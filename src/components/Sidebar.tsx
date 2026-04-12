@@ -24,6 +24,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     journee: false,
     programme: false,
     'ia-generative': false,
+    scenario: false,
   })
 
   const toggleCategory = (categoryId: string) => {

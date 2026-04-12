@@ -55,7 +55,7 @@ const CustomNode = memo(({ data, selected }: NodeProps) => {
           className="node-category-badge"
           style={{ backgroundColor: `${color}20`, color: color as string }}
         >
-          {category === 'organisation' ? '📋' : category === 'montage-video' ? '🎬' : category === 'journee' ? '☀️' : category === 'ia-generative' ? '🤖' : '📅'}
+          {category === 'organisation' ? '📋' : category === 'montage-video' ? '🎬' : category === 'journee' ? '☀️' : category === 'ia-generative' ? '🤖' : category === 'scenario' ? '🎭' : '📅'}
         </span>
         {isEditing ? (
           <input
