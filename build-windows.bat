@@ -32,7 +32,7 @@ if %errorlevel% neq 0 (
 
 echo.
 echo [4/4] Creation du .EXE Windows...
-call npx @electron/packager . "Node Organisation" --platform=win32 --arch=x64 --out=release --overwrite --ignore="node_modules/((?!(@dagrejs|@xyflow|react|react-dom|scheduler|css-mediaquery)).)" --ignore="src|public|electron|\.ts$|\.bat$|\.md$|vite\.config|tsconfig|vite\.web" --app-version=1.0.0
+call npx @electron/packager . "Node Organisation" --platform=win32 --arch=x64 --out=release --overwrite --ignore="^/src" --ignore="^/public" --ignore="^/electron" --ignore="^/\.git" --ignore="\.ts$" --ignore="\.bat$" --ignore="^/vite" --ignore="^/tsconfig" --ignore="^/release" --app-version=1.0.0
 if %errorlevel% neq 0 (
     echo ERREUR: Le packaging a echoue.
     pause
