@@ -334,7 +334,7 @@ function FlowCanvas() {
           deleteKeyCode={['Backspace', 'Delete']}
           multiSelectionKeyCode="Shift"
           className="react-flow-canvas"
-          proOptions={{ hideAttribution: false }}
+          proOptions={{ hideAttribution: true }}
         >
           <Controls position="bottom-right" className="flow-controls" />
           <MiniMap
