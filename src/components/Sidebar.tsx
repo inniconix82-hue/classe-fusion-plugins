@@ -20,7 +20,9 @@ const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({
     organisation: true,
-    'montage-video': true,
+    'montage-video': false,
+    journee: false,
+    programme: false,
   })
 
   const toggleCategory = (categoryId: string) => {

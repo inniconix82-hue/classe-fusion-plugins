@@ -289,13 +289,14 @@ body {
 .custom-node {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 10px 14px;
-  min-width: 160px;
-  max-width: 240px;
+  border-radius: 6px;
+  padding: 6px 10px;
+  min-width: 120px;
+  max-width: 200px;
   cursor: grab;
   transition: all 0.15s;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  font-size: 12px;
 }
 
 .custom-node:hover {
@@ -310,35 +311,35 @@ body {
 .node-header {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 4px;
+  gap: 6px;
+  margin-bottom: 2px;
 }
 
 .node-category-badge {
-  font-size: 12px;
-  width: 24px;
-  height: 24px;
+  font-size: 10px;
+  width: 20px;
+  height: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 6px;
+  border-radius: 4px;
   flex-shrink: 0;
 }
 
 .node-label {
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 600;
   color: var(--text-primary);
-  line-height: 1.3;
+  line-height: 1.2;
 }
 
 .node-label-input {
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 600;
   background: var(--bg-primary);
   border: 1px solid var(--accent);
   border-radius: 4px;
-  padding: 2px 6px;
+  padding: 1px 4px;
   color: var(--text-primary);
   outline: none;
   width: 100%;
@@ -346,17 +347,17 @@ body {
 }
 
 .node-description {
-  font-size: 11px;
+  font-size: 9px;
   color: var(--text-muted);
-  line-height: 1.4;
-  padding-left: 32px;
+  line-height: 1.3;
+  padding-left: 26px;
 }
 
 /* Node handles */
 
 .node-handle {
-  width: 10px !important;
-  height: 10px !important;
+  width: 8px !important;
+  height: 8px !important;
   border: 2px solid var(--bg-card) !important;
   border-radius: 50% !important;
   transition: transform 0.15s;
