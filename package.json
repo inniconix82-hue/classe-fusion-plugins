@@ -10,7 +10,9 @@
     "electron:build": "npm run build && electron-builder",
     "electron:build:win": "npm run build && electron-builder --win",
     "package:win": "npm run build && npx @electron/packager . \"Node Organisation\" --platform=win32 --arch=x64 --out=release --overwrite --ignore=\"node_modules|src|public|electron|vite\\.config|tsconfig|build-windows\" --app-version=1.0.0",
-    "package:mac": "npm run build && npx @electron/packager . \"Node Organisation\" --platform=darwin --arch=x64,arm64 --out=release --overwrite --ignore=\"^/src\" --ignore=\"^/public\" --ignore=\"^/electron\" --ignore=\"^/\\.git\" --ignore=\"\\.ts$\" --ignore=\"\\.bat$\" --ignore=\"^/vite\" --ignore=\"^/tsconfig\" --ignore=\"^/release\" --app-version=1.0.0"
+    "package:mac": "npm run build && npx @electron/packager . \"Node Organisation\" --platform=darwin --arch=x64,arm64 --out=release --overwrite --ignore=\"^/src\" --ignore=\"^/public\" --ignore=\"^/electron\" --ignore=\"^/\\.git\" --ignore=\"\\.ts$\" --ignore=\"\\.bat$\" --ignore=\"^/vite\" --ignore=\"^/tsconfig\" --ignore=\"^/release\" --app-version=1.0.0",
+    "build:web": "tsc && vite build --config vite.web.config.ts",
+    "preview:web": "vite preview --config vite.web.config.ts"
   },
   "build": {
     "appId": "com.nodesorg.app",
