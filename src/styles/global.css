@@ -351,6 +351,35 @@ body {
   color: var(--text-muted);
   line-height: 1.3;
   padding-left: 26px;
+  cursor: text;
+  min-height: 14px;
+}
+
+.node-desc-placeholder {
+  font-style: italic;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.custom-node:hover .node-desc-placeholder {
+  opacity: 0.5;
+}
+
+.node-description-edit {
+  padding-left: 26px;
+  margin-top: 2px;
+}
+
+.node-desc-input {
+  font-size: 9px;
+  background: var(--bg-primary);
+  border: 1px solid var(--accent);
+  border-radius: 3px;
+  padding: 1px 4px;
+  color: var(--text-muted);
+  outline: none;
+  width: 100%;
+  font-family: inherit;
 }
 
 /* Node handles */
