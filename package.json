@@ -25,7 +25,9 @@
       "target": [
         {
           "target": "nsis",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ],
       "icon": "public/icon.png",
@@ -36,23 +38,27 @@
       "oneClick": false,
       "perMachine": false,
       "allowToChangeInstallationDirectory": true,
-      "installerLanguages": ["fr"],
+      "installerLanguages": [
+        "fr"
+      ],
       "language": "1036"
     }
   },
   "dependencies": {
     "@dagrejs/dagre": "^1.1.0",
     "@xyflow/react": "^12.0.0",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^2.5.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@electron/packager": "^18.3.0",
     "@types/react": "^18.3.0",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.0",
     "concurrently": "^8.2.0",
     "electron": "^31.0.0",
-    "@electron/packager": "^18.3.0",
     "electron-builder": "^24.13.0",
     "typescript": "^5.5.0",
     "vite": "^5.4.0",

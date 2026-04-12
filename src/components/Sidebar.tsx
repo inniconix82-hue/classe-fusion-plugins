@@ -9,6 +9,8 @@ interface SidebarProps {
   layoutDirection: 'TB' | 'LR'
   onToggleDirection: () => void
   onOpenShortcuts: () => void
+  onExportPNG: () => void
+  onExportPDF: () => void
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
@@ -19,6 +21,8 @@ const Sidebar: React.FC<SidebarProps> = ({
   layoutDirection,
   onToggleDirection,
   onOpenShortcuts,
+  onExportPNG,
+  onExportPDF,
 }) => {
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({
     organisation: true,
@@ -59,6 +63,15 @@ const Sidebar: React.FC<SidebarProps> = ({
         </button>
         <button className="action-btn" onClick={onClear} title="Nouveau">
           <span className="btn-icon">🗑️</span> Nouveau
+        </button>
+      </div>
+
+      <div className="sidebar-actions">
+        <button className="action-btn" onClick={onExportPNG} title="Exporter en PNG">
+          <span className="btn-icon">🖼️</span> Export PNG
+        </button>
+        <button className="action-btn" onClick={onExportPDF} title="Exporter en PDF">
+          <span className="btn-icon">📄</span> Export PDF
         </button>
       </div>
 

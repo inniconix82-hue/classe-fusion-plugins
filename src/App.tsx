@@ -24,6 +24,7 @@ import ShortcutsModal from './components/ShortcutsModal'
 import { type LayoutDirection, getLayoutedElements } from './data/layoutUtils'
 import { type PresetNode } from './data/presets'
 import { type Shortcut, loadShortcuts, matchesShortcut } from './data/shortcuts'
+import { exportToPNG, exportToPDF } from './data/exportUtils'
 
 const nodeTypes = {
   custom: CustomNode,
@@ -217,6 +218,14 @@ function FlowCanvas() {
     }))
   }, [setNodes])
 
+  const onExportPNG = useCallback(() => {
+    exportToPNG('organisation')
+  }, [])
+
+  const onExportPDF = useCallback(() => {
+    exportToPDF('organisation')
+  }, [])
+
   const onDuplicate = useCallback(() => {
     const selected = nodes.filter((n) => n.selected)
     if (selected.length === 0) return
@@ -254,6 +263,8 @@ function FlowCanvas() {
             case 'copy': onCopy(); break
             case 'paste': onPaste(); break
             case 'duplicate': onDuplicate(); break
+            case 'exportpng': onExportPNG(); break
+            case 'exportpdf': onExportPDF(); break
           }
           return
         }
@@ -261,7 +272,7 @@ function FlowCanvas() {
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [shortcuts, showShortcuts, onSave, onLoad, onClear, onAutoLayout, onToggleDirection, fitView, onSelectAll, onCopy, onPaste, onDuplicate])
+  }, [shortcuts, showShortcuts, onSave, onLoad, onClear, onAutoLayout, onToggleDirection, fitView, onSelectAll, onCopy, onPaste, onDuplicate, onExportPNG, onExportPDF])
 
   return (
     <div className="app-container">
@@ -273,6 +284,8 @@ function FlowCanvas() {
         layoutDirection={layoutDirection}
         onToggleDirection={onToggleDirection}
         onOpenShortcuts={() => setShowShortcuts(true)}
+        onExportPNG={onExportPNG}
+        onExportPDF={onExportPDF}
       />
 
       {showShortcuts && (

@@ -17,6 +17,8 @@ export const defaultShortcuts: Shortcut[] = [
   { id: 'copy', label: 'Copier', keys: 'Ctrl+C', description: 'Copier les nodes sélectionnés' },
   { id: 'paste', label: 'Coller', keys: 'Ctrl+V', description: 'Coller les nodes copiés' },
   { id: 'duplicate', label: 'Dupliquer', keys: 'Ctrl+Shift+D', description: 'Dupliquer la sélection' },
+  { id: 'exportpng', label: 'Export PNG', keys: 'Ctrl+Shift+P', description: 'Exporter en image PNG' },
+  { id: 'exportpdf', label: 'Export PDF', keys: 'Ctrl+Shift+E', description: 'Exporter en PDF' },
 ]
 
 const STORAGE_KEY = 'nodeorg-shortcuts'
