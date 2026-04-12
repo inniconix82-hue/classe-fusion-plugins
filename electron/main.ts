@@ -1,10 +1,13 @@
-import { app, BrowserWindow, ipcMain, dialog } from 'electron'
+import { app, BrowserWindow, ipcMain, dialog, Menu } from 'electron'
 import { join } from 'path'
 import { readFileSync, writeFileSync } from 'fs'
 
 let mainWindow: BrowserWindow | null = null
 
 function createWindow() {
+  // Remove default menu to let all keyboard shortcuts pass through to the renderer
+  Menu.setApplicationMenu(null)
+
   mainWindow = new BrowserWindow({
     width: 1400,
     height: 900,

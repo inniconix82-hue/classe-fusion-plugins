@@ -252,6 +252,7 @@ function FlowCanvas() {
       for (const shortcut of shortcuts) {
         if (matchesShortcut(e, shortcut.keys)) {
           e.preventDefault()
+          e.stopImmediatePropagation()
           switch (shortcut.id) {
             case 'save': onSave(); break
             case 'load': onLoad(); break
@@ -270,8 +271,9 @@ function FlowCanvas() {
         }
       }
     }
-    window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
+    // Use capture phase to intercept before React Flow swallows the event
+    window.addEventListener('keydown', handler, true)
+    return () => window.removeEventListener('keydown', handler, true)
   }, [shortcuts, showShortcuts, onSave, onLoad, onClear, onAutoLayout, onToggleDirection, fitView, onSelectAll, onCopy, onPaste, onDuplicate, onExportPNG, onExportPDF])
 
   return (
