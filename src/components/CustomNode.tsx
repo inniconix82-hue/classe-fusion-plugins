@@ -1,4 +1,4 @@
-import React, { memo, useState, useRef, useEffect } from 'react'
+import React, { memo, useState, useRef, useEffect, useCallback } from 'react'
 import { Handle, Position, type NodeProps } from '@xyflow/react'
 
 export interface CustomNodeData {
@@ -28,6 +28,7 @@ const CustomNode = memo(({ data, selected }: NodeProps) => {
   const [editDesc, setEditDesc] = useState((description as string) || '')
   const [editColor, setEditColor] = useState(color as string)
   const labelRef = useRef<HTMLInputElement>(null)
+  const nodeRef = useRef<HTMLDivElement>(null)
 
   // Sync with external data changes
   useEffect(() => {
@@ -43,12 +44,20 @@ const CustomNode = memo(({ data, selected }: NodeProps) => {
     setIsEditing(true)
   }
 
-  const saveAndClose = () => {
+  const saveAndClose = useCallback(() => {
     setIsEditing(false)
     ;(data as any).label = editLabel
     ;(data as any).description = editDesc
     ;(data as any).color = editColor
-  }
+  }, [data, editLabel, editDesc, editColor])
+
+  const handleBlur = useCallback((e: React.FocusEvent) => {
+    const relatedTarget = e.relatedTarget as HTMLElement | null
+    if (relatedTarget && nodeRef.current?.contains(relatedTarget)) {
+      return
+    }
+    saveAndClose()
+  }, [saveAndClose])
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape') {
@@ -79,6 +88,7 @@ const CustomNode = memo(({ data, selected }: NodeProps) => {
 
   return (
     <div
+      ref={nodeRef}
       className={`custom-node ${selected ? 'selected' : ''}`}
       style={{
         borderColor: (isEditing ? editColor : color) as string,
@@ -106,7 +116,7 @@ const CustomNode = memo(({ data, selected }: NodeProps) => {
             className="node-label-input"
             value={editLabel}
             onChange={(e) => setEditLabel(e.target.value)}
-            onBlur={saveAndClose}
+            onBlur={handleBlur}
             onKeyDown={handleLabelKeyDown}
             placeholder="Nom du node"
             autoFocus
@@ -122,19 +132,26 @@ const CustomNode = memo(({ data, selected }: NodeProps) => {
             className="node-desc-input"
             value={editDesc}
             onChange={(e) => setEditDesc(e.target.value)}
-            onBlur={saveAndClose}
+            onBlur={handleBlur}
             onKeyDown={handleDescKeyDown}
             placeholder="Description (optionnel)"
           />
-          <div className="node-color-picker">
-            <input
-              type="color"
-              value={editColor}
-              onChange={(e) => setEditColor(e.target.value)}
-              className="color-input"
-              title="Couleur du node"
-            />
-            <span className="color-label">Couleur</span>
+          <div className="node-edit-footer">
+            <div className="node-color-picker">
+              <input
+                type="color"
+                value={editColor}
+                onChange={(e) => setEditColor(e.target.value)}
+                onBlur={handleBlur}
+                className="color-input"
+                title="Couleur du node"
+                tabIndex={0}
+              />
+              <span className="color-label">Couleur</span>
+            </div>
+            <button className="node-save-btn" onClick={saveAndClose} tabIndex={0}>
+              OK
+            </button>
           </div>
         </div>
       ) : (

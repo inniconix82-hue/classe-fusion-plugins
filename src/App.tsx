@@ -22,11 +22,13 @@ import CustomNode from './components/CustomNode'
 import CustomEdge from './components/CustomEdge'
 import Sidebar from './components/Sidebar'
 import ShortcutsModal from './components/ShortcutsModal'
+import OllamaPanel from './components/OllamaPanel'
 import { type LayoutDirection, getLayoutedElements } from './data/layoutUtils'
 import { type PresetNode } from './data/presets'
 import { type Shortcut, loadShortcuts, matchesShortcut } from './data/shortcuts'
 import { useHistory } from './data/useHistory'
 import { exportToPNG, exportToPDF } from './data/exportUtils'
+import { generateFromNodes } from './data/ollamaService'
 
 const nodeTypes = {
   custom: CustomNode,
@@ -69,6 +71,10 @@ function FlowCanvas() {
   )
   const [shortcuts, setShortcuts] = useState<Shortcut[]>(loadShortcuts)
   const [showShortcuts, setShowShortcuts] = useState(false)
+  const [showOllama, setShowOllama] = useState(false)
+  const [ollamaResult, setOllamaResult] = useState('')
+  const [ollamaError, setOllamaError] = useState<string | null>(null)
+  const [ollamaLoading, setOllamaLoading] = useState(false)
   const history = useHistory()
   const { screenToFlowPosition, fitView } = useReactFlow()
 
@@ -277,6 +283,21 @@ function FlowCanvas() {
     exportToPDF('organisation')
   }, [])
 
+  const onOllamaGenerate = useCallback(async () => {
+    setOllamaLoading(true)
+    setOllamaResult('')
+    setOllamaError(null)
+
+    const result = await generateFromNodes(nodes, (token) => {
+      setOllamaResult((prev) => prev + token)
+    })
+
+    if (result.error) {
+      setOllamaError(result.error)
+    }
+    setOllamaLoading(false)
+  }, [nodes])
+
   const onDuplicate = useCallback(() => {
     const selected = nodes.filter((n) => n.selected)
     if (selected.length === 0) return
@@ -353,6 +374,7 @@ function FlowCanvas() {
         onOpenShortcuts={() => setShowShortcuts(true)}
         onExportPNG={onExportPNG}
         onExportPDF={onExportPDF}
+        onToggleOllama={() => setShowOllama((v) => !v)}
       />
 
       {showShortcuts && (
@@ -360,6 +382,16 @@ function FlowCanvas() {
           shortcuts={shortcuts}
           onUpdateShortcuts={setShortcuts}
           onClose={() => setShowShortcuts(false)}
+        />
+      )}
+
+      {showOllama && (
+        <OllamaPanel
+          result={ollamaResult}
+          error={ollamaError}
+          loading={ollamaLoading}
+          onClose={() => setShowOllama(false)}
+          onGenerate={onOllamaGenerate}
         />
       )}
 

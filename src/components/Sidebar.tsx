@@ -11,6 +11,7 @@ interface SidebarProps {
   onOpenShortcuts: () => void
   onExportPNG: () => void
   onExportPDF: () => void
+  onToggleOllama: () => void
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
@@ -23,6 +24,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   onOpenShortcuts,
   onExportPNG,
   onExportPDF,
+  onToggleOllama,
 }) => {
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({
     organisation: true,
@@ -92,6 +94,12 @@ const Sidebar: React.FC<SidebarProps> = ({
       <div className="sidebar-layout-controls">
         <button className="layout-btn" onClick={onOpenShortcuts} style={{ flex: 'none', width: '100%' }}>
           ⌨️ Raccourcis clavier
+        </button>
+      </div>
+
+      <div className="sidebar-layout-controls">
+        <button className="ollama-sidebar-btn" onClick={onToggleOllama} style={{ flex: 'none', width: '100%' }}>
+          🤖 Générer avec Ollama
         </button>
       </div>
 
