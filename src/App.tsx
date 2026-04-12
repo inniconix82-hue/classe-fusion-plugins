@@ -19,44 +19,67 @@ import {
 import '@xyflow/react/dist/style.css'
 
 import CustomNode from './components/CustomNode'
+import CustomEdge from './components/CustomEdge'
 import Sidebar from './components/Sidebar'
 import ShortcutsModal from './components/ShortcutsModal'
 import { type LayoutDirection, getLayoutedElements } from './data/layoutUtils'
 import { type PresetNode } from './data/presets'
 import { type Shortcut, loadShortcuts, matchesShortcut } from './data/shortcuts'
+import { useHistory } from './data/useHistory'
 import { exportToPNG, exportToPDF } from './data/exportUtils'
 
 const nodeTypes = {
   custom: CustomNode,
 }
 
+const edgeTypes = {
+  custom: CustomEdge,
+}
+
 let nodeIdCounter = 0
 const getNextNodeId = () => `node_${++nodeIdCounter}`
 
 const defaultEdgeOptions = {
+  type: 'custom',
   animated: true,
+  data: { label: '' },
   style: { stroke: '#64748b', strokeWidth: 2 },
 }
 
-const initialNodes: Node[] = []
-const initialEdges: Edge[] = []
+const AUTOSAVE_KEY = 'nodeorg-autosave'
+
+function loadAutoSave(): { nodes: Node[]; edges: Edge[]; layoutDirection?: string } | null {
+  try {
+    const stored = localStorage.getItem(AUTOSAVE_KEY)
+    if (stored) return JSON.parse(stored)
+  } catch {}
+  return null
+}
+
+const saved = loadAutoSave()
+const initialNodes: Node[] = saved?.nodes || []
+const initialEdges: Edge[] = saved?.edges || []
 
 function FlowCanvas() {
   const reactFlowWrapper = useRef<HTMLDivElement>(null)
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes)
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges)
-  const [layoutDirection, setLayoutDirection] = useState<LayoutDirection>('TB')
+  const [layoutDirection, setLayoutDirection] = useState<LayoutDirection>(
+    (saved?.layoutDirection as LayoutDirection) || 'TB'
+  )
   const [shortcuts, setShortcuts] = useState<Shortcut[]>(loadShortcuts)
   const [showShortcuts, setShowShortcuts] = useState(false)
+  const history = useHistory()
   const { screenToFlowPosition, fitView } = useReactFlow()
 
   const onConnect: OnConnect = useCallback(
     (params: Connection) => {
+      history.push(nodes, edges)
       setEdges((eds: Edge[]) =>
         addEdge(params, eds)
       )
     },
-    [setEdges]
+    [setEdges, history, nodes, edges]
   )
 
   const onDragOver = useCallback((event: React.DragEvent) => {
@@ -90,9 +113,10 @@ function FlowCanvas() {
         },
       }
 
+      history.push(nodes, edges)
       setNodes((nds) => [...nds, newNode])
     },
-    [screenToFlowPosition, setNodes]
+    [screenToFlowPosition, setNodes, history, nodes, edges]
   )
 
   const onAutoLayout = useCallback(() => {
@@ -177,6 +201,7 @@ function FlowCanvas() {
     setNodes([])
     setEdges([])
     nodeIdCounter = 0
+    localStorage.removeItem(AUTOSAVE_KEY)
   }, [setNodes, setEdges])
 
   const onNodeDoubleClick = useCallback((_event: React.MouseEvent, _node: Node) => {
@@ -200,6 +225,14 @@ function FlowCanvas() {
       )
     )
   }, [nodes, setEdges])
+
+  const onUndo = useCallback(() => {
+    history.undo(nodes, edges, setNodes, setEdges)
+  }, [history, nodes, edges, setNodes, setEdges])
+
+  const onRedo = useCallback(() => {
+    history.redo(nodes, edges, setNodes, setEdges)
+  }, [history, nodes, edges, setNodes, setEdges])
 
   const onSelectAll = useCallback(() => {
     setNodes((nds) =>
@@ -260,6 +293,17 @@ function FlowCanvas() {
     )
   }, [nodes, setNodes])
 
+  // Auto-save to localStorage every 3 seconds
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      localStorage.setItem(
+        AUTOSAVE_KEY,
+        JSON.stringify({ nodes, edges, layoutDirection })
+      )
+    }, 3000)
+    return () => clearTimeout(timer)
+  }, [nodes, edges, layoutDirection])
+
   // Keyboard shortcuts
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -278,6 +322,8 @@ function FlowCanvas() {
             case 'layout': onAutoLayout(); break
             case 'direction': onToggleDirection(); break
             case 'fitview': fitView({ padding: 0.2 }); break
+            case 'undo': onUndo(); break
+            case 'redo': onRedo(); break
             case 'selectall': onSelectAll(); break
             case 'copy': onCopy(); break
             case 'paste': onPaste(); break
@@ -293,7 +339,7 @@ function FlowCanvas() {
     // Use capture phase to intercept before React Flow swallows the event
     window.addEventListener('keydown', handler, true)
     return () => window.removeEventListener('keydown', handler, true)
-  }, [shortcuts, showShortcuts, onSave, onLoad, onClear, onAutoLayout, onToggleDirection, fitView, onSelectAll, onCopy, onPaste, onDuplicate, onExportPNG, onExportPDF, onDisconnectSelected])
+  }, [shortcuts, showShortcuts, onSave, onLoad, onClear, onAutoLayout, onToggleDirection, fitView, onUndo, onRedo, onSelectAll, onCopy, onPaste, onDuplicate, onExportPNG, onExportPDF, onDisconnectSelected])
 
   return (
     <div className="app-container">
@@ -329,6 +375,7 @@ function FlowCanvas() {
           onNodeDoubleClick={onNodeDoubleClick}
           onEdgeContextMenu={onEdgeContextMenu}
           nodeTypes={nodeTypes}
+          edgeTypes={edgeTypes}
           defaultEdgeOptions={defaultEdgeOptions}
           fitView
           deleteKeyCode={['Backspace', 'Delete']}

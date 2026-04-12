@@ -31,7 +31,12 @@ const Sidebar: React.FC<SidebarProps> = ({
     programme: false,
     'ia-generative': false,
     scenario: false,
+    'gestion-projet': false,
+    contenu: false,
+    business: false,
   })
+
+  const [searchQuery, setSearchQuery] = useState('')
 
   const toggleCategory = (categoryId: string) => {
     setExpandedCategories((prev) => ({
@@ -92,10 +97,33 @@ const Sidebar: React.FC<SidebarProps> = ({
 
       <div className="sidebar-divider" />
 
+      <div className="sidebar-search">
+        <input
+          className="search-input"
+          type="text"
+          placeholder="🔍 Rechercher un node..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
+      </div>
+
       <div className="sidebar-section-title">Glisser un node sur le canvas</div>
 
       <div className="sidebar-categories">
-        {presetCategories.map((category) => (
+        {presetCategories.map((category) => {
+          const filteredNodes = searchQuery
+            ? category.nodes.filter(
+                (n) =>
+                  n.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                  n.description.toLowerCase().includes(searchQuery.toLowerCase())
+              )
+            : category.nodes
+
+          if (searchQuery && filteredNodes.length === 0) return null
+
+          const isExpanded = searchQuery ? true : expandedCategories[category.id]
+
+          return (
           <div key={category.id} className="category-group">
             <button
               className="category-header"
@@ -104,18 +132,19 @@ const Sidebar: React.FC<SidebarProps> = ({
             >
               <span className="category-icon">{category.icon}</span>
               <span className="category-name">{category.name}</span>
+              <span className="category-count">{filteredNodes.length}</span>
               <span
                 className={`category-chevron ${
-                  expandedCategories[category.id] ? 'expanded' : ''
+                  isExpanded ? 'expanded' : ''
                 }`}
               >
                 ›
               </span>
             </button>
 
-            {expandedCategories[category.id] && (
+            {isExpanded && (
               <div className="category-nodes">
-                {category.nodes.map((preset, index) => (
+                {filteredNodes.map((preset, index) => (
                   <div
                     key={`${preset.label}-${index}`}
                     className="preset-node"
@@ -130,7 +159,8 @@ const Sidebar: React.FC<SidebarProps> = ({
               </div>
             )}
           </div>
-        ))}
+          )
+        })}
       </div>
     </aside>
   )

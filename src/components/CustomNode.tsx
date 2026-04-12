@@ -16,6 +16,9 @@ const categoryIcons: Record<string, string> = {
   'ia-generative': '🤖',
   scenario: '🎭',
   programme: '📅',
+  'gestion-projet': '📊',
+  contenu: '📱',
+  business: '💼',
 }
 
 const CustomNode = memo(({ data, selected }: NodeProps) => {
@@ -23,6 +26,7 @@ const CustomNode = memo(({ data, selected }: NodeProps) => {
   const [isEditing, setIsEditing] = useState(false)
   const [editLabel, setEditLabel] = useState(label as string)
   const [editDesc, setEditDesc] = useState((description as string) || '')
+  const [editColor, setEditColor] = useState(color as string)
   const labelRef = useRef<HTMLInputElement>(null)
 
   // Sync with external data changes
@@ -30,8 +34,9 @@ const CustomNode = memo(({ data, selected }: NodeProps) => {
     if (!isEditing) {
       setEditLabel(label as string)
       setEditDesc((description as string) || '')
+      setEditColor(color as string)
     }
-  }, [label, description, isEditing])
+  }, [label, description, color, isEditing])
 
   const handleDoubleClick = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -42,12 +47,14 @@ const CustomNode = memo(({ data, selected }: NodeProps) => {
     setIsEditing(false)
     ;(data as any).label = editLabel
     ;(data as any).description = editDesc
+    ;(data as any).color = editColor
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape') {
       setEditLabel(label as string)
       setEditDesc((description as string) || '')
+      setEditColor(color as string)
       setIsEditing(false)
     }
     // Allow Tab to switch between fields
@@ -74,7 +81,7 @@ const CustomNode = memo(({ data, selected }: NodeProps) => {
     <div
       className={`custom-node ${selected ? 'selected' : ''}`}
       style={{
-        borderColor: color as string,
+        borderColor: (isEditing ? editColor : color) as string,
         borderLeftWidth: '4px',
       }}
       onDoubleClick={handleDoubleClick}
@@ -83,13 +90,13 @@ const CustomNode = memo(({ data, selected }: NodeProps) => {
         type="target"
         position={Position.Top}
         className="node-handle"
-        style={{ backgroundColor: color as string }}
+        style={{ backgroundColor: (isEditing ? editColor : color) as string }}
       />
 
       <div className="node-header">
         <span
           className="node-category-badge"
-          style={{ backgroundColor: `${color}20`, color: color as string }}
+          style={{ backgroundColor: `${(isEditing ? editColor : color)}20`, color: (isEditing ? editColor : color) as string }}
         >
           {icon}
         </span>
@@ -119,6 +126,16 @@ const CustomNode = memo(({ data, selected }: NodeProps) => {
             onKeyDown={handleDescKeyDown}
             placeholder="Description (optionnel)"
           />
+          <div className="node-color-picker">
+            <input
+              type="color"
+              value={editColor}
+              onChange={(e) => setEditColor(e.target.value)}
+              className="color-input"
+              title="Couleur du node"
+            />
+            <span className="color-label">Couleur</span>
+          </div>
         </div>
       ) : (
         <div
@@ -133,7 +150,7 @@ const CustomNode = memo(({ data, selected }: NodeProps) => {
         type="source"
         position={Position.Bottom}
         className="node-handle"
-        style={{ backgroundColor: color as string }}
+        style={{ backgroundColor: (isEditing ? editColor : color) as string }}
       />
     </div>
   )

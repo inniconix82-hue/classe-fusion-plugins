@@ -14,6 +14,7 @@ export const defaultShortcuts: Shortcut[] = [
   { id: 'fitview', label: 'Zoom adapté', keys: 'Ctrl+F', description: 'Adapter le zoom au contenu' },
   { id: 'selectall', label: 'Tout sélectionner', keys: 'Ctrl+A', description: 'Sélectionner tous les nodes' },
   { id: 'undo', label: 'Annuler', keys: 'Ctrl+Z', description: 'Annuler la dernière action' },
+  { id: 'redo', label: 'Refaire', keys: 'Ctrl+Y', description: 'Refaire l\'action annulée' },
   { id: 'copy', label: 'Copier', keys: 'Ctrl+C', description: 'Copier les nodes sélectionnés' },
   { id: 'paste', label: 'Coller', keys: 'Ctrl+V', description: 'Coller les nodes copiés' },
   { id: 'duplicate', label: 'Dupliquer', keys: 'Ctrl+Shift+D', description: 'Dupliquer la sélection' },
