@@ -23,6 +23,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     'montage-video': false,
     journee: false,
     programme: false,
+    'ia-generative': false,
   })
 
   const toggleCategory = (categoryId: string) => {
