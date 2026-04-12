@@ -27,11 +27,13 @@
           "arch": ["x64"]
         }
       ],
-      "icon": "public/icon.png"
+      "icon": "public/icon.png",
+      "sign": false,
+      "signingHashAlgorithms": null
     },
     "nsis": {
       "oneClick": false,
-      "perMachine": true,
+      "perMachine": false,
       "allowToChangeInstallationDirectory": true,
       "installerLanguages": ["fr"],
       "language": "1036"
