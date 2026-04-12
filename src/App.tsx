@@ -183,6 +183,24 @@ function FlowCanvas() {
     // Editing is handled inside the CustomNode component
   }, [])
 
+  const onEdgeContextMenu = useCallback(
+    (event: React.MouseEvent, edge: Edge) => {
+      event.preventDefault()
+      setEdges((eds) => eds.filter((e) => e.id !== edge.id))
+    },
+    [setEdges]
+  )
+
+  const onDisconnectSelected = useCallback(() => {
+    const selectedNodeIds = nodes.filter((n) => n.selected).map((n) => n.id)
+    if (selectedNodeIds.length === 0) return
+    setEdges((eds) =>
+      eds.filter(
+        (e) => !selectedNodeIds.includes(e.source) && !selectedNodeIds.includes(e.target)
+      )
+    )
+  }, [nodes, setEdges])
+
   const onSelectAll = useCallback(() => {
     setNodes((nds) =>
       nds.map((n) => ({ ...n, selected: true }))
@@ -266,6 +284,7 @@ function FlowCanvas() {
             case 'duplicate': onDuplicate(); break
             case 'exportpng': onExportPNG(); break
             case 'exportpdf': onExportPDF(); break
+            case 'disconnect': onDisconnectSelected(); break
           }
           return
         }
@@ -274,7 +293,7 @@ function FlowCanvas() {
     // Use capture phase to intercept before React Flow swallows the event
     window.addEventListener('keydown', handler, true)
     return () => window.removeEventListener('keydown', handler, true)
-  }, [shortcuts, showShortcuts, onSave, onLoad, onClear, onAutoLayout, onToggleDirection, fitView, onSelectAll, onCopy, onPaste, onDuplicate, onExportPNG, onExportPDF])
+  }, [shortcuts, showShortcuts, onSave, onLoad, onClear, onAutoLayout, onToggleDirection, fitView, onSelectAll, onCopy, onPaste, onDuplicate, onExportPNG, onExportPDF, onDisconnectSelected])
 
   return (
     <div className="app-container">
@@ -308,6 +327,7 @@ function FlowCanvas() {
           onDrop={onDrop}
           onDragOver={onDragOver}
           onNodeDoubleClick={onNodeDoubleClick}
+          onEdgeContextMenu={onEdgeContextMenu}
           nodeTypes={nodeTypes}
           defaultEdgeOptions={defaultEdgeOptions}
           fitView

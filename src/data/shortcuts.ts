@@ -19,6 +19,7 @@ export const defaultShortcuts: Shortcut[] = [
   { id: 'duplicate', label: 'Dupliquer', keys: 'Ctrl+Shift+D', description: 'Dupliquer la sélection' },
   { id: 'exportpng', label: 'Export PNG', keys: 'Ctrl+Shift+P', description: 'Exporter en image PNG' },
   { id: 'exportpdf', label: 'Export PDF', keys: 'Ctrl+Shift+E', description: 'Exporter en PDF' },
+  { id: 'disconnect', label: 'Déconnecter', keys: 'Ctrl+Shift+X', description: 'Supprimer les connexions des nodes sélectionnés' },
 ]
 
 const STORAGE_KEY = 'nodeorg-shortcuts'
