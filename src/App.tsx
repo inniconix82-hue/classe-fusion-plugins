@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import {
   ReactFlow,
   Controls,
@@ -20,8 +20,10 @@ import '@xyflow/react/dist/style.css'
 
 import CustomNode from './components/CustomNode'
 import Sidebar from './components/Sidebar'
+import ShortcutsModal from './components/ShortcutsModal'
 import { type LayoutDirection, getLayoutedElements } from './data/layoutUtils'
 import { type PresetNode } from './data/presets'
+import { type Shortcut, loadShortcuts, matchesShortcut } from './data/shortcuts'
 
 const nodeTypes = {
   custom: CustomNode,
@@ -43,6 +45,8 @@ function FlowCanvas() {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes)
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges)
   const [layoutDirection, setLayoutDirection] = useState<LayoutDirection>('TB')
+  const [shortcuts, setShortcuts] = useState<Shortcut[]>(loadShortcuts)
+  const [showShortcuts, setShowShortcuts] = useState(false)
   const { screenToFlowPosition, fitView } = useReactFlow()
 
   const onConnect: OnConnect = useCallback(
@@ -178,6 +182,87 @@ function FlowCanvas() {
     // Editing is handled inside the CustomNode component
   }, [])
 
+  const onSelectAll = useCallback(() => {
+    setNodes((nds) =>
+      nds.map((n) => ({ ...n, selected: true }))
+    )
+  }, [setNodes])
+
+  const clipboardRef = useRef<Node[]>([])
+
+  const onCopy = useCallback(() => {
+    const selected = nodes.filter((n) => n.selected)
+    if (selected.length > 0) {
+      clipboardRef.current = selected.map((n) => ({ ...n }))
+    }
+  }, [nodes])
+
+  const onPaste = useCallback(() => {
+    if (clipboardRef.current.length === 0) return
+    const offset = 50
+    const newNodes = clipboardRef.current.map((n) => ({
+      ...n,
+      id: getNextNodeId(),
+      position: { x: n.position.x + offset, y: n.position.y + offset },
+      selected: true,
+      data: { ...n.data },
+    }))
+    setNodes((nds) =>
+      nds.map((n) => ({ ...n, selected: false })).concat(newNodes)
+    )
+    // Shift clipboard offset for next paste
+    clipboardRef.current = clipboardRef.current.map((n) => ({
+      ...n,
+      position: { x: n.position.x + offset, y: n.position.y + offset },
+    }))
+  }, [setNodes])
+
+  const onDuplicate = useCallback(() => {
+    const selected = nodes.filter((n) => n.selected)
+    if (selected.length === 0) return
+    const offset = 50
+    const newNodes = selected.map((n) => ({
+      ...n,
+      id: getNextNodeId(),
+      position: { x: n.position.x + offset, y: n.position.y + offset },
+      selected: true,
+      data: { ...n.data },
+    }))
+    setNodes((nds) =>
+      nds.map((n) => ({ ...n, selected: false })).concat(newNodes)
+    )
+  }, [nodes, setNodes])
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (showShortcuts) return
+      const target = e.target as HTMLElement
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return
+
+      for (const shortcut of shortcuts) {
+        if (matchesShortcut(e, shortcut.keys)) {
+          e.preventDefault()
+          switch (shortcut.id) {
+            case 'save': onSave(); break
+            case 'load': onLoad(); break
+            case 'new': onClear(); break
+            case 'layout': onAutoLayout(); break
+            case 'direction': onToggleDirection(); break
+            case 'fitview': fitView({ padding: 0.2 }); break
+            case 'selectall': onSelectAll(); break
+            case 'copy': onCopy(); break
+            case 'paste': onPaste(); break
+            case 'duplicate': onDuplicate(); break
+          }
+          return
+        }
+      }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [shortcuts, showShortcuts, onSave, onLoad, onClear, onAutoLayout, onToggleDirection, fitView, onSelectAll, onCopy, onPaste, onDuplicate])
+
   return (
     <div className="app-container">
       <Sidebar
@@ -187,7 +272,16 @@ function FlowCanvas() {
         onAutoLayout={onAutoLayout}
         layoutDirection={layoutDirection}
         onToggleDirection={onToggleDirection}
+        onOpenShortcuts={() => setShowShortcuts(true)}
       />
+
+      {showShortcuts && (
+        <ShortcutsModal
+          shortcuts={shortcuts}
+          onUpdateShortcuts={setShortcuts}
+          onClose={() => setShowShortcuts(false)}
+        />
+      )}
 
       <div className="canvas-container" ref={reactFlowWrapper}>
         <ReactFlow

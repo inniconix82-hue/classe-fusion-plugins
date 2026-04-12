@@ -8,6 +8,7 @@ interface SidebarProps {
   onAutoLayout: () => void
   layoutDirection: 'TB' | 'LR'
   onToggleDirection: () => void
+  onOpenShortcuts: () => void
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
@@ -17,6 +18,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   onAutoLayout,
   layoutDirection,
   onToggleDirection,
+  onOpenShortcuts,
 }) => {
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({
     organisation: true,
@@ -66,6 +68,12 @@ const Sidebar: React.FC<SidebarProps> = ({
         </button>
         <button className="layout-btn" onClick={onToggleDirection}>
           {layoutDirection === 'TB' ? '↕ Vertical' : '↔ Horizontal'}
+        </button>
+      </div>
+
+      <div className="sidebar-layout-controls">
+        <button className="layout-btn" onClick={onOpenShortcuts} style={{ flex: 'none', width: '100%' }}>
+          ⌨️ Raccourcis clavier
         </button>
       </div>
 
