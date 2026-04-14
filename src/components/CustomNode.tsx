@@ -1,5 +1,5 @@
 import React, { memo, useState, useRef, useEffect, useCallback } from 'react'
-import { Handle, Position, type NodeProps } from '@xyflow/react'
+import { Handle, Position, useReactFlow, type NodeProps } from '@xyflow/react'
 
 export interface CustomNodeData {
   label: string
@@ -21,8 +21,9 @@ const categoryIcons: Record<string, string> = {
   business: '💼',
 }
 
-const CustomNode = memo(({ data, selected }: NodeProps) => {
+const CustomNode = memo(({ id, data, selected }: NodeProps) => {
   const { label, description, color, category } = data as unknown as CustomNodeData
+  const { setNodes } = useReactFlow()
   const [isEditing, setIsEditing] = useState(false)
   const [editLabel, setEditLabel] = useState(label as string)
   const [editDesc, setEditDesc] = useState((description as string) || '')
@@ -46,10 +47,14 @@ const CustomNode = memo(({ data, selected }: NodeProps) => {
 
   const saveAndClose = useCallback(() => {
     setIsEditing(false)
-    ;(data as any).label = editLabel
-    ;(data as any).description = editDesc
-    ;(data as any).color = editColor
-  }, [data, editLabel, editDesc, editColor])
+    setNodes((nds) =>
+      nds.map((n) =>
+        n.id === id
+          ? { ...n, data: { ...n.data, label: editLabel, description: editDesc, color: editColor } }
+          : n
+      )
+    )
+  }, [id, setNodes, editLabel, editDesc, editColor])
 
   const handleBlur = useCallback((e: React.FocusEvent) => {
     const relatedTarget = e.relatedTarget as HTMLElement | null

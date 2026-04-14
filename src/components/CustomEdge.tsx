@@ -1,8 +1,9 @@
-import React, { useState } from 'react'
+import React, { useState, useCallback } from 'react'
 import {
   BaseEdge,
   EdgeLabelRenderer,
   getSmoothStepPath,
+  useReactFlow,
   type EdgeProps,
 } from '@xyflow/react'
 
@@ -20,6 +21,7 @@ const CustomEdge: React.FC<EdgeProps> = ({
 }) => {
   const [isEditing, setIsEditing] = useState(false)
   const [labelText, setLabelText] = useState((data?.label as string) || '')
+  const { setEdges } = useReactFlow()
 
   const [edgePath, labelX, labelY] = getSmoothStepPath({
     sourceX,
@@ -35,12 +37,16 @@ const CustomEdge: React.FC<EdgeProps> = ({
     setIsEditing(true)
   }
 
-  const handleSave = () => {
+  const handleSave = useCallback(() => {
     setIsEditing(false)
-    if (data) {
-      ;(data as any).label = labelText
-    }
-  }
+    setEdges((eds) =>
+      eds.map((e) =>
+        e.id === id
+          ? { ...e, data: { ...e.data, label: labelText } }
+          : e
+      )
+    )
+  }, [id, setEdges, labelText])
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     e.stopPropagation()

@@ -38,9 +38,6 @@ const edgeTypes = {
   custom: CustomEdge,
 }
 
-let nodeIdCounter = 0
-const getNextNodeId = () => `node_${++nodeIdCounter}`
-
 const defaultEdgeOptions = {
   type: 'custom',
   animated: true,
@@ -61,6 +58,19 @@ function loadAutoSave(): { nodes: Node[]; edges: Edge[]; layoutDirection?: strin
 const saved = loadAutoSave()
 const initialNodes: Node[] = saved?.nodes || []
 const initialEdges: Edge[] = saved?.edges || []
+
+let nodeIdCounter = 0
+
+// Initialize counter from existing nodes to avoid ID collisions on reload
+for (const node of initialNodes) {
+  const match = node.id.match(/^node_(\d+)$/)
+  if (match) {
+    const num = parseInt(match[1], 10)
+    if (num > nodeIdCounter) nodeIdCounter = num
+  }
+}
+
+const getNextNodeId = () => `node_${++nodeIdCounter}`
 
 function FlowCanvas() {
   const reactFlowWrapper = useRef<HTMLDivElement>(null)
