@@ -23,6 +23,7 @@ import CustomEdge from './components/CustomEdge'
 import Sidebar from './components/Sidebar'
 import ShortcutsModal from './components/ShortcutsModal'
 import OllamaPanel from './components/OllamaPanel'
+import GoogleDrivePanel from './components/GoogleDrivePanel'
 import { type LayoutDirection, getLayoutedElements } from './data/layoutUtils'
 import { type PresetNode } from './data/presets'
 import { type Shortcut, loadShortcuts, matchesShortcut } from './data/shortcuts'
@@ -75,6 +76,7 @@ function FlowCanvas() {
   const [ollamaResult, setOllamaResult] = useState('')
   const [ollamaError, setOllamaError] = useState<string | null>(null)
   const [ollamaLoading, setOllamaLoading] = useState(false)
+  const [showGoogleDrive, setShowGoogleDrive] = useState(false)
   const history = useHistory()
   const { screenToFlowPosition, fitView } = useReactFlow()
 
@@ -298,6 +300,21 @@ function FlowCanvas() {
     setOllamaLoading(false)
   }, [nodes])
 
+  const onGoogleDriveLoadProject = useCallback((data: string) => {
+    try {
+      const parsed = JSON.parse(data)
+      setNodes(parsed.nodes || [])
+      setEdges(parsed.edges || [])
+      if (parsed.layoutDirection) setLayoutDirection(parsed.layoutDirection)
+    } catch {
+      // Invalid JSON
+    }
+  }, [setNodes, setEdges])
+
+  const onGoogleDriveGetProjectData = useCallback(() => {
+    return JSON.stringify({ nodes, edges, layoutDirection }, null, 2)
+  }, [nodes, edges, layoutDirection])
+
   const onDuplicate = useCallback(() => {
     const selected = nodes.filter((n) => n.selected)
     if (selected.length === 0) return
@@ -375,6 +392,7 @@ function FlowCanvas() {
         onExportPNG={onExportPNG}
         onExportPDF={onExportPDF}
         onToggleOllama={() => setShowOllama((v) => !v)}
+        onToggleGoogleDrive={() => setShowGoogleDrive((v) => !v)}
       />
 
       {showShortcuts && (
@@ -392,6 +410,14 @@ function FlowCanvas() {
           loading={ollamaLoading}
           onClose={() => setShowOllama(false)}
           onGenerate={onOllamaGenerate}
+        />
+      )}
+
+      {showGoogleDrive && (
+        <GoogleDrivePanel
+          onClose={() => setShowGoogleDrive(false)}
+          onLoadProject={onGoogleDriveLoadProject}
+          onGetProjectData={onGoogleDriveGetProjectData}
         />
       )}
 
