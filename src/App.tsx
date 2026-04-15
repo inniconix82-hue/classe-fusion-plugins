@@ -32,7 +32,7 @@ import { type PresetNode } from './data/presets'
 import { type Shortcut, type NodeShortcut, loadShortcuts, loadNodeShortcuts, matchesShortcut, saveNodeShortcuts } from './data/shortcuts'
 import { useHistory } from './data/useHistory'
 import { exportToPNG, exportToPDF } from './data/exportUtils'
-import { generateFromNodes, type OllamaStyle } from './data/ollamaService'
+import { generateFromNodes, askQuestion, type OllamaStyle } from './data/ollamaService'
 
 const nodeTypes = {
   custom: CustomNode,
@@ -85,6 +85,7 @@ function FlowCanvas() {
   const [ollamaLoading, setOllamaLoading] = useState(false)
   const [showEditor, setShowEditor] = useState(false)
   const [editorContent, setEditorContent] = useState('')
+  const [questionLoading, setQuestionLoading] = useState(false)
   const history = useHistory()
   const { screenToFlowPosition, fitView } = useReactFlow()
 
@@ -473,6 +474,52 @@ function FlowCanvas() {
     setShowOllama(false)
   }, [])
 
+  const onAskQuestion = useCallback(async (question: string) => {
+    setQuestionLoading(true)
+    const result = await askQuestion(question)
+    setQuestionLoading(false)
+
+    if (result.error) {
+      setOllamaError(result.error)
+      return
+    }
+
+    // Find the last selected node to connect to, or place freely
+    const selectedNode = nodes.find((n) => n.selected)
+    const baseX = selectedNode ? selectedNode.position.x + 200 : 200 + Math.random() * 300
+    const baseY = selectedNode ? selectedNode.position.y + 100 : 200 + Math.random() * 200
+
+    const newId = getNextNodeId()
+    const newNode: Node = {
+      id: newId,
+      type: 'custom',
+      position: { x: baseX, y: baseY },
+      data: {
+        label: result.title,
+        description: result.description,
+        color: '#8b5cf6',
+        category: 'ia',
+      },
+    }
+
+    history.push(nodes, edges)
+    setNodes((nds) => [...nds, newNode])
+
+    // Auto-connect to selected node
+    if (selectedNode) {
+      const newEdge: Edge = {
+        id: `e-${selectedNode.id}-${newId}`,
+        source: selectedNode.id,
+        target: newId,
+        type: 'custom',
+        animated: true,
+        data: { label: '' },
+        style: { stroke: '#8b5cf6', strokeWidth: 2 },
+      }
+      setEdges((eds) => [...eds, newEdge])
+    }
+  }, [nodes, edges, history, setNodes, setEdges])
+
   const onDuplicate = useCallback(() => {
     const selected = nodes.filter((n) => n.selected)
     if (selected.length === 0) return
@@ -598,6 +645,8 @@ function FlowCanvas() {
           onClose={() => setShowOllama(false)}
           onGenerate={onOllamaGenerate}
           onSendToEditor={onSendToEditor}
+          onAskQuestion={onAskQuestion}
+          questionLoading={questionLoading}
         />
       )}
 

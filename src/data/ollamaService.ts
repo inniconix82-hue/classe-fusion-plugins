@@ -149,3 +149,123 @@ export async function listModels(): Promise<string[]> {
     return []
   }
 }
+
+// Knowledge base storage
+const KB_STORAGE_KEY = 'nodeorg-knowledge-base'
+
+export function getKnowledgeBase(): string[] {
+  try {
+    const stored = localStorage.getItem(KB_STORAGE_KEY)
+    if (stored) return JSON.parse(stored)
+  } catch {}
+  return []
+}
+
+export function addToKnowledgeBase(text: string) {
+  const chunks = chunkText(text, 500)
+  const current = getKnowledgeBase()
+  const updated = [...current, ...chunks]
+  localStorage.setItem(KB_STORAGE_KEY, JSON.stringify(updated))
+}
+
+export function clearKnowledgeBase() {
+  localStorage.removeItem(KB_STORAGE_KEY)
+}
+
+function chunkText(text: string, maxLen: number): string[] {
+  const paragraphs = text.split(/\n\n+/).filter((p) => p.trim().length > 20)
+  const chunks: string[] = []
+  let current = ''
+  for (const p of paragraphs) {
+    if (current.length + p.length > maxLen && current.length > 0) {
+      chunks.push(current.trim())
+      current = ''
+    }
+    current += p + '\n\n'
+  }
+  if (current.trim()) chunks.push(current.trim())
+  return chunks
+}
+
+function findRelevantChunks(question: string, chunks: string[], maxChunks = 3): string[] {
+  const words = question.toLowerCase().split(/\s+/).filter((w) => w.length > 3)
+  if (words.length === 0 || chunks.length === 0) return []
+
+  const scored = chunks.map((chunk) => {
+    const lower = chunk.toLowerCase()
+    let score = 0
+    for (const word of words) {
+      if (lower.includes(word)) score++
+    }
+    return { chunk, score }
+  })
+
+  return scored
+    .filter((s) => s.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, maxChunks)
+    .map((s) => s.chunk)
+}
+
+export interface MindMapResponse {
+  title: string
+  description: string
+  error?: string
+}
+
+export async function askQuestion(question: string): Promise<MindMapResponse> {
+  const model = getOllamaModel()
+  const kb = getKnowledgeBase()
+  const relevantChunks = findRelevantChunks(question, kb)
+
+  let contextBlock = ''
+  if (relevantChunks.length > 0) {
+    contextBlock = `\nContexte documentaire :\n${relevantChunks.join('\n---\n')}\n`
+  }
+
+  const prompt = `Tu es un assistant qui répond de manière ULTRA concise pour créer des cartes mentales.${contextBlock}
+
+Question : ${question}
+
+RÈGLES STRICTES :
+- Titre : 1 à 3 mots maximum (le concept clé)
+- Description : maximum 5-8 mots (définition express)
+- Format EXACT de ta réponse (rien d'autre) :
+TITRE: [ton titre]
+DESC: [ta description courte]
+
+Réponds en français.`
+
+  try {
+    const response = await fetch(`${OLLAMA_URL}/api/generate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model, prompt, stream: false }),
+    })
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        return { title: '', description: '', error: `Modèle "${model}" non trouvé.` }
+      }
+      return { title: '', description: '', error: `Erreur Ollama (${response.status})` }
+    }
+
+    const json = await response.json()
+    const text = json.response || ''
+
+    // Parse the response
+    const titleMatch = text.match(/TITRE\s*:\s*(.+)/i)
+    const descMatch = text.match(/DESC\s*:\s*(.+)/i)
+
+    const title = titleMatch ? titleMatch[1].trim() : question.slice(0, 30)
+    const description = descMatch ? descMatch[1].trim() : text.slice(0, 50).trim()
+
+    return { title, description }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
+    if (message.includes('Failed to fetch') || message.includes('ECONNREFUSED')) {
+      return { title: '', description: '', error: 'Ollama non connecté' }
+    }
+    return { title: '', description: '', error: message }
+  }
+}
