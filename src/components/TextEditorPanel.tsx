@@ -42,11 +42,21 @@ const TextEditorPanel: React.FC<TextEditorPanelProps> = ({
     const el = editorRef.current
     if (!el) return
 
+    // Temporarily switch to white background + black text for PDF
+    const origBg = el.style.background
+    const origColor = el.style.color
+    el.style.background = '#ffffff'
+    el.style.color = '#000000'
+
     const canvas = await html2canvas(el, {
       backgroundColor: '#ffffff',
       scale: 2,
       useCORS: true,
     })
+
+    // Restore original styles
+    el.style.background = origBg
+    el.style.color = origColor
 
     const imgData = canvas.toDataURL('image/png')
     const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
