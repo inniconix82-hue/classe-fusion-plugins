@@ -132,39 +132,56 @@ function FlowCanvas() {
       history.push(nodes, edges)
 
       // Check if dropped on an edge (drop-on-edge to insert node)
-      if (nodeType !== 'sticky') {
-        const dropX = event.clientX
-        const dropY = event.clientY
-        const edgeElements = document.querySelectorAll('.react-flow__edge')
-        let hitEdge: Edge | null = null
+      if (nodeType !== 'sticky' && edges.length > 0) {
+        const HIT_DISTANCE = 40 // pixels in flow coordinates
 
-        edgeElements.forEach((el) => {
-          const rect = el.getBoundingClientRect()
-          // Expand hit area for easier targeting
-          const expandedRect = {
-            left: rect.left - 15,
-            right: rect.right + 15,
-            top: rect.top - 15,
-            bottom: rect.bottom + 15,
-          }
-          if (
-            dropX >= expandedRect.left &&
-            dropX <= expandedRect.right &&
-            dropY >= expandedRect.top &&
-            dropY <= expandedRect.bottom
-          ) {
-            const edgeId = el.getAttribute('data-testid')?.replace('rf__edge-', '') ||
-              el.querySelector('[data-id]')?.getAttribute('data-id')
-            if (edgeId) {
-              const found = edges.find((e) => e.id === edgeId)
-              if (found) hitEdge = found
-            }
-          }
-        })
+        // Find the closest edge to the drop position
+        let closestEdge: Edge | null = null
+        let closestDist = Infinity
 
-        if (hitEdge) {
-          const edge = hitEdge as Edge
-          // Remove old edge, add two new edges through the new node
+        for (const edge of edges) {
+          const sourceNode = nodes.find((n) => n.id === edge.source)
+          const targetNode = nodes.find((n) => n.id === edge.target)
+          if (!sourceNode || !targetNode) continue
+
+          // Get center-bottom of source (where the edge starts)
+          const sw = sourceNode.measured?.width ?? 160
+          const sh = sourceNode.measured?.height ?? 60
+          const sx = sourceNode.position.x + sw / 2
+          const sy = sourceNode.position.y + sh
+
+          // Get center-top of target (where the edge ends)
+          const tw = targetNode.measured?.width ?? 160
+          const tx = targetNode.position.x + tw / 2
+          const ty = targetNode.position.y
+
+          // Distance from drop point to line segment (sx,sy) -> (tx,ty)
+          const dx = tx - sx
+          const dy = ty - sy
+          const lenSq = dx * dx + dy * dy
+          if (lenSq === 0) continue
+
+          const dropCenterX = position.x + 80
+          const dropCenterY = position.y + 30
+
+          let t = ((dropCenterX - sx) * dx + (dropCenterY - sy) * dy) / lenSq
+          t = Math.max(0, Math.min(1, t))
+
+          const projX = sx + t * dx
+          const projY = sy + t * dy
+          const dist = Math.sqrt(
+            (dropCenterX - projX) * (dropCenterX - projX) +
+            (dropCenterY - projY) * (dropCenterY - projY)
+          )
+
+          if (dist < closestDist) {
+            closestDist = dist
+            closestEdge = edge
+          }
+        }
+
+        if (closestEdge && closestDist < HIT_DISTANCE) {
+          const edge = closestEdge
           setEdges((eds) => {
             const filtered = eds.filter((e) => e.id !== edge.id)
             const edgeToNew: Edge = {
