@@ -17,7 +17,9 @@ export function setOllamaModel(model: string) {
   localStorage.setItem(STORAGE_KEY, model)
 }
 
-function buildPromptFromNodes(nodes: Node[]): string {
+export type OllamaStyle = 'concis' | 'structure' | 'detaille'
+
+function buildPromptFromNodes(nodes: Node[], style: OllamaStyle = 'concis'): string {
   if (nodes.length === 0) {
     return 'Aucun nœud sur le canvas.'
   }
@@ -27,23 +29,23 @@ function buildPromptFromNodes(nodes: Node[]): string {
     const label = d.label || 'Sans titre'
     const desc = d.description || ''
     const cat = d.category || ''
-    let line = `### ${label}`
-    if (cat) line += ` (${cat})`
-    if (desc) line += `\n${desc}`
+    let line = `- ${label}`
+    if (cat) line += ` [${cat}]`
+    if (desc) line += ` : ${desc}`
     return line
   })
 
-  return `Tu es un assistant scénariste professionnel. Tu aides à structurer, développer et enrichir des scénarios.
+  const styleInstructions = {
+    concis: `Réponds en bullet points uniquement. Maximum 5-7 points courts. Sois direct et actionnable. Pas d'introduction ni de conclusion.`,
+    structure: `Réponds avec des titres et sous-points. Structure claire en sections. Pas de longs paragraphes.`,
+    detaille: `Développe en paragraphes complets. Crée des liens narratifs entre les éléments. Propose des idées pour enrichir.`,
+  }
 
-Voici les éléments du scénario organisés sous forme de nœuds :
+  return `Tu es un assistant professionnel. À partir de ces éléments de canvas :
 
-${sections.join('\n\n')}
+${sections.join('\n')}
 
-À partir de ces éléments, génère un texte structuré qui :
-- Développe chaque section en détail
-- Crée des liens narratifs entre les éléments
-- Propose des idées pour enrichir l'histoire
-- Maintient la cohérence de l'ensemble
+${styleInstructions[style]}
 
 Réponds en français.`
 }
@@ -55,9 +57,10 @@ export interface OllamaResponse {
 
 export async function generateFromNodes(
   nodes: Node[],
-  onToken?: (token: string) => void
+  onToken?: (token: string) => void,
+  style: OllamaStyle = 'concis'
 ): Promise<OllamaResponse> {
-  const prompt = buildPromptFromNodes(nodes)
+  const prompt = buildPromptFromNodes(nodes, style)
   const model = getOllamaModel()
 
   try {

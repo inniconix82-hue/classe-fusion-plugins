@@ -5,6 +5,14 @@ export interface Shortcut {
   description: string
 }
 
+export interface NodeShortcut {
+  nodeLabel: string
+  nodeCategory: string
+  nodeColor: string
+  nodeType: string
+  keys: string // empty = not assigned
+}
+
 export const defaultShortcuts: Shortcut[] = [
   { id: 'save', label: 'Sauvegarder', keys: 'Ctrl+S', description: 'Sauvegarder le projet' },
   { id: 'load', label: 'Ouvrir', keys: 'Ctrl+O', description: 'Ouvrir un projet' },
@@ -63,6 +71,20 @@ export function matchesShortcut(e: KeyboardEvent, keysStr: string): boolean {
     e.altKey === parsed.alt &&
     pressedKey === parsed.key
   )
+}
+
+const NODE_SHORTCUTS_KEY = 'nodeorg-node-shortcuts'
+
+export function loadNodeShortcuts(): NodeShortcut[] {
+  try {
+    const stored = localStorage.getItem(NODE_SHORTCUTS_KEY)
+    if (stored) return JSON.parse(stored)
+  } catch {}
+  return []
+}
+
+export function saveNodeShortcuts(shortcuts: NodeShortcut[]) {
+  localStorage.setItem(NODE_SHORTCUTS_KEY, JSON.stringify(shortcuts))
 }
 
 export function formatKeyCombo(e: KeyboardEvent): string {

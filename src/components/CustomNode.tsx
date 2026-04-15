@@ -11,15 +11,21 @@ export interface CustomNodeData {
 
 const categoryIcons: Record<string, string> = {
   outils: '🔧',
-  organisation: '📋',
-  'montage-video': '🎬',
+  productivite: '📋',
   journee: '☀️',
-  'ia-generative': '🤖',
-  scenario: '🎭',
-  programme: '📅',
   'gestion-projet': '📊',
+  entreprise: '💼',
+  finance: '💰',
+  marketing: '📈',
+  rh: '👥',
+  creativite: '🎨',
+  scenario: '🎭',
+  audiovisuel: '🎬',
   contenu: '📱',
-  business: '💼',
+  ia: '🤖',
+  dev: '💻',
+  education: '🎓',
+  evenementiel: '📅',
 }
 
 const CustomNode = memo(({ data, selected }: NodeProps) => {

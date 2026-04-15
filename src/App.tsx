@@ -22,20 +22,23 @@ import CustomNode from './components/CustomNode'
 import CustomEdge from './components/CustomEdge'
 import StickyNoteNode from './components/StickyNoteNode'
 import RouterNode from './components/RouterNode'
+import VignetteNode from './components/VignetteNode'
 import Sidebar from './components/Sidebar'
 import ShortcutsModal from './components/ShortcutsModal'
 import OllamaPanel from './components/OllamaPanel'
+import TextEditorPanel from './components/TextEditorPanel'
 import { type LayoutDirection, getLayoutedElements } from './data/layoutUtils'
 import { type PresetNode } from './data/presets'
-import { type Shortcut, loadShortcuts, matchesShortcut } from './data/shortcuts'
+import { type Shortcut, type NodeShortcut, loadShortcuts, loadNodeShortcuts, matchesShortcut, saveNodeShortcuts } from './data/shortcuts'
 import { useHistory } from './data/useHistory'
 import { exportToPNG, exportToPDF } from './data/exportUtils'
-import { generateFromNodes } from './data/ollamaService'
+import { generateFromNodes, type OllamaStyle } from './data/ollamaService'
 
 const nodeTypes = {
   custom: CustomNode,
   sticky: StickyNoteNode,
   router: RouterNode,
+  vignette: VignetteNode,
 }
 
 const edgeTypes = {
@@ -74,11 +77,14 @@ function FlowCanvas() {
     (saved?.layoutDirection as LayoutDirection) || 'TB'
   )
   const [shortcuts, setShortcuts] = useState<Shortcut[]>(loadShortcuts)
+  const [nodeShortcuts, setNodeShortcuts] = useState<NodeShortcut[]>(loadNodeShortcuts)
   const [showShortcuts, setShowShortcuts] = useState(false)
   const [showOllama, setShowOllama] = useState(false)
   const [ollamaResult, setOllamaResult] = useState('')
   const [ollamaError, setOllamaError] = useState<string | null>(null)
   const [ollamaLoading, setOllamaLoading] = useState(false)
+  const [showEditor, setShowEditor] = useState(false)
+  const [editorContent, setEditorContent] = useState('')
   const history = useHistory()
   const { screenToFlowPosition, fitView } = useReactFlow()
 
@@ -115,6 +121,7 @@ function FlowCanvas() {
       let nodeType = 'custom'
       if (preset.type === 'sticky') nodeType = 'sticky'
       else if (preset.type === 'router') nodeType = 'router'
+      else if (preset.type === 'vignette') nodeType = 'vignette'
 
       const newNodeId = getNextNodeId()
       const newNode: Node = {
@@ -305,6 +312,43 @@ function FlowCanvas() {
     // Editing is handled inside the CustomNode component
   }, [])
 
+  const onNodesDelete = useCallback(
+    (deletedNodes: Node[]) => {
+      const deletedIds = new Set(deletedNodes.map((n) => n.id))
+      const bridgeEdges: Edge[] = []
+
+      for (const node of deletedNodes) {
+        const incoming = edges.filter((e) => e.target === node.id && !deletedIds.has(e.source))
+        const outgoing = edges.filter((e) => e.source === node.id && !deletedIds.has(e.target))
+
+        for (const inEdge of incoming) {
+          for (const outEdge of outgoing) {
+            bridgeEdges.push({
+              id: `e-${inEdge.source}-${outEdge.target}-${Date.now()}`,
+              source: inEdge.source,
+              target: outEdge.target,
+              type: 'custom',
+              animated: true,
+              data: { label: '' },
+              style: { stroke: '#64748b', strokeWidth: 2 },
+            })
+          }
+        }
+      }
+
+      if (bridgeEdges.length > 0) {
+        setTimeout(() => {
+          setEdges((eds) => {
+            const existingKeys = new Set(eds.map((e) => `${e.source}-${e.target}`))
+            const newEdges = bridgeEdges.filter((e) => !existingKeys.has(`${e.source}-${e.target}`))
+            return [...eds, ...newEdges]
+          })
+        }, 0)
+      }
+    },
+    [edges, setEdges]
+  )
+
   const onEdgeContextMenu = useCallback(
     (event: React.MouseEvent, edge: Edge) => {
       event.preventDefault()
@@ -403,20 +447,31 @@ function FlowCanvas() {
     exportToPDF('organisation', nodes)
   }, [nodes])
 
-  const onOllamaGenerate = useCallback(async () => {
+  const onOllamaGenerate = useCallback(async (style: OllamaStyle) => {
     setOllamaLoading(true)
     setOllamaResult('')
     setOllamaError(null)
 
     const result = await generateFromNodes(nodes, (token) => {
       setOllamaResult((prev) => prev + token)
-    })
+    }, style)
 
     if (result.error) {
       setOllamaError(result.error)
     }
     setOllamaLoading(false)
   }, [nodes])
+
+  const onSendToEditor = useCallback((text: string) => {
+    const html = text
+      .split('\n')
+      .filter((line) => line.trim())
+      .map((line) => `<p>${line}</p>`)
+      .join('')
+    setEditorContent((prev) => prev + html)
+    setShowEditor(true)
+    setShowOllama(false)
+  }, [])
 
   const onDuplicate = useCallback(() => {
     const selected = nodes.filter((n) => n.selected)
@@ -476,11 +531,39 @@ function FlowCanvas() {
           return
         }
       }
+
+      // Node shortcuts
+      for (const ns of nodeShortcuts) {
+        if (!ns.keys) continue
+        if (matchesShortcut(e, ns.keys)) {
+          e.preventDefault()
+          e.stopImmediatePropagation()
+          const newId = getNextNodeId()
+          const nodeType = ns.nodeType === 'sticky' ? 'sticky' : ns.nodeType === 'router' ? 'router' : ns.nodeType === 'vignette' ? 'vignette' : 'custom'
+          const center = { x: 300, y: 200 }
+          history.push(nodes, edges)
+          setNodes((nds) => [
+            ...nds,
+            {
+              id: newId,
+              type: nodeType,
+              position: { x: center.x + Math.random() * 60, y: center.y + Math.random() * 60 },
+              data: {
+                label: ns.nodeLabel,
+                description: '',
+                color: ns.nodeColor,
+                category: ns.nodeCategory,
+              },
+            },
+          ])
+          return
+        }
+      }
     }
     // Use capture phase to intercept before React Flow swallows the event
     window.addEventListener('keydown', handler, true)
     return () => window.removeEventListener('keydown', handler, true)
-  }, [shortcuts, showShortcuts, onSave, onLoad, onClear, onAutoLayout, onToggleDirection, fitView, onUndo, onRedo, onSelectAll, onCopy, onPaste, onDuplicate, onExportPNG, onExportPDF, onDisconnectSelected])
+  }, [shortcuts, nodeShortcuts, showShortcuts, onSave, onLoad, onClear, onAutoLayout, onToggleDirection, fitView, onUndo, onRedo, onSelectAll, onCopy, onPaste, onDuplicate, onExportPNG, onExportPDF, onDisconnectSelected, nodes, edges, history, setNodes])
 
   return (
     <div className="app-container">
@@ -495,12 +578,14 @@ function FlowCanvas() {
         onExportPNG={onExportPNG}
         onExportPDF={onExportPDF}
         onToggleOllama={() => setShowOllama((v) => !v)}
+        onToggleEditor={() => setShowEditor((v) => !v)}
       />
 
       {showShortcuts && (
         <ShortcutsModal
           shortcuts={shortcuts}
           onUpdateShortcuts={setShortcuts}
+          onUpdateNodeShortcuts={(ns) => { setNodeShortcuts(ns); saveNodeShortcuts(ns) }}
           onClose={() => setShowShortcuts(false)}
         />
       )}
@@ -512,6 +597,15 @@ function FlowCanvas() {
           loading={ollamaLoading}
           onClose={() => setShowOllama(false)}
           onGenerate={onOllamaGenerate}
+          onSendToEditor={onSendToEditor}
+        />
+      )}
+
+      {showEditor && (
+        <TextEditorPanel
+          onClose={() => setShowEditor(false)}
+          initialContent={editorContent}
+          onContentChange={setEditorContent}
         />
       )}
 
@@ -526,6 +620,7 @@ function FlowCanvas() {
           onDragOver={onDragOver}
           onNodeDoubleClick={onNodeDoubleClick}
           onEdgeContextMenu={onEdgeContextMenu}
+          onNodesDelete={onNodesDelete}
           nodeTypes={nodeTypes}
           edgeTypes={edgeTypes}
           defaultEdgeOptions={defaultEdgeOptions}

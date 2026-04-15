@@ -1,13 +1,22 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect } from 'react'
 import { getOllamaModel, setOllamaModel, listModels, checkOllamaStatus } from '../data/ollamaService'
+
+export type OllamaStyle = 'concis' | 'structure' | 'detaille'
 
 interface OllamaPanelProps {
   result: string
   error: string | null
   loading: boolean
   onClose: () => void
-  onGenerate: () => void
+  onGenerate: (style: OllamaStyle) => void
+  onSendToEditor: (text: string) => void
 }
+
+const STYLE_OPTIONS: { value: OllamaStyle; label: string; desc: string }[] = [
+  { value: 'concis', label: '⚡ Concis', desc: 'Bullet points, 5 lignes max' },
+  { value: 'structure', label: '📐 Structuré', desc: 'Titres + sous-points' },
+  { value: 'detaille', label: '📖 Détaillé', desc: 'Paragraphes complets' },
+]
 
 const OllamaPanel: React.FC<OllamaPanelProps> = ({
   result,
@@ -15,22 +24,17 @@ const OllamaPanel: React.FC<OllamaPanelProps> = ({
   loading,
   onClose,
   onGenerate,
+  onSendToEditor,
 }) => {
   const [model, setModel] = useState(getOllamaModel())
   const [availableModels, setAvailableModels] = useState<string[]>([])
   const [ollamaOnline, setOllamaOnline] = useState<boolean | null>(null)
-  const resultRef = useRef<HTMLDivElement>(null)
+  const [style, setStyle] = useState<OllamaStyle>('concis')
 
   useEffect(() => {
     checkOllamaStatus().then(setOllamaOnline)
     listModels().then(setAvailableModels)
   }, [])
-
-  useEffect(() => {
-    if (resultRef.current) {
-      resultRef.current.scrollTop = resultRef.current.scrollHeight
-    }
-  }, [result])
 
   const handleModelChange = (newModel: string) => {
     setModel(newModel)
@@ -72,10 +76,26 @@ const OllamaPanel: React.FC<OllamaPanelProps> = ({
         )}
       </div>
 
+      <div className="ollama-style-selector">
+        <label className="ollama-label">Style :</label>
+        <div className="ollama-style-options">
+          {STYLE_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              className={`ollama-style-btn ${style === opt.value ? 'active' : ''}`}
+              onClick={() => setStyle(opt.value)}
+              title={opt.desc}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div className="ollama-actions">
         <button
           className="ollama-generate-btn"
-          onClick={onGenerate}
+          onClick={() => onGenerate(style)}
           disabled={loading}
         >
           {loading ? (
@@ -89,7 +109,7 @@ const OllamaPanel: React.FC<OllamaPanelProps> = ({
         </button>
       </div>
 
-      <div className="ollama-result" ref={resultRef}>
+      <div className="ollama-result">
         {error && (
           <div className="ollama-error">
             <span className="ollama-error-icon">⚠️</span>
@@ -97,10 +117,18 @@ const OllamaPanel: React.FC<OllamaPanelProps> = ({
           </div>
         )}
         {result ? (
-          <div className="ollama-text">{result}</div>
+          <>
+            <div className="ollama-text">{result}</div>
+            <button
+              className="ollama-send-editor-btn"
+              onClick={() => onSendToEditor(result)}
+            >
+              📝 Envoyer dans l'éditeur
+            </button>
+          </>
         ) : !error && !loading ? (
           <div className="ollama-placeholder">
-            Cliquez sur "Générer" pour que l'IA analyse vos nodes et génère du contenu scénaristique.
+            Cliquez sur "Générer" pour que l'IA analyse vos nodes et génère du contenu.
           </div>
         ) : null}
       </div>

@@ -12,6 +12,7 @@ interface SidebarProps {
   onExportPNG: () => void
   onExportPDF: () => void
   onToggleOllama: () => void
+  onToggleEditor: () => void
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
@@ -25,18 +26,25 @@ const Sidebar: React.FC<SidebarProps> = ({
   onExportPNG,
   onExportPDF,
   onToggleOllama,
+  onToggleEditor,
 }) => {
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({
     outils: true,
-    organisation: true,
+    productivite: true,
     journee: false,
     'gestion-projet': false,
+    entreprise: false,
+    finance: false,
+    marketing: false,
+    rh: false,
+    creativite: false,
     scenario: false,
-    'montage-video': false,
+    audiovisuel: false,
     contenu: false,
-    'ia-generative': false,
-    programme: false,
-    business: false,
+    ia: false,
+    dev: false,
+    education: false,
+    evenementiel: false,
   })
 
   const [searchQuery, setSearchQuery] = useState('')
@@ -101,6 +109,12 @@ const Sidebar: React.FC<SidebarProps> = ({
       <div className="sidebar-layout-controls">
         <button className="ollama-sidebar-btn" onClick={onToggleOllama} style={{ flex: 'none', width: '100%' }}>
           🤖 Générer avec Ollama
+        </button>
+      </div>
+
+      <div className="sidebar-layout-controls">
+        <button className="editor-sidebar-btn" onClick={onToggleEditor} style={{ flex: 'none', width: '100%' }}>
+          📝 Éditeur de document
         </button>
       </div>
 
