@@ -27,14 +27,15 @@ const Sidebar: React.FC<SidebarProps> = ({
   onToggleOllama,
 }) => {
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({
+    outils: true,
     organisation: true,
-    'montage-video': false,
     journee: false,
-    programme: false,
-    'ia-generative': false,
-    scenario: false,
     'gestion-projet': false,
+    scenario: false,
+    'montage-video': false,
     contenu: false,
+    'ia-generative': false,
+    programme: false,
     business: false,
   })
 

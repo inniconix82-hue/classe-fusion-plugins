@@ -10,6 +10,7 @@ export interface CustomNodeData {
 }
 
 const categoryIcons: Record<string, string> = {
+  outils: '🔧',
   organisation: '📋',
   'montage-video': '🎬',
   journee: '☀️',

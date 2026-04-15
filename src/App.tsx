@@ -20,6 +20,8 @@ import '@xyflow/react/dist/style.css'
 
 import CustomNode from './components/CustomNode'
 import CustomEdge from './components/CustomEdge'
+import StickyNoteNode from './components/StickyNoteNode'
+import RouterNode from './components/RouterNode'
 import Sidebar from './components/Sidebar'
 import ShortcutsModal from './components/ShortcutsModal'
 import OllamaPanel from './components/OllamaPanel'
@@ -32,6 +34,8 @@ import { generateFromNodes } from './data/ollamaService'
 
 const nodeTypes = {
   custom: CustomNode,
+  sticky: StickyNoteNode,
+  router: RouterNode,
 }
 
 const edgeTypes = {
@@ -107,9 +111,15 @@ function FlowCanvas() {
         y: event.clientY,
       })
 
+      // Determine node type based on preset type
+      let nodeType = 'custom'
+      if (preset.type === 'sticky') nodeType = 'sticky'
+      else if (preset.type === 'router') nodeType = 'router'
+
+      const newNodeId = getNextNodeId()
       const newNode: Node = {
-        id: getNextNodeId(),
-        type: 'custom',
+        id: newNodeId,
+        type: nodeType,
         position,
         data: {
           label: preset.label,
@@ -120,9 +130,73 @@ function FlowCanvas() {
       }
 
       history.push(nodes, edges)
+
+      // Check if dropped on an edge (drop-on-edge to insert node)
+      if (nodeType !== 'sticky') {
+        const dropX = event.clientX
+        const dropY = event.clientY
+        const edgeElements = document.querySelectorAll('.react-flow__edge')
+        let hitEdge: Edge | null = null
+
+        edgeElements.forEach((el) => {
+          const rect = el.getBoundingClientRect()
+          // Expand hit area for easier targeting
+          const expandedRect = {
+            left: rect.left - 15,
+            right: rect.right + 15,
+            top: rect.top - 15,
+            bottom: rect.bottom + 15,
+          }
+          if (
+            dropX >= expandedRect.left &&
+            dropX <= expandedRect.right &&
+            dropY >= expandedRect.top &&
+            dropY <= expandedRect.bottom
+          ) {
+            const edgeId = el.getAttribute('data-testid')?.replace('rf__edge-', '') ||
+              el.querySelector('[data-id]')?.getAttribute('data-id')
+            if (edgeId) {
+              const found = edges.find((e) => e.id === edgeId)
+              if (found) hitEdge = found
+            }
+          }
+        })
+
+        if (hitEdge) {
+          const edge = hitEdge as Edge
+          // Remove old edge, add two new edges through the new node
+          setEdges((eds) => {
+            const filtered = eds.filter((e) => e.id !== edge.id)
+            const edgeToNew: Edge = {
+              id: `e-${edge.source}-${newNodeId}`,
+              source: edge.source,
+              sourceHandle: edge.sourceHandle || undefined,
+              target: newNodeId,
+              type: 'custom',
+              animated: true,
+              data: { label: '' },
+              style: { stroke: '#64748b', strokeWidth: 2 },
+            }
+            const edgeFromNew: Edge = {
+              id: `e-${newNodeId}-${edge.target}`,
+              source: newNodeId,
+              target: edge.target,
+              targetHandle: edge.targetHandle || undefined,
+              type: 'custom',
+              animated: true,
+              data: { label: '' },
+              style: { stroke: '#64748b', strokeWidth: 2 },
+            }
+            return [...filtered, edgeToNew, edgeFromNew]
+          })
+          setNodes((nds) => [...nds, newNode])
+          return
+        }
+      }
+
       setNodes((nds) => [...nds, newNode])
     },
-    [screenToFlowPosition, setNodes, history, nodes, edges]
+    [screenToFlowPosition, setNodes, setEdges, history, nodes, edges]
   )
 
   const onAutoLayout = useCallback(() => {
@@ -251,37 +325,66 @@ function FlowCanvas() {
   const onCopy = useCallback(() => {
     const selected = nodes.filter((n) => n.selected)
     if (selected.length > 0) {
+      const selectedIds = selected.map((n) => n.id)
       clipboardRef.current = selected.map((n) => ({ ...n }))
+      // Also copy edges between selected nodes
+      clipboardEdgesRef.current = edges.filter(
+        (e) => selectedIds.includes(e.source) && selectedIds.includes(e.target)
+      ).map((e) => ({ ...e }))
     }
-  }, [nodes])
+  }, [nodes, edges])
+
+  const clipboardEdgesRef = useRef<Edge[]>([])
 
   const onPaste = useCallback(() => {
     if (clipboardRef.current.length === 0) return
-    const offset = 50
-    const newNodes = clipboardRef.current.map((n) => ({
-      ...n,
-      id: getNextNodeId(),
-      position: { x: n.position.x + offset, y: n.position.y + offset },
-      selected: true,
-      data: { ...n.data },
-    }))
+    const offset = 150
+    const idMap: Record<string, string> = {}
+
+    const newNodes = clipboardRef.current.map((n) => {
+      const newId = getNextNodeId()
+      idMap[n.id] = newId
+      return {
+        ...n,
+        id: newId,
+        position: { x: n.position.x + offset, y: n.position.y + offset },
+        selected: true,
+        data: { ...n.data },
+      }
+    })
+
+    // Recreate edges between pasted nodes
+    const newEdges: Edge[] = clipboardEdgesRef.current
+      .filter((e) => idMap[e.source] && idMap[e.target])
+      .map((e) => ({
+        ...e,
+        id: `e-${idMap[e.source]}-${idMap[e.target]}-${Date.now()}`,
+        source: idMap[e.source],
+        target: idMap[e.target],
+        data: { ...e.data },
+      }))
+
     setNodes((nds) =>
       nds.map((n) => ({ ...n, selected: false })).concat(newNodes)
     )
+    if (newEdges.length > 0) {
+      setEdges((eds) => [...eds, ...newEdges])
+    }
+
     // Shift clipboard offset for next paste
     clipboardRef.current = clipboardRef.current.map((n) => ({
       ...n,
       position: { x: n.position.x + offset, y: n.position.y + offset },
     }))
-  }, [setNodes])
+  }, [setNodes, setEdges])
 
   const onExportPNG = useCallback(() => {
-    exportToPNG('organisation')
-  }, [])
+    exportToPNG('organisation', nodes)
+  }, [nodes])
 
   const onExportPDF = useCallback(() => {
-    exportToPDF('organisation')
-  }, [])
+    exportToPDF('organisation', nodes)
+  }, [nodes])
 
   const onOllamaGenerate = useCallback(async () => {
     setOllamaLoading(true)
@@ -301,7 +404,7 @@ function FlowCanvas() {
   const onDuplicate = useCallback(() => {
     const selected = nodes.filter((n) => n.selected)
     if (selected.length === 0) return
-    const offset = 50
+    const offset = 150
     const newNodes = selected.map((n) => ({
       ...n,
       id: getNextNodeId(),

@@ -448,6 +448,127 @@ body {
   font-family: inherit;
 }
 
+/* ==============================
+   Sticky Note Node
+   ============================== */
+
+.sticky-note-node {
+  background: rgba(253, 224, 71, 0.1);
+  border: 2px dashed #fde047;
+  border-radius: 4px;
+  padding: 10px 14px;
+  min-width: 140px;
+  max-width: 240px;
+  cursor: grab;
+  transition: all 0.15s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.sticky-note-node.selected {
+  box-shadow: 0 0 0 2px var(--accent), 0 4px 16px rgba(99, 102, 241, 0.3);
+}
+
+.sticky-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #fde047;
+  margin-bottom: 4px;
+}
+
+.sticky-text {
+  font-size: 11px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.sticky-placeholder {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-style: italic;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.sticky-note-node:hover .sticky-placeholder {
+  opacity: 0.5;
+}
+
+.sticky-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sticky-title-input {
+  font-size: 12px;
+  font-weight: 700;
+  background: var(--bg-primary);
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  padding: 2px 6px;
+  color: #fde047;
+  outline: none;
+  width: 100%;
+  font-family: inherit;
+}
+
+.sticky-text-input {
+  font-size: 11px;
+  background: var(--bg-primary);
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  padding: 4px 6px;
+  color: var(--text-secondary);
+  outline: none;
+  width: 100%;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 40px;
+}
+
+/* ==============================
+   Router Node
+   ============================== */
+
+.router-node {
+  background: var(--bg-card);
+  border: 2px solid #94a3b8;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  transition: all 0.15s;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.router-node.selected {
+  box-shadow: 0 0 0 2px var(--accent), 0 4px 16px rgba(99, 102, 241, 0.3);
+}
+
+.router-node:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  transform: scale(1.05);
+}
+
+.router-icon {
+  font-size: 16px;
+  color: var(--accent);
+  line-height: 1;
+}
+
+.router-label {
+  font-size: 7px;
+  color: var(--text-muted);
+  text-align: center;
+  line-height: 1;
+  margin-top: 1px;
+}
+
 /* Node handles */
 
 .node-handle {
