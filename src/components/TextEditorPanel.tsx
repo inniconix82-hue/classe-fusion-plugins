@@ -42,11 +42,60 @@ const TextEditorPanel: React.FC<TextEditorPanelProps> = ({
     const el = editorRef.current
     if (!el) return
 
-    // Temporarily switch to white background + black text for PDF
-    const origBg = el.style.background
-    const origColor = el.style.color
-    el.style.background = '#ffffff'
-    el.style.color = '#000000'
+    // Inject a print-friendly stylesheet temporarily
+    const printStyle = document.createElement('style')
+    printStyle.textContent = `
+      .text-editor-content.pdf-export {
+        background: #ffffff !important;
+        color: #000000 !important;
+        padding: 40px 50px !important;
+        font-family: Georgia, 'Times New Roman', serif !important;
+        font-size: 14px !important;
+        line-height: 1.8 !important;
+      }
+      .text-editor-content.pdf-export * {
+        color: #000000 !important;
+      }
+      .text-editor-content.pdf-export h1 {
+        font-size: 28px !important;
+        font-weight: 700 !important;
+        margin: 20px 0 12px !important;
+        padding-bottom: 6px !important;
+        border-bottom: 2px solid #333 !important;
+      }
+      .text-editor-content.pdf-export h2 {
+        font-size: 22px !important;
+        font-weight: 600 !important;
+        margin: 16px 0 10px !important;
+        padding-bottom: 4px !important;
+        border-bottom: 1px solid #999 !important;
+      }
+      .text-editor-content.pdf-export h3 {
+        font-size: 17px !important;
+        font-weight: 600 !important;
+        margin: 12px 0 8px !important;
+      }
+      .text-editor-content.pdf-export p {
+        margin: 6px 0 !important;
+      }
+      .text-editor-content.pdf-export ul,
+      .text-editor-content.pdf-export ol {
+        padding-left: 24px !important;
+        margin: 8px 0 !important;
+      }
+      .text-editor-content.pdf-export li {
+        margin: 4px 0 !important;
+      }
+      .text-editor-content.pdf-export blockquote {
+        border-left: 3px solid #666 !important;
+        padding-left: 16px !important;
+        margin: 10px 0 !important;
+        font-style: italic !important;
+        color: #444 !important;
+      }
+    `
+    document.head.appendChild(printStyle)
+    el.classList.add('pdf-export')
 
     const canvas = await html2canvas(el, {
       backgroundColor: '#ffffff',
@@ -54,9 +103,9 @@ const TextEditorPanel: React.FC<TextEditorPanelProps> = ({
       useCORS: true,
     })
 
-    // Restore original styles
-    el.style.background = origBg
-    el.style.color = origColor
+    // Restore
+    el.classList.remove('pdf-export')
+    document.head.removeChild(printStyle)
 
     const imgData = canvas.toDataURL('image/png')
     const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
