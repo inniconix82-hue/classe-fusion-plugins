@@ -9,7 +9,7 @@
     "electron:dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
     "electron:build": "npm run build && electron-builder",
     "electron:build:win": "npm run build && electron-builder --win",
-    "package:win": "npm run build && npx @electron/packager . \"Node Organisation\" --platform=win32 --arch=x64 --out=release --overwrite --ignore=\"^/src$\" --ignore=\"^/public$\" --ignore=\"^/electron$\" --ignore=\"^/\\.git$\" --ignore=\"^/\\.gitignore$\" --ignore=\"\\.ts$\" --ignore=\"\\.bat$\" --ignore=\"\\.sh$\" --ignore=\"^/build-\" --ignore=\"^/vite\" --ignore=\"^/tsconfig\" --ignore=\"^/release$\" --app-version=1.0.0",
+    "package:win": "node build-win.js",
     "package:mac": "npm run build && npx @electron/packager . \"Node Organisation\" --platform=darwin --arch=x64,arm64 --out=release --overwrite --ignore=\"^/src\" --ignore=\"^/public\" --ignore=\"^/electron\" --ignore=\"^/\\.git\" --ignore=\"\\.ts$\" --ignore=\"\\.bat$\" --ignore=\"^/vite\" --ignore=\"^/tsconfig\" --ignore=\"^/release\" --app-version=1.0.0",
     "build:web": "tsc && vite build --config vite.web.config.ts",
     "preview:web": "vite preview --config vite.web.config.ts"
