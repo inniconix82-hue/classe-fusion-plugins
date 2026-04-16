@@ -87,6 +87,7 @@ function FlowCanvas() {
   const [showEditor, setShowEditor] = useState(false)
   const [editorContent, setEditorContent] = useState('')
   const [questionLoading, setQuestionLoading] = useState(false)
+  const [showMinimap, setShowMinimap] = useState(true)
   const [showSetupWizard, setShowSetupWizard] = useState(false)
   const history = useHistory()
 
@@ -649,6 +650,8 @@ function FlowCanvas() {
         onExportPDF={onExportPDF}
         onToggleOllama={() => setShowOllama((v) => !v)}
         onToggleEditor={() => setShowEditor((v) => !v)}
+        showMinimap={showMinimap}
+        onToggleMinimap={() => setShowMinimap((v) => !v)}
       />
 
       {showShortcuts && (
@@ -703,15 +706,17 @@ function FlowCanvas() {
           proOptions={{ hideAttribution: true }}
         >
           <Controls position="bottom-right" className="flow-controls" />
-          <MiniMap
-            position="bottom-left"
-            className="flow-minimap"
-            nodeColor={(node: Node) => {
-              const data = node.data as any
-              return data?.color || '#64748b'
-            }}
-            maskColor="rgba(0, 0, 0, 0.2)"
-          />
+          {showMinimap && (
+            <MiniMap
+              position="bottom-left"
+              className="flow-minimap"
+              nodeColor={(node: Node) => {
+                const data = node.data as any
+                return data?.color || '#64748b'
+              }}
+              maskColor="rgba(0, 0, 0, 0.2)"
+            />
+          )}
           <Background
             variant={BackgroundVariant.Dots}
             gap={20}

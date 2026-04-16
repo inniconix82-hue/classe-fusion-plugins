@@ -2005,3 +2005,7 @@ body {
   font-size: 15px;
   padding: 14px;
 }
+
+.action-btn-wide {
+  flex: 1 1 100%;
+}

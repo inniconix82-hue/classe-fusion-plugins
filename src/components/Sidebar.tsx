@@ -13,6 +13,8 @@ interface SidebarProps {
   onExportPDF: () => void
   onToggleOllama: () => void
   onToggleEditor: () => void
+  showMinimap: boolean
+  onToggleMinimap: () => void
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
@@ -27,6 +29,8 @@ const Sidebar: React.FC<SidebarProps> = ({
   onExportPDF,
   onToggleOllama,
   onToggleEditor,
+  showMinimap,
+  onToggleMinimap,
 }) => {
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({
     outils: true,
@@ -71,7 +75,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       <div className="sidebar-actions">
-        <button className="action-btn" onClick={onSave} title="Sauvegarder">
+        <button className="action-btn action-btn-wide" onClick={onSave} title="Sauvegarder">
           <span className="btn-icon">💾</span> Sauvegarder
         </button>
         <button className="action-btn" onClick={onLoad} title="Ouvrir">
@@ -115,6 +119,12 @@ const Sidebar: React.FC<SidebarProps> = ({
       <div className="sidebar-layout-controls">
         <button className="editor-sidebar-btn" onClick={onToggleEditor} style={{ flex: 'none', width: '100%' }}>
           📝 Éditeur de document
+        </button>
+      </div>
+
+      <div className="sidebar-layout-controls">
+        <button className="layout-btn" onClick={onToggleMinimap} style={{ flex: 'none', width: '100%' }}>
+          {showMinimap ? '🗺️ Masquer minimap' : '🗺️ Afficher minimap'}
         </button>
       </div>
 
