@@ -1985,3 +1985,23 @@ body {
   color: var(--danger);
   margin-bottom: 6px;
 }
+
+.setup-wizard-sub {
+  font-size: 13px;
+  color: var(--text-secondary);
+  text-align: center;
+  margin: 0 0 16px;
+}
+
+.setup-no-ollama {
+  text-align: center;
+  padding: 8px 0;
+}
+
+.setup-ollama-btn {
+  display: block;
+  width: 100%;
+  margin-top: 16px;
+  font-size: 15px;
+  padding: 14px;
+}

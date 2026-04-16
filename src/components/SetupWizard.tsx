@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 
 interface Model {
   id: string
@@ -21,9 +21,38 @@ interface SetupWizardProps {
 
 const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete, onSkip }) => {
   const [selected, setSelected] = useState<string>('mistral')
-  const [step, setStep] = useState<'select' | 'downloading' | 'done' | 'error'>('select')
+  const [step, setStep] = useState<'checking' | 'no-ollama' | 'select' | 'downloading' | 'done' | 'error'>('checking')
   const [progress, setProgress] = useState(0)
   const [progressLabel, setProgressLabel] = useState('')
+
+  useEffect(() => {
+    // Check if Ollama is running
+    fetch('http://localhost:11434/api/tags')
+      .then((res) => {
+        if (res.ok) setStep('select')
+        else setStep('no-ollama')
+      })
+      .catch(() => setStep('no-ollama'))
+  }, [])
+
+  const openOllamaDownload = () => {
+    // Works in Electron via shell, fallback to window.open
+    if ((window as any).electron?.shell?.openExternal) {
+      (window as any).electron.shell.openExternal('https://ollama.com/download')
+    } else {
+      window.open('https://ollama.com/download', '_blank')
+    }
+  }
+
+  const checkOllamaAgain = () => {
+    setStep('checking')
+    fetch('http://localhost:11434/api/tags')
+      .then((res) => {
+        if (res.ok) setStep('select')
+        else setStep('no-ollama')
+      })
+      .catch(() => setStep('no-ollama'))
+  }
 
   const handleDownload = async () => {
     setStep('downloading')
@@ -37,7 +66,7 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete, onSkip }) => {
         body: JSON.stringify({ name: selected, stream: true }),
       })
 
-      if (!response.ok) throw new Error(`Ollama non disponible (${response.status})`)
+      if (!response.ok) throw new Error()
 
       const reader = response.body!.getReader()
       const decoder = new TextDecoder()
@@ -45,26 +74,21 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete, onSkip }) => {
       while (true) {
         const { done, value } = await reader.read()
         if (done) break
-
         const chunk = decoder.decode(value, { stream: true })
-        const lines = chunk.split('\n').filter(Boolean)
-
-        for (const line of lines) {
+        for (const line of chunk.split('\n').filter(Boolean)) {
           try {
             const json = JSON.parse(line)
             if (json.status) setProgressLabel(json.status)
             if (json.total && json.completed) {
               setProgress(Math.round((json.completed / json.total) * 100))
             }
-          } catch {
-            // skip malformed lines
-          }
+          } catch { /* skip */ }
         }
       }
 
       setStep('done')
       setTimeout(() => onComplete(selected), 1500)
-    } catch (err) {
+    } catch {
       setStep('error')
     }
   }
@@ -75,11 +99,39 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete, onSkip }) => {
         <div className="setup-wizard-header">
           <span className="setup-wizard-logo">🧠</span>
           <h1>Bienvenue dans Node Organisation</h1>
-          <p>Pour utiliser l'IA, choisissez un modèle Ollama à télécharger.</p>
         </div>
+
+        {step === 'checking' && (
+          <div className="setup-downloading">
+            <div className="setup-progress-label">Vérification d'Ollama...</div>
+          </div>
+        )}
+
+        {step === 'no-ollama' && (
+          <div className="setup-no-ollama">
+            <div className="setup-error-icon">🤖</div>
+            <div className="setup-done-text">Ollama n'est pas installé</div>
+            <div className="setup-error-sub">
+              Ollama est nécessaire pour utiliser l'IA. C'est gratuit et s'installe en 1 clic.
+            </div>
+            <button className="setup-download-btn setup-ollama-btn" onClick={openOllamaDownload}>
+              ⬇ Télécharger Ollama (gratuit)
+            </button>
+            <div className="setup-wizard-hint" style={{ marginTop: 16 }}>
+              Après l'installation, lancez Ollama puis cliquez sur "Ollama installé, continuer".
+            </div>
+            <div className="setup-wizard-actions" style={{ marginTop: 12 }}>
+              <button className="setup-skip-btn" onClick={onSkip}>Passer pour l'instant</button>
+              <button className="setup-download-btn" onClick={checkOllamaAgain}>
+                ✓ Ollama installé, continuer
+              </button>
+            </div>
+          </div>
+        )}
 
         {step === 'select' && (
           <>
+            <p className="setup-wizard-sub">Choisissez un modèle IA à télécharger.</p>
             <div className="setup-models">
               {MODELS.map((m) => (
                 <div
@@ -101,16 +153,11 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete, onSkip }) => {
                 </div>
               ))}
             </div>
-
             <div className="setup-wizard-hint">
-              Assurez-vous qu'Ollama est lancé avant de continuer.<br />
               Le téléchargement peut prendre quelques minutes selon votre connexion.
             </div>
-
             <div className="setup-wizard-actions">
-              <button className="setup-skip-btn" onClick={onSkip}>
-                Passer (configurer plus tard)
-              </button>
+              <button className="setup-skip-btn" onClick={onSkip}>Passer</button>
               <button className="setup-download-btn" onClick={handleDownload}>
                 ⬇ Télécharger {selected}
               </button>
@@ -125,9 +172,7 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete, onSkip }) => {
               <div className="setup-progress-fill" style={{ width: `${progress}%` }} />
             </div>
             <div className="setup-progress-pct">{progress}%</div>
-            <p className="setup-downloading-note">
-              Ne fermez pas l'application pendant le téléchargement.
-            </p>
+            <p className="setup-downloading-note">Ne fermez pas l'application pendant le téléchargement.</p>
           </div>
         )}
 
@@ -142,12 +187,10 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete, onSkip }) => {
         {step === 'error' && (
           <div className="setup-error">
             <div className="setup-error-icon">⚠️</div>
-            <div className="setup-error-text">Ollama n'est pas accessible.</div>
-            <div className="setup-error-sub">
-              Vérifiez qu'Ollama est lancé (cherchez l'icône dans la barre des tâches), puis réessayez.
-            </div>
+            <div className="setup-error-text">Erreur de téléchargement</div>
+            <div className="setup-error-sub">Vérifiez qu'Ollama est lancé et réessayez.</div>
             <div className="setup-wizard-actions">
-              <button className="setup-skip-btn" onClick={onSkip}>Passer pour l'instant</button>
+              <button className="setup-skip-btn" onClick={onSkip}>Passer</button>
               <button className="setup-download-btn" onClick={() => setStep('select')}>Réessayer</button>
             </div>
           </div>
