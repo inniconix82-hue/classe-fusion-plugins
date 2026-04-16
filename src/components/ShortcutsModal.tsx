@@ -53,13 +53,33 @@ const ShortcutsModal: React.FC<ShortcutsModalProps> = ({
       }
 
       if (editingNodeKey) {
-        setNodeShortcuts((prev) =>
-          prev.map((s) =>
-            `${s.nodeLabel}__${s.nodeCategory}` === editingNodeKey
-              ? { ...s, keys: combo }
-              : s
+        const [nodeLabel, nodeCategory] = editingNodeKey.split('__')
+        const presetNode = presetCategories
+          .flatMap((cat) => cat.nodes.map((n) => ({ ...n, catId: cat.id, catColor: cat.color })))
+          .find((n) => n.label === nodeLabel && n.catId === nodeCategory)
+
+        setNodeShortcuts((prev) => {
+          const existing = prev.find(
+            (s) => s.nodeLabel === nodeLabel && s.nodeCategory === nodeCategory
           )
-        )
+          if (existing) {
+            return prev.map((s) =>
+              s.nodeLabel === nodeLabel && s.nodeCategory === nodeCategory
+                ? { ...s, keys: combo }
+                : s
+            )
+          }
+          return [
+            ...prev,
+            {
+              nodeLabel,
+              nodeCategory,
+              nodeColor: presetNode?.color || '#64748b',
+              nodeType: presetNode?.type || 'custom',
+              keys: combo,
+            },
+          ]
+        })
         setEditingNodeKey(null)
       }
     },
