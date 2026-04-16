@@ -23,6 +23,8 @@ import CustomEdge from './components/CustomEdge'
 import StickyNoteNode from './components/StickyNoteNode'
 import RouterNode from './components/RouterNode'
 import VignetteNode from './components/VignetteNode'
+import UnderlayNode from './components/UnderlayNode'
+import HelpModal from './components/HelpModal'
 import Sidebar from './components/Sidebar'
 import ShortcutsModal from './components/ShortcutsModal'
 import OllamaPanel from './components/OllamaPanel'
@@ -40,6 +42,7 @@ const nodeTypes = {
   sticky: StickyNoteNode,
   router: RouterNode,
   vignette: VignetteNode,
+  underlay: UnderlayNode,
 }
 
 const edgeTypes = {
@@ -88,6 +91,7 @@ function FlowCanvas() {
   const [editorContent, setEditorContent] = useState('')
   const [questionLoading, setQuestionLoading] = useState(false)
   const [showMinimap, setShowMinimap] = useState(true)
+  const [showHelp, setShowHelp] = useState(false)
   const [showSetupWizard, setShowSetupWizard] = useState(false)
   const history = useHistory()
 
@@ -652,7 +656,21 @@ function FlowCanvas() {
         onToggleEditor={() => setShowEditor((v) => !v)}
         showMinimap={showMinimap}
         onToggleMinimap={() => setShowMinimap((v) => !v)}
+        onAddUnderlay={() => {
+          const id = getNextNodeId()
+          history.push(nodes, edges)
+          setNodes((nds) => [...nds, {
+            id,
+            type: 'underlay',
+            position: { x: 100, y: 100 },
+            style: { width: 300, height: 200, zIndex: -1 },
+            data: { label: 'Zone', color: '#6366f1' },
+          }])
+        }}
+        onShowHelp={() => setShowHelp(true)}
       />
+
+      {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
 
       {showShortcuts && (
         <ShortcutsModal

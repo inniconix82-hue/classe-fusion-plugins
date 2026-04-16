@@ -15,6 +15,8 @@ interface SidebarProps {
   onToggleEditor: () => void
   showMinimap: boolean
   onToggleMinimap: () => void
+  onAddUnderlay: () => void
+  onShowHelp: () => void
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
@@ -31,6 +33,8 @@ const Sidebar: React.FC<SidebarProps> = ({
   onToggleEditor,
   showMinimap,
   onToggleMinimap,
+  onAddUnderlay,
+  onShowHelp,
 }) => {
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({
     outils: true,
@@ -123,8 +127,20 @@ const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       <div className="sidebar-layout-controls">
+        <button className="layout-btn" onClick={onAddUnderlay} style={{ flex: 'none', width: '100%' }}>
+          🟦 Ajouter une zone
+        </button>
+      </div>
+
+      <div className="sidebar-layout-controls">
         <button className="layout-btn" onClick={onToggleMinimap} style={{ flex: 'none', width: '100%' }}>
           {showMinimap ? '🗺️ Masquer minimap' : '🗺️ Afficher minimap'}
+        </button>
+      </div>
+
+      <div className="sidebar-layout-controls">
+        <button className="layout-btn" onClick={onShowHelp} style={{ flex: 'none', width: '100%' }}>
+          ❓ Aide
         </button>
       </div>
 
