@@ -1,4 +1,5 @@
 const { execSync } = require('child_process')
+const https = require('https')
 const path = require('path')
 const fs = require('fs')
 
@@ -25,20 +26,50 @@ function copyDir(src, dest) {
   }
 }
 
-// Copy package.json (strip devDependencies)
 const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'))
 delete pkg.devDependencies
 delete pkg.build
 delete pkg.scripts
 fs.writeFileSync(path.join(tmpDir, 'package.json'), JSON.stringify(pkg, null, 2))
 
-// Copy dist and dist-electron
 copyDir(path.join(__dirname, 'dist'), path.join(tmpDir, 'dist'))
 copyDir(path.join(__dirname, 'dist-electron'), path.join(tmpDir, 'dist-electron'))
 
 // 4. Install production dependencies only
 console.log('📥 Installation des dépendances de production...')
 execSync('npm install --omit=dev', { cwd: tmpDir, stdio: 'inherit' })
+
+// Download file helper
+function downloadFile(url, dest) {
+  return new Promise((resolve, reject) => {
+    const follow = (url) => {
+      https.get(url, (res) => {
+        if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+          follow(res.headers.location)
+          return
+        }
+        if (res.statusCode !== 200) {
+          reject(new Error(`HTTP ${res.statusCode}`))
+          return
+        }
+        const total = parseInt(res.headers['content-length'] || '0', 10)
+        let downloaded = 0
+        const file = fs.createWriteStream(dest)
+        res.on('data', (chunk) => {
+          downloaded += chunk.length
+          if (total > 0) {
+            const pct = Math.round((downloaded / total) * 100)
+            process.stdout.write(`\r   Téléchargement: ${pct}% (${Math.round(downloaded/1024/1024)}MB / ${Math.round(total/1024/1024)}MB)`)
+          }
+        })
+        res.pipe(file)
+        file.on('finish', () => { file.close(); console.log(''); resolve() })
+        file.on('error', reject)
+      }).on('error', reject)
+    }
+    follow(url)
+  })
+}
 
 // 5. Package with electron packager
 const packager = require('@electron/packager')
@@ -57,7 +88,18 @@ async function run() {
   const appFolder = appPaths[0]
   console.log('✅ App packagée dans:', appFolder)
 
-  // 6. Create ZIP
+  // 6. Download OllamaSetup.exe
+  const ollamaSetupPath = path.join(appFolder, 'OllamaSetup.exe')
+  console.log('🤖 Téléchargement de OllamaSetup.exe...')
+  try {
+    await downloadFile('https://ollama.com/download/OllamaSetup.exe', ollamaSetupPath)
+    console.log('✅ OllamaSetup.exe inclus dans le package')
+  } catch (err) {
+    console.log('⚠️  Impossible de télécharger OllamaSetup.exe:', err.message)
+    console.log('   Vous pouvez le télécharger manuellement depuis https://ollama.com/download')
+  }
+
+  // 7. Create ZIP
   const zipName = 'Node-Organisation-Windows.zip'
   const zipPath = path.join(__dirname, 'release', zipName)
   if (fs.existsSync(zipPath)) fs.unlinkSync(zipPath)
@@ -74,7 +116,8 @@ async function run() {
   }
 
   console.log(`\n🎉 ZIP créé : release/${zipName}`)
-  console.log('   Partagez ce fichier. L\'utilisateur n\'a qu\'à dézipper et lancer "Node Organisation.exe"')
+  console.log('   Contient : Node Organisation.exe + OllamaSetup.exe')
+  console.log('   L\'utilisateur dézippe, installe Ollama, puis lance l\'app.')
 
   // Cleanup
   fs.rmSync(tmpDir, { recursive: true })

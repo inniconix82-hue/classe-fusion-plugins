@@ -35,10 +35,18 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete, onSkip }) => {
       .catch(() => setStep('no-ollama'))
   }, [])
 
+  const installOllamaLocal = async () => {
+    const api = (window as any).electronAPI
+    if (api?.installOllamaLocal) {
+      await api.installOllamaLocal()
+    } else {
+      openOllamaDownload()
+    }
+  }
+
   const openOllamaDownload = () => {
-    // Works in Electron via shell, fallback to window.open
-    if ((window as any).electron?.shell?.openExternal) {
-      (window as any).electron.shell.openExternal('https://ollama.com/download')
+    if ((window as any).electronAPI?.openExternal) {
+      (window as any).electronAPI.openExternal('https://ollama.com/download')
     } else {
       window.open('https://ollama.com/download', '_blank')
     }
@@ -114,8 +122,11 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete, onSkip }) => {
             <div className="setup-error-sub">
               Ollama est nécessaire pour utiliser l'IA. C'est gratuit et s'installe en 1 clic.
             </div>
-            <button className="setup-download-btn setup-ollama-btn" onClick={openOllamaDownload}>
-              ⬇ Télécharger Ollama (gratuit)
+            <button className="setup-download-btn setup-ollama-btn" onClick={installOllamaLocal}>
+              🚀 Installer Ollama (inclus)
+            </button>
+            <button className="setup-skip-btn" onClick={openOllamaDownload} style={{ marginTop: 8 }}>
+              Ou télécharger depuis ollama.com
             </button>
             <div className="setup-wizard-hint" style={{ marginTop: 16 }}>
               Après l'installation, lancez Ollama puis cliquez sur "Ollama installé, continuer".

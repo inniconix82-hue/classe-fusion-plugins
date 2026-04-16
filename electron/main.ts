@@ -1,7 +1,7 @@
-import { app, BrowserWindow, ipcMain, dialog, Menu } from 'electron'
+import { app, BrowserWindow, ipcMain, dialog, Menu, shell } from 'electron'
 import { join } from 'path'
-import { readFileSync, writeFileSync } from 'fs'
-import { spawn } from 'child_process'
+import { readFileSync, writeFileSync, existsSync } from 'fs'
+import { spawn, execFile } from 'child_process'
 
 let mainWindow: BrowserWindow | null = null
 
@@ -74,6 +74,36 @@ ipcMain.handle('launch-ollama', async () => {
       return { success: false }
     }
   }
+})
+
+// IPC handler to install Ollama from bundled OllamaSetup.exe
+ipcMain.handle('install-ollama-local', async () => {
+  const appDir = app.isPackaged
+    ? join(app.getAppPath(), '..')
+    : join(__dirname, '..')
+  const setupPath = join(appDir, 'OllamaSetup.exe')
+
+  if (!existsSync(setupPath)) {
+    return { success: false, error: 'OllamaSetup.exe not found' }
+  }
+
+  try {
+    execFile(setupPath, [], { detached: true })
+    return { success: true }
+  } catch {
+    try {
+      spawn(setupPath, [], { detached: true, stdio: 'ignore', shell: true }).unref()
+      return { success: true }
+    } catch {
+      return { success: false, error: 'Failed to launch installer' }
+    }
+  }
+})
+
+// IPC handler to open external URLs
+ipcMain.handle('open-external', async (_event, url: string) => {
+  await shell.openExternal(url)
+  return { success: true }
 })
 
 // IPC handlers for save/load
