@@ -115,6 +115,20 @@ const OllamaPanel: React.FC<OllamaPanelProps> = ({
           <span className={`ollama-status ${ollamaOnline === true ? 'online' : ollamaOnline === false ? 'offline' : 'checking'}`}>
             {ollamaOnline === true ? 'Connecté' : ollamaOnline === false ? 'Hors ligne' : '...'}
           </span>
+          {ollamaOnline === false && (
+            <button
+              className="ollama-launch-btn"
+              onClick={async () => {
+                const api = (window as any).electronAPI
+                if (api?.launchOllama) {
+                  await api.launchOllama()
+                  setTimeout(() => checkOllamaStatus().then(setOllamaOnline), 3000)
+                }
+              }}
+            >
+              ▶ Lancer
+            </button>
+          )}
         </div>
         <button className="ollama-close-btn" onClick={onClose}>×</button>
       </div>

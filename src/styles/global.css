@@ -2009,3 +2009,19 @@ body {
 .action-btn-wide {
   flex: 1 1 100%;
 }
+
+.ollama-launch-btn {
+  background: var(--accent);
+  border: none;
+  color: white;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.ollama-launch-btn:hover {
+  background: var(--accent-hover);
+}

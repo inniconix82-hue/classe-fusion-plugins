@@ -1,6 +1,7 @@
 import { app, BrowserWindow, ipcMain, dialog, Menu } from 'electron'
 import { join } from 'path'
 import { readFileSync, writeFileSync } from 'fs'
+import { spawn } from 'child_process'
 
 let mainWindow: BrowserWindow | null = null
 
@@ -47,6 +48,31 @@ app.on('window-all-closed', () => {
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) {
     createWindow()
+  }
+})
+
+// IPC handler to launch Ollama
+ipcMain.handle('launch-ollama', async () => {
+  try {
+    const ollamaPath = process.platform === 'win32'
+      ? 'C:\\Users\\' + (process.env.USERNAME || 'user') + '\\AppData\\Local\\Programs\\Ollama\\ollama.exe'
+      : 'ollama'
+
+    spawn(ollamaPath, ['serve'], {
+      detached: true,
+      stdio: 'ignore',
+      shell: process.platform === 'win32',
+    }).unref()
+
+    return { success: true }
+  } catch {
+    // Fallback: try just "ollama" from PATH
+    try {
+      spawn('ollama', ['serve'], { detached: true, stdio: 'ignore', shell: true }).unref()
+      return { success: true }
+    } catch {
+      return { success: false }
+    }
   }
 })
 
