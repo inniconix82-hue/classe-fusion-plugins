@@ -32,7 +32,8 @@ import { type PresetNode } from './data/presets'
 import { type Shortcut, type NodeShortcut, loadShortcuts, loadNodeShortcuts, matchesShortcut, saveNodeShortcuts } from './data/shortcuts'
 import { useHistory } from './data/useHistory'
 import { exportToPNG, exportToPDF } from './data/exportUtils'
-import { generateFromNodes, askQuestion, type OllamaStyle } from './data/ollamaService'
+import { generateFromNodes, askQuestion, hasInstalledModels, type OllamaStyle } from './data/ollamaService'
+import SetupWizard from './components/SetupWizard'
 
 const nodeTypes = {
   custom: CustomNode,
@@ -86,7 +87,16 @@ function FlowCanvas() {
   const [showEditor, setShowEditor] = useState(false)
   const [editorContent, setEditorContent] = useState('')
   const [questionLoading, setQuestionLoading] = useState(false)
+  const [showSetupWizard, setShowSetupWizard] = useState(false)
   const history = useHistory()
+
+  useEffect(() => {
+    const wizardDone = localStorage.getItem('nodeorg-setup-done')
+    if (wizardDone) return
+    hasInstalledModels().then((has) => {
+      if (!has) setShowSetupWizard(true)
+    })
+  }, [])
   const { screenToFlowPosition, fitView } = useReactFlow()
 
   const onConnect: OnConnect = useCallback(
@@ -614,6 +624,19 @@ function FlowCanvas() {
 
   return (
     <div className="app-container">
+      {showSetupWizard && (
+        <SetupWizard
+          onComplete={(model) => {
+            localStorage.setItem('nodeorg-setup-done', '1')
+            localStorage.setItem('nodeorg-ollama-model', model)
+            setShowSetupWizard(false)
+          }}
+          onSkip={() => {
+            localStorage.setItem('nodeorg-setup-done', '1')
+            setShowSetupWizard(false)
+          }}
+        />
+      )}
       <Sidebar
         onSave={onSave}
         onLoad={onLoad}

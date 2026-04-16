@@ -207,6 +207,15 @@ function findRelevantChunks(question: string, chunks: string[], maxChunks = 3): 
     .map((s) => s.chunk)
 }
 
+export async function hasInstalledModels(): Promise<boolean> {
+  try {
+    const models = await listModels()
+    return models.length > 0
+  } catch {
+    return false
+  }
+}
+
 export interface MindMapResponse {
   title: string
   description: string
