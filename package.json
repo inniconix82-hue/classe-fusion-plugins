@@ -34,8 +34,8 @@
         }
       ],
       "icon": "public/icon.png",
-      "sign": false,
-      "signingHashAlgorithms": null
+      "signAndEditExecutable": false,
+      "sign": null
     },
     "nsis": {
       "oneClick": false,
