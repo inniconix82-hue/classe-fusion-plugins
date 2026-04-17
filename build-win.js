@@ -104,13 +104,16 @@ async function run() {
 
   console.log('🗜️  Création du ZIP...')
   const isWin = process.platform === 'win32'
+  const releaseDir = path.join(__dirname, 'release')
+  const folderName = path.basename(appFolder)
   if (isWin) {
+    // Zip the folder itself (not its contents) so extraction creates a subfolder
     execSync(
-      `powershell -Command "Compress-Archive -Path '${appFolder}\\*' -DestinationPath '${zipPath}' -Force"`,
+      `powershell -Command "Compress-Archive -Path '${appFolder}' -DestinationPath '${zipPath}' -Force"`,
       { stdio: 'inherit' }
     )
   } else {
-    execSync(`cd "${appFolder}" && zip -r "${zipPath}" .`, { stdio: 'inherit' })
+    execSync(`cd "${releaseDir}" && zip -r "${zipPath}" "${folderName}"`, { stdio: 'inherit' })
   }
 
   console.log(`\n🎉 ZIP créé : release/${zipName}`)
