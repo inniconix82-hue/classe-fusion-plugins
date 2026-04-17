@@ -1,7 +1,7 @@
 import type { Node } from '@xyflow/react'
 
 const OLLAMA_URL = 'http://localhost:11434'
-const DEFAULT_MODEL = 'mistral'
+const DEFAULT_MODEL = 'tinyllama'
 
 const STORAGE_KEY = 'nodeorg-ollama-model'
 

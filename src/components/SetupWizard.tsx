@@ -9,9 +9,9 @@ interface Model {
 }
 
 const MODELS: Model[] = [
-  { id: 'mistral', name: 'Mistral 7B', size: '4.1 GB', desc: 'Meilleure qualité, recommandé', recommended: true },
+  { id: 'tinyllama', name: 'TinyLlama', size: '637 MB', desc: 'Rapide, recommandé pour la carte mentale', recommended: true },
   { id: 'llama3.2', name: 'Llama 3.2 3B', size: '2.0 GB', desc: 'Bon équilibre qualité / rapidité' },
-  { id: 'tinyllama', name: 'TinyLlama', size: '637 MB', desc: 'Très léger, PC moins puissants' },
+  { id: 'mistral', name: 'Mistral 7B', size: '4.1 GB', desc: 'Meilleure qualité, PC puissants' },
 ]
 
 interface SetupWizardProps {
@@ -20,7 +20,7 @@ interface SetupWizardProps {
 }
 
 const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete, onSkip }) => {
-  const [selected, setSelected] = useState<string>('mistral')
+  const [selected, setSelected] = useState<string>('tinyllama')
   const [step, setStep] = useState<'checking' | 'no-ollama' | 'select' | 'downloading' | 'done' | 'error'>('checking')
   const [progress, setProgress] = useState(0)
   const [progressLabel, setProgressLabel] = useState('')
