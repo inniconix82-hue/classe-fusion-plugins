@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
-import { presetCategories, type PresetNode } from '../data/presets'
+import { presetCategories, type PresetNode, type PresetCategory } from '../data/presets'
+import { loadCustomCategories } from '../data/customCategories'
 
 interface SidebarProps {
   onSave: () => void
@@ -17,6 +18,7 @@ interface SidebarProps {
   onToggleMinimap: () => void
   onAddUnderlay: () => void
   onShowHelp: () => void
+  onManageCategories: () => void
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
@@ -35,6 +37,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   onToggleMinimap,
   onAddUnderlay,
   onShowHelp,
+  onManageCategories,
 }) => {
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({
     outils: true,
@@ -54,6 +57,8 @@ const Sidebar: React.FC<SidebarProps> = ({
     education: false,
     evenementiel: false,
   })
+
+  const [customCategories, setCustomCategories] = useState<PresetCategory[]>(() => loadCustomCategories())
 
   const [searchQuery, setSearchQuery] = useState('')
 
@@ -144,6 +149,12 @@ const Sidebar: React.FC<SidebarProps> = ({
         </button>
       </div>
 
+      <div className="sidebar-layout-controls">
+        <button className="custom-cats-sidebar-btn" onClick={() => { setCustomCategories(loadCustomCategories()); onManageCategories() }} style={{ flex: 'none', width: '100%' }}>
+          🗂️ Mes catégories
+        </button>
+      </div>
+
       <div className="sidebar-divider" />
 
       <div className="sidebar-search">
@@ -159,7 +170,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       <div className="sidebar-section-title">Glisser un node sur le canvas</div>
 
       <div className="sidebar-categories">
-        {presetCategories.map((category) => {
+        {[...customCategories, ...presetCategories].map((category) => {
           const filteredNodes = searchQuery
             ? category.nodes.filter(
                 (n) =>

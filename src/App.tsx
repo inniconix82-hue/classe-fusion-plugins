@@ -36,6 +36,7 @@ import { useHistory } from './data/useHistory'
 import { exportToPNG, exportToPDF } from './data/exportUtils'
 import { generateFromNodes, askQuestion, hasInstalledModels, type OllamaStyle } from './data/ollamaService'
 import SetupWizard from './components/SetupWizard'
+import CustomCategoriesModal from './components/CustomCategoriesModal'
 
 const nodeTypes = {
   custom: CustomNode,
@@ -99,6 +100,7 @@ function FlowCanvas() {
   const [showMinimap, setShowMinimap] = useState(true)
   const [showHelp, setShowHelp] = useState(false)
   const [showSetupWizard, setShowSetupWizard] = useState(false)
+  const [showCustomCategories, setShowCustomCategories] = useState(false)
   const history = useHistory()
 
   useEffect(() => {
@@ -746,9 +748,14 @@ function FlowCanvas() {
           }])
         }}
         onShowHelp={() => setShowHelp(true)}
+        onManageCategories={() => setShowCustomCategories(true)}
       />
 
       {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
+
+      {showCustomCategories && (
+        <CustomCategoriesModal onClose={() => setShowCustomCategories(false)} />
+      )}
 
       {showShortcuts && (
         <ShortcutsModal
