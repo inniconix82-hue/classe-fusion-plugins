@@ -27,17 +27,15 @@ function copyDir(src, dest) {
 }
 
 const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'))
+// All frontend code is bundled by Vite — no npm deps needed at runtime
 delete pkg.devDependencies
+delete pkg.dependencies
 delete pkg.build
 delete pkg.scripts
 fs.writeFileSync(path.join(tmpDir, 'package.json'), JSON.stringify(pkg, null, 2))
 
 copyDir(path.join(__dirname, 'dist'), path.join(tmpDir, 'dist'))
 copyDir(path.join(__dirname, 'dist-electron'), path.join(tmpDir, 'dist-electron'))
-
-// 4. Install production dependencies only
-console.log('📥 Installation des dépendances de production...')
-execSync('npm install --omit=dev', { cwd: tmpDir, stdio: 'inherit' })
 
 // Download file helper
 function downloadFile(url, dest) {
