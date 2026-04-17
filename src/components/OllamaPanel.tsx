@@ -37,7 +37,47 @@ const OllamaPanel: React.FC<OllamaPanelProps> = ({
   const [question, setQuestion] = useState('')
   const [kbCount, setKbCount] = useState(getKnowledgeBase().length)
   const [activeTab, setActiveTab] = useState<'generate' | 'mindmap'>('mindmap')
+  const [downloading, setDownloading] = useState(false)
+  const [downloadProgress, setDownloadProgress] = useState(0)
+  const [downloadLabel, setDownloadLabel] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const handleDownloadModel = async () => {
+    setDownloading(true)
+    setDownloadProgress(0)
+    setDownloadLabel('Connexion...')
+    try {
+      const response = await fetch('http://localhost:11434/api/pull', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: model, stream: true }),
+      })
+      if (!response.ok) throw new Error()
+      const reader = response.body!.getReader()
+      const decoder = new TextDecoder()
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        const chunk = decoder.decode(value, { stream: true })
+        for (const line of chunk.split('\n').filter(Boolean)) {
+          try {
+            const json = JSON.parse(line)
+            if (json.status) setDownloadLabel(json.status)
+            if (json.total && json.completed) {
+              setDownloadProgress(Math.round((json.completed / json.total) * 100))
+            }
+          } catch { /* skip */ }
+        }
+      }
+      setDownloadLabel('Modèle installé !')
+      setDownloadProgress(100)
+      listModels().then(setAvailableModels)
+    } catch {
+      setDownloadLabel('Erreur de téléchargement')
+    } finally {
+      setDownloading(false)
+    }
+  }
 
   useEffect(() => {
     checkOllamaStatus().then(setOllamaOnline)
@@ -191,6 +231,35 @@ const OllamaPanel: React.FC<OllamaPanelProps> = ({
               {questionLoading ? '...' : '→'}
             </button>
           </div>
+
+          {availableModels.length === 0 && ollamaOnline === true && (
+            <div className="ollama-model-download" style={{ marginTop: 8 }}>
+              <div className="ollama-error" style={{ marginBottom: 8 }}>
+                <span className="ollama-error-icon">⚠️</span>
+                <span className="ollama-error-text">Aucun modèle installé.</span>
+              </div>
+              {downloading ? (
+                <>
+                  <div className="setup-progress-label" style={{ fontSize: 12, marginBottom: 4 }}>{downloadLabel}</div>
+                  <div className="setup-progress-bar">
+                    <div className="setup-progress-fill" style={{ width: `${downloadProgress}%` }} />
+                  </div>
+                  <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 4 }}>{downloadProgress}%</div>
+                </>
+              ) : (
+                <button className="ollama-generate-btn" onClick={handleDownloadModel} style={{ fontSize: 13 }}>
+                  ⬇ Télécharger {model}
+                </button>
+              )}
+            </div>
+          )}
+
+          {error && (
+            <div className="ollama-error" style={{ marginTop: 8 }}>
+              <span className="ollama-error-icon">⚠️</span>
+              <pre className="ollama-error-text">{error}</pre>
+            </div>
+          )}
 
           <div className="ollama-mindmap-hint">
             Chaque réponse crée un node sur le canvas (2-3 mots)
