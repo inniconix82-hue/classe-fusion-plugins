@@ -2168,3 +2168,327 @@ body {
   border-left: 2px solid var(--accent);
   line-height: 1.4;
 }
+
+/* ==================== CUSTOM CATEGORIES SIDEBAR BUTTON ==================== */
+.custom-cats-sidebar-btn {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #f59e0b;
+  background: rgba(245, 158, 11, 0.1);
+  color: #fbbf24;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.15s;
+}
+
+.custom-cats-sidebar-btn:hover {
+  background: rgba(245, 158, 11, 0.25);
+  color: #fde68a;
+}
+
+/* ==================== CUSTOM CATEGORIES MODAL ==================== */
+.custom-cats-modal {
+  width: 560px;
+  max-height: 82vh;
+}
+
+.custom-cats-body {
+  padding: 14px 16px;
+  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.custom-cats-empty {
+  padding: 24px 16px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.custom-cat-item {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-left: 3px solid;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.custom-cat-header {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.custom-cat-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 13px;
+  transition: background 0.1s;
+}
+
+.custom-cat-toggle:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.custom-cat-icon {
+  font-size: 16px;
+}
+
+.custom-cat-name {
+  font-weight: 600;
+  flex: 1;
+  text-align: left;
+}
+
+.custom-cat-count {
+  font-size: 11px;
+  color: var(--text-muted);
+  background: var(--bg-tertiary);
+  padding: 2px 7px;
+  border-radius: 10px;
+}
+
+.custom-cat-delete-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 8px 10px;
+  font-size: 14px;
+  transition: color 0.15s;
+  flex-shrink: 0;
+}
+
+.custom-cat-delete-btn:hover {
+  color: var(--danger);
+}
+
+.custom-cat-nodes {
+  padding: 8px 12px 10px;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.custom-node-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-left: 3px solid;
+  border-radius: 6px;
+}
+
+.custom-node-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.custom-node-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.custom-node-desc {
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.custom-node-delete-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 13px;
+  padding: 2px 5px;
+  flex-shrink: 0;
+  transition: color 0.15s;
+}
+
+.custom-node-delete-btn:hover {
+  color: var(--danger);
+}
+
+.custom-node-form {
+  padding: 10px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.custom-node-form-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.custom-cat-add-node-btn {
+  background: none;
+  border: 1px dashed var(--border-color);
+  color: var(--text-muted);
+  border-radius: 6px;
+  padding: 7px 12px;
+  cursor: pointer;
+  font-size: 12px;
+  text-align: left;
+  transition: all 0.15s;
+  width: 100%;
+}
+
+.custom-cat-add-node-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.custom-cat-new-form {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.custom-cats-form-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.custom-cats-input {
+  width: 100%;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 8px 10px;
+  color: var(--text-primary);
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.custom-cats-input:focus {
+  border-color: var(--accent);
+}
+
+.custom-cats-icon-row,
+.custom-cats-color-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.custom-cats-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  padding-top: 4px;
+  min-width: 50px;
+}
+
+.custom-cats-icons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.custom-cats-icon-btn {
+  background: var(--bg-tertiary);
+  border: 2px solid transparent;
+  border-radius: 6px;
+  padding: 4px 6px;
+  cursor: pointer;
+  font-size: 18px;
+  transition: all 0.1s;
+  line-height: 1;
+}
+
+.custom-cats-icon-btn:hover {
+  background: var(--bg-secondary);
+  border-color: var(--border-color);
+}
+
+.custom-cats-icon-btn.selected {
+  border-color: var(--accent);
+  background: rgba(99, 102, 241, 0.15);
+}
+
+.custom-cats-colors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.custom-cats-color-swatch {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform 0.1s;
+  outline-offset: 2px;
+}
+
+.custom-cats-color-swatch:hover {
+  transform: scale(1.15);
+}
+
+.custom-cats-color-swatch.selected {
+  border-color: white;
+  transform: scale(1.15);
+}
+
+.custom-cat-form-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.custom-cats-add-cat-btn {
+  width: 100%;
+  padding: 10px 14px;
+  background: none;
+  border: 1px dashed var(--accent);
+  color: var(--accent);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+  transition: all 0.15s;
+  margin-top: 4px;
+}
+
+.custom-cats-add-cat-btn:hover {
+  background: rgba(99, 102, 241, 0.1);
+  color: var(--accent-hover);
+}
