@@ -10,7 +10,7 @@
     "electron:build": "npm run build && electron-builder",
     "electron:build:win": "node build-win-installer.js",
     "package:win": "node build-win.js",
-    "package:mac": "npm run build && npx @electron/packager . \"Node Organisation\" --platform=darwin --arch=x64,arm64 --out=release --overwrite --ignore=\"^/src\" --ignore=\"^/public\" --ignore=\"^/electron\" --ignore=\"^/\\.git\" --ignore=\"\\.ts$\" --ignore=\"\\.bat$\" --ignore=\"^/vite\" --ignore=\"^/tsconfig\" --ignore=\"^/release\" --app-version=1.0.0",
+    "package:mac": "node build-mac.js",
     "build:web": "tsc && vite build --config vite.web.config.ts",
     "preview:web": "vite preview --config vite.web.config.ts"
   },
