@@ -54,23 +54,38 @@ app.on('activate', () => {
 // IPC handler to launch Ollama
 ipcMain.handle('launch-ollama', async () => {
   const username = process.env.USERNAME || process.env.USER || 'user'
-  const candidates = process.platform === 'win32'
-    ? [
-        `C:\\Users\\${username}\\AppData\\Local\\Programs\\Ollama\\ollama.exe`,
-        `C:\\Users\\${username}\\AppData\\Local\\Ollama\\ollama.exe`,
-        `C:\\Program Files\\Ollama\\ollama.exe`,
-        'ollama',
-      ]
-    : ['ollama']
 
-  for (const cmd of candidates) {
+  if (process.platform === 'win32') {
+    // On Windows, Ollama runs as a tray app — launch the exe without args
+    const candidates = [
+      `C:\\Users\\${username}\\AppData\\Local\\Programs\\Ollama\\Ollama.exe`,
+      `C:\\Users\\${username}\\AppData\\Local\\Programs\\Ollama\\ollama.exe`,
+      `C:\\Users\\${username}\\AppData\\Local\\Ollama\\Ollama.exe`,
+      `C:\\Program Files\\Ollama\\Ollama.exe`,
+    ]
+    for (const exePath of candidates) {
+      if (!existsSync(exePath)) continue
+      try {
+        const child = spawn(exePath, [], { detached: true, stdio: 'ignore' })
+        child.unref()
+        child.on('error', () => {})
+        return { success: true, path: exePath }
+      } catch { /* try next */ }
+    }
+    // Fallback: try via shell
     try {
-      if (cmd !== 'ollama' && !existsSync(cmd)) continue
-      const child = spawn(cmd, ['serve'], { detached: true, stdio: 'ignore', shell: true })
+      const child = spawn('ollama', ['serve'], { detached: true, stdio: 'ignore', shell: true })
       child.unref()
       child.on('error', () => {})
-      return { success: true, path: cmd }
-    } catch { /* try next */ }
+      return { success: true }
+    } catch { /* ignore */ }
+  } else {
+    try {
+      const child = spawn('ollama', ['serve'], { detached: true, stdio: 'ignore' })
+      child.unref()
+      child.on('error', () => {})
+      return { success: true }
+    } catch { /* ignore */ }
   }
   return { success: false }
 })
