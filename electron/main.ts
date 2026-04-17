@@ -53,27 +53,26 @@ app.on('activate', () => {
 
 // IPC handler to launch Ollama
 ipcMain.handle('launch-ollama', async () => {
-  try {
-    const ollamaPath = process.platform === 'win32'
-      ? 'C:\\Users\\' + (process.env.USERNAME || 'user') + '\\AppData\\Local\\Programs\\Ollama\\ollama.exe'
-      : 'ollama'
+  const username = process.env.USERNAME || process.env.USER || 'user'
+  const candidates = process.platform === 'win32'
+    ? [
+        `C:\\Users\\${username}\\AppData\\Local\\Programs\\Ollama\\ollama.exe`,
+        `C:\\Users\\${username}\\AppData\\Local\\Ollama\\ollama.exe`,
+        `C:\\Program Files\\Ollama\\ollama.exe`,
+        'ollama',
+      ]
+    : ['ollama']
 
-    spawn(ollamaPath, ['serve'], {
-      detached: true,
-      stdio: 'ignore',
-      shell: process.platform === 'win32',
-    }).unref()
-
-    return { success: true }
-  } catch {
-    // Fallback: try just "ollama" from PATH
+  for (const cmd of candidates) {
     try {
-      spawn('ollama', ['serve'], { detached: true, stdio: 'ignore', shell: true }).unref()
-      return { success: true }
-    } catch {
-      return { success: false }
-    }
+      if (cmd !== 'ollama' && !existsSync(cmd)) continue
+      const child = spawn(cmd, ['serve'], { detached: true, stdio: 'ignore', shell: true })
+      child.unref()
+      child.on('error', () => {})
+      return { success: true, path: cmd }
+    } catch { /* try next */ }
   }
+  return { success: false }
 })
 
 // IPC handler to install Ollama from bundled OllamaSetup.exe
