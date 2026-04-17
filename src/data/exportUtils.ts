@@ -27,7 +27,7 @@ function getNodesBoundingBox(nodes: Node[]): { x: number; y: number; width: numb
     maxY = Math.max(maxY, node.position.y + h)
   })
 
-  const padding = 60
+  const padding = 80
   return {
     x: minX - padding,
     y: minY - padding,
@@ -41,63 +41,72 @@ async function captureCanvas(nodes?: Node[]): Promise<HTMLCanvasElement | null> 
   const container = getFlowContainer()
   if (!viewport || !container) return null
 
-  // Hide controls, minimap, and panel during capture
+  // Hide UI controls during capture
   const uiElements = container.querySelectorAll<HTMLElement>(
     '.react-flow__controls, .react-flow__minimap, .react-flow__panel'
   )
-  uiElements.forEach((el) => (el.style.display = 'none'))
+  uiElements.forEach((el) => (el.style.visibility = 'hidden'))
 
-  // Get the current transform of the viewport
-  const viewportStyle = window.getComputedStyle(viewport)
-  const transform = viewportStyle.transform
-  const originalTransform = viewport.style.transform
+  const originalViewportTransform = viewport.style.transform
+  const originalWidth = container.style.width
+  const originalHeight = container.style.height
+  const originalOverflow = container.style.overflow
+  const originalPosition = (container.parentElement as HTMLElement)?.style.overflow
 
-  // If we have nodes, compute bounding box and adjust viewport transform
   let captureWidth = container.clientWidth
   let captureHeight = container.clientHeight
 
   if (nodes && nodes.length > 0) {
     const bounds = getNodesBoundingBox(nodes)
     if (bounds) {
-      // Calculate scale to fit bounds into a reasonable export size
-      const maxDim = 2000
-      const scaleX = maxDim / bounds.width
-      const scaleY = maxDim / bounds.height
-      const scale = Math.min(scaleX, scaleY, 2) // cap at 2x
-
+      // Scale to get a good resolution without going too large
+      const maxDim = 4000
+      const scale = Math.min(maxDim / bounds.width, maxDim / bounds.height, 2)
       captureWidth = Math.ceil(bounds.width * scale)
       captureHeight = Math.ceil(bounds.height * scale)
 
-      // Set viewport transform to center on the bounding box
+      // Expand the container to fit all content so html2canvas doesn't clip
+      container.style.width = `${captureWidth}px`
+      container.style.height = `${captureHeight}px`
+      container.style.overflow = 'hidden'
+      if (container.parentElement) {
+        (container.parentElement as HTMLElement).style.overflow = 'visible'
+      }
+
+      // Translate + scale viewport to show all nodes
       viewport.style.transform = `translate(${-bounds.x * scale}px, ${-bounds.y * scale}px) scale(${scale})`
     }
   }
 
-  // Wait for transform to apply
+  // Wait for layout to update
   await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))
 
-  const canvas = await html2canvas(viewport, {
+  const canvas = await html2canvas(container, {
     backgroundColor: '#0f172a',
-    scale: 2,
+    scale: 1,
     useCORS: true,
     logging: false,
     width: captureWidth,
     height: captureHeight,
-    // Capture all content including SVG edges
-    foreignObjectRendering: false,
+    windowWidth: captureWidth,
+    windowHeight: captureHeight,
     onclone: (clonedDoc) => {
-      // Ensure SVG edges are visible in the clone
       const svgEdges = clonedDoc.querySelectorAll('.react-flow__edge path')
       svgEdges.forEach((path) => {
-        const el = path as SVGPathElement
-        el.setAttribute('stroke-opacity', '1')
+        ;(path as SVGPathElement).setAttribute('stroke-opacity', '1')
       })
     },
   })
 
-  // Restore original transform and UI
-  viewport.style.transform = originalTransform
-  uiElements.forEach((el) => (el.style.display = ''))
+  // Restore everything
+  viewport.style.transform = originalViewportTransform
+  container.style.width = originalWidth
+  container.style.height = originalHeight
+  container.style.overflow = originalOverflow
+  if (container.parentElement && originalPosition !== undefined) {
+    ;(container.parentElement as HTMLElement).style.overflow = originalPosition
+  }
+  uiElements.forEach((el) => (el.style.visibility = ''))
 
   return canvas
 }
@@ -120,7 +129,6 @@ export async function exportToPDF(filename: string = 'organisation', nodes?: Nod
   const imgWidth = canvas.width
   const imgHeight = canvas.height
 
-  // Determine orientation
   const isLandscape = imgWidth > imgHeight
   const pdf = new jsPDF({
     orientation: isLandscape ? 'landscape' : 'portrait',
