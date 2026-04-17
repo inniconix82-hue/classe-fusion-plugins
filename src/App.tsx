@@ -37,6 +37,7 @@ import { exportToPNG, exportToPDF } from './data/exportUtils'
 import { generateFromNodes, askQuestion, hasInstalledModels, type OllamaStyle } from './data/ollamaService'
 import SetupWizard from './components/SetupWizard'
 import CustomCategoriesModal from './components/CustomCategoriesModal'
+import { loadCustomCategories, saveCustomCategories } from './data/customCategories'
 
 const nodeTypes = {
   custom: CustomNode,
@@ -101,6 +102,8 @@ function FlowCanvas() {
   const [showHelp, setShowHelp] = useState(false)
   const [showSetupWizard, setShowSetupWizard] = useState(false)
   const [showCustomCategories, setShowCustomCategories] = useState(false)
+  const [nodeContextMenu, setNodeContextMenu] = useState<{ x: number; y: number; node: Node } | null>(null)
+  const [saveToCategoryPicker, setSaveToCategoryPicker] = useState<Node | null>(null)
   const history = useHistory()
 
   useEffect(() => {
@@ -412,6 +415,11 @@ function FlowCanvas() {
     },
     [setEdges]
   )
+
+  const onNodeContextMenu = useCallback((event: React.MouseEvent, node: Node) => {
+    event.preventDefault()
+    setNodeContextMenu({ x: event.clientX, y: event.clientY, node })
+  }, [])
 
   const onDisconnectSelected = useCallback(() => {
     const selectedNodeIds = nodes.filter((n) => n.selected).map((n) => n.id)
@@ -757,6 +765,82 @@ function FlowCanvas() {
         <CustomCategoriesModal onClose={() => setShowCustomCategories(false)} />
       )}
 
+      {/* Node context menu */}
+      {nodeContextMenu && (
+        <div
+          className="node-context-menu"
+          style={{ top: nodeContextMenu.y, left: nodeContextMenu.x }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            className="node-context-item"
+            onClick={() => {
+              setSaveToCategoryPicker(nodeContextMenu.node)
+              setNodeContextMenu(null)
+            }}
+          >
+            📌 Sauvegarder dans mes catégories
+          </button>
+          <div className="node-context-divider" />
+          <button
+            className="node-context-item node-context-danger"
+            onClick={() => {
+              setNodes((nds) => nds.filter((n) => n.id !== nodeContextMenu.node.id))
+              setNodeContextMenu(null)
+            }}
+          >
+            🗑 Supprimer ce node
+          </button>
+        </div>
+      )}
+
+      {/* Save to category picker */}
+      {saveToCategoryPicker && (() => {
+        const cats = loadCustomCategories()
+        const nodeData = saveToCategoryPicker.data as any
+        return (
+          <div className="modal-overlay" onClick={() => setSaveToCategoryPicker(null)}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 360 }}>
+              <div className="modal-header">
+                <h2>📌 Sauvegarder dans une catégorie</h2>
+                <button className="modal-close" onClick={() => setSaveToCategoryPicker(null)}>&times;</button>
+              </div>
+              <div style={{ padding: '16px' }}>
+                {cats.length === 0 ? (
+                  <div style={{ color: 'var(--text-muted)', fontSize: 13, textAlign: 'center', padding: '20px 0' }}>
+                    Aucune catégorie personnalisée.<br />
+                    Crée-en une via "🗂️ Mes catégories".
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {cats.map((cat) => (
+                      <button
+                        key={cat.id}
+                        className="node-context-item"
+                        style={{ borderLeft: `3px solid ${cat.color}`, padding: '10px 14px', borderRadius: 6, background: 'var(--bg-primary)', border: `1px solid var(--border-color)`, borderLeftColor: cat.color }}
+                        onClick={() => {
+                          const updated = cats.map((c) =>
+                            c.id === cat.id
+                              ? { ...c, nodes: [...c.nodes, { type: 'custom', label: nodeData.label || 'Node', description: nodeData.description || '', category: cat.id, color: nodeData.color || cat.color }] }
+                              : c
+                          )
+                          saveCustomCategories(updated)
+                          setSaveToCategoryPicker(null)
+                        }}
+                      >
+                        <span style={{ marginRight: 8 }}>{cat.icon}</span>
+                        <strong>{cat.name}</strong>
+                        <span style={{ color: 'var(--text-muted)', fontSize: 11, marginLeft: 8 }}>{cat.nodes.length} nodes</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )
+      })()}
+
       {showShortcuts && (
         <ShortcutsModal
           shortcuts={shortcuts}
@@ -798,7 +882,9 @@ function FlowCanvas() {
           onDragOver={onDragOver}
           onNodeDoubleClick={onNodeDoubleClick}
           onEdgeContextMenu={onEdgeContextMenu}
+          onNodeContextMenu={onNodeContextMenu}
           onNodesDelete={onNodesDelete}
+          onPaneClick={() => setNodeContextMenu(null)}
           onNodeDragStart={onNodeDragStart}
           onNodeDrag={onNodeDrag}
           onNodeDragStop={onNodeDragStop}
