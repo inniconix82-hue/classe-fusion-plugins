@@ -108,6 +108,38 @@ function FlowCanvas() {
       if (!has) setShowSetupWizard(true)
     })
   }, [])
+
+  // Hide/show nodes when an underlay is collapsed/expanded
+  useEffect(() => {
+    const underlays = nodes.filter((n) => n.type === 'underlay')
+    if (underlays.length === 0) return
+
+    setNodes((nds) => {
+      let changed = false
+      const updated = nds.map((n) => {
+        if (n.type === 'underlay') return n
+        let shouldHide = false
+        for (const u of underlays) {
+          const d = u.data as any
+          if (!d.collapsed) continue
+          const uw = u.measured?.width ?? 300
+          const uh = u.measured?.height ?? 200
+          const nw = n.measured?.width ?? 180
+          const nh = n.measured?.height ?? 80
+          const cx = n.position.x + nw / 2
+          const cy = n.position.y + nh / 2
+          if (cx >= u.position.x && cx <= u.position.x + uw && cy >= u.position.y && cy <= u.position.y + uh) {
+            shouldHide = true
+            break
+          }
+        }
+        const currentHidden = !!(n as any).hidden
+        if (shouldHide !== currentHidden) { changed = true; return { ...n, hidden: shouldHide } }
+        return n
+      })
+      return changed ? updated : nds
+    })
+  }, [nodes.map((n) => n.type === 'underlay' ? (n.data as any).collapsed : null).join(',')])
   const { screenToFlowPosition, fitView } = useReactFlow()
 
   const onConnect: OnConnect = useCallback(

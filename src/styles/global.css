@@ -2065,6 +2065,26 @@ body {
   width: 100%;
 }
 
+.underlay-collapse-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 10px;
+  padding: 0 4px 0 0;
+  flex-shrink: 0;
+  opacity: 0.8;
+  transition: opacity 0.15s;
+}
+.underlay-collapse-btn:hover { opacity: 1; }
+
+.underlay-node.collapsed {
+  height: auto !important;
+  min-height: 0 !important;
+}
+.underlay-node.collapsed .underlay-header {
+  border-bottom: none;
+}
+
 .underlay-color-btn {
   width: 16px;
   height: 16px;
