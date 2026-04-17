@@ -6,4 +6,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   launchOllama: () => ipcRenderer.invoke('launch-ollama'),
   installOllamaLocal: () => ipcRenderer.invoke('install-ollama-local'),
   openExternal: (url: string) => ipcRenderer.invoke('open-external', url),
+  openKbFolder: () => ipcRenderer.invoke('open-kb-folder'),
+  readKbFolder: () => ipcRenderer.invoke('read-kb-folder'),
+  readFileBuffer: (path: string) => ipcRenderer.invoke('read-file-buffer', path),
 })

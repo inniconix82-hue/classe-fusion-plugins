@@ -278,7 +278,46 @@ const OllamaPanel: React.FC<OllamaPanelProps> = ({
                 className="ollama-kb-btn"
                 onClick={() => fileInputRef.current?.click()}
               >
-                📄 Ajouter un PDF / texte
+                📄 Ajouter un fichier
+              </button>
+              <button
+                className="ollama-kb-btn"
+                onClick={async () => {
+                  const api = (window as any).electronAPI
+                  if (api?.openKbFolder) await api.openKbFolder()
+                }}
+              >
+                📁 Dossier
+              </button>
+              <button
+                className="ollama-kb-btn"
+                onClick={async () => {
+                  const api = (window as any).electronAPI
+                  if (!api?.readKbFolder) return
+                  const files = await api.readKbFolder()
+                  for (const file of files) {
+                    const buffer = await api.readFileBuffer(file.path)
+                    if (file.name.endsWith('.pdf')) {
+                      try {
+                        const pdfjsLib = await import('pdfjs-dist')
+                        pdfjsLib.GlobalWorkerOptions.workerSrc = ''
+                        const pdf = await pdfjsLib.getDocument({ data: buffer }).promise
+                        let text = ''
+                        for (let i = 1; i <= pdf.numPages; i++) {
+                          const page = await pdf.getPage(i)
+                          const content = await page.getTextContent()
+                          text += content.items.map((item: any) => item.str).join(' ') + '\n\n'
+                        }
+                        addToKnowledgeBase(text)
+                      } catch { /* skip */ }
+                    } else {
+                      addToKnowledgeBase(new TextDecoder().decode(buffer))
+                    }
+                  }
+                  setKbCount(getKnowledgeBase().length)
+                }}
+              >
+                🔄 Recharger dossier
               </button>
               {kbCount > 0 && (
                 <button className="ollama-kb-clear" onClick={handleClearKB}>

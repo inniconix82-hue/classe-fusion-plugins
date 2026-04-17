@@ -1,6 +1,6 @@
 import { app, BrowserWindow, ipcMain, dialog, Menu, shell } from 'electron'
 import { join } from 'path'
-import { readFileSync, writeFileSync, existsSync } from 'fs'
+import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from 'fs'
 import { spawn, execFile } from 'child_process'
 
 let mainWindow: BrowserWindow | null = null
@@ -112,6 +112,31 @@ ipcMain.handle('install-ollama-local', async () => {
       return { success: false, error: 'Failed to launch installer' }
     }
   }
+})
+
+// IPC handlers for knowledge base folder
+ipcMain.handle('get-kb-folder', () => {
+  const folder = join(app.getPath('documents'), 'NodeOrganisation', 'Connaissances')
+  if (!existsSync(folder)) mkdirSync(folder, { recursive: true })
+  return folder
+})
+
+ipcMain.handle('open-kb-folder', async () => {
+  const folder = join(app.getPath('documents'), 'NodeOrganisation', 'Connaissances')
+  if (!existsSync(folder)) mkdirSync(folder, { recursive: true })
+  await shell.openPath(folder)
+  return folder
+})
+
+ipcMain.handle('read-kb-folder', () => {
+  const folder = join(app.getPath('documents'), 'NodeOrganisation', 'Connaissances')
+  if (!existsSync(folder)) mkdirSync(folder, { recursive: true })
+  const files = readdirSync(folder).filter((f) => /\.(pdf|txt|md)$/i.test(f))
+  return files.map((f) => ({ name: f, path: join(folder, f) }))
+})
+
+ipcMain.handle('read-file-buffer', (_event, filePath: string) => {
+  return readFileSync(filePath)
 })
 
 // IPC handler to open external URLs
