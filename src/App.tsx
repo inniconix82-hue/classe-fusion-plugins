@@ -75,6 +75,12 @@ const initialEdges: Edge[] = saved?.edges || []
 
 function FlowCanvas() {
   const reactFlowWrapper = useRef<HTMLDivElement>(null)
+  const underlayDragRef = useRef<{
+    underlayId: string
+    startPos: { x: number; y: number }
+    containedIds: string[]
+    containedStartPositions: Record<string, { x: number; y: number }>
+  } | null>(null)
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes)
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges)
   const [layoutDirection, setLayoutDirection] = useState<LayoutDirection>(
@@ -627,6 +633,46 @@ function FlowCanvas() {
     return () => window.removeEventListener('keydown', handler, true)
   }, [shortcuts, nodeShortcuts, showShortcuts, onSave, onLoad, onClear, onAutoLayout, onToggleDirection, fitView, onUndo, onRedo, onSelectAll, onCopy, onPaste, onDuplicate, onExportPNG, onExportPDF, onDisconnectSelected, nodes, edges, history, setNodes])
 
+  const onNodeDragStart = useCallback((_event: React.MouseEvent, node: Node) => {
+    if (node.type !== 'underlay') return
+    const uw = node.measured?.width ?? 300
+    const uh = node.measured?.height ?? 200
+    const contained = nodes.filter((n) => {
+      if (n.id === node.id || n.type === 'underlay') return false
+      const nw = n.measured?.width ?? 180
+      const nh = n.measured?.height ?? 80
+      const cx = n.position.x + nw / 2
+      const cy = n.position.y + nh / 2
+      return cx >= node.position.x && cx <= node.position.x + uw && cy >= node.position.y && cy <= node.position.y + uh
+    })
+    const containedStartPositions: Record<string, { x: number; y: number }> = {}
+    contained.forEach((n) => { containedStartPositions[n.id] = { ...n.position } })
+    underlayDragRef.current = {
+      underlayId: node.id,
+      startPos: { ...node.position },
+      containedIds: contained.map((n) => n.id),
+      containedStartPositions,
+    }
+  }, [nodes])
+
+  const onNodeDrag = useCallback((_event: React.MouseEvent, node: Node) => {
+    const ref = underlayDragRef.current
+    if (!ref || node.id !== ref.underlayId) return
+    const dx = node.position.x - ref.startPos.x
+    const dy = node.position.y - ref.startPos.y
+    setNodes((nds) =>
+      nds.map((n) => {
+        if (!ref.containedIds.includes(n.id)) return n
+        const start = ref.containedStartPositions[n.id]
+        return { ...n, position: { x: start.x + dx, y: start.y + dy } }
+      })
+    )
+  }, [setNodes])
+
+  const onNodeDragStop = useCallback(() => {
+    underlayDragRef.current = null
+  }, [])
+
   return (
     <div className="app-container">
       {showSetupWizard && (
@@ -714,6 +760,9 @@ function FlowCanvas() {
           onNodeDoubleClick={onNodeDoubleClick}
           onEdgeContextMenu={onEdgeContextMenu}
           onNodesDelete={onNodesDelete}
+          onNodeDragStart={onNodeDragStart}
+          onNodeDrag={onNodeDrag}
+          onNodeDragStop={onNodeDragStop}
           nodeTypes={nodeTypes}
           edgeTypes={edgeTypes}
           defaultEdgeOptions={defaultEdgeOptions}
