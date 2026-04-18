@@ -69,10 +69,20 @@ async function run() {
   console.log('🗜️  Création du ZIP...')
   const releaseDir = path.join(__dirname, 'release')
   const folderName = path.basename(appFolder)
-  execSync(
-    `ditto -c -k --sequesterRsrc --keepParent "${appFolder}" "${zipPath}"`,
-    { stdio: 'inherit' }
-  )
+  try {
+    execSync(
+      `ditto -c -k --sequesterRsrc --keepParent "${appFolder}" "${zipPath}"`,
+      { stdio: 'inherit' }
+    )
+  } catch {
+    console.log('⚠️  ditto a échoué, essai avec zip -y...')
+    execSync(
+      `cd "${releaseDir}" && zip -r -y "${zipPath}" "${folderName}"`,
+      { stdio: 'inherit' }
+    )
+  }
+
+  if (!fs.existsSync(zipPath)) throw new Error('ZIP non créé — vérifiez les permissions du dossier release/')
 
   console.log(`\n🎉 ZIP créé : release/${zipName}`)
   console.log('   L\'utilisateur dézippe et glisse "Node Organisation.app" dans Applications.')
