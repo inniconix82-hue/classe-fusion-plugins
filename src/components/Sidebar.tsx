@@ -58,10 +58,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   onToggleCollapse,
   isNetworkActive = false,
 }) => {
-  const [expandedSuper, setExpandedSuper] = useState<Record<string, boolean>>({
-    perso: true, productivite: true, projet: false, business: false,
-    creativite: false, tech: false, social: false, educ: false,
-  })
+  const [expandedSuper, setExpandedSuper] = useState<Record<string, boolean>>({})
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({})
 
   const [customCategories, setCustomCategories] = useState<PresetCategory[]>(() => loadCustomCategories())
@@ -259,7 +256,13 @@ const Sidebar: React.FC<SidebarProps> = ({
             <div key={superCat.id} className="super-category-group">
               <button
                 className="super-category-header"
-                onClick={() => setExpandedSuper((prev) => ({ ...prev, [superCat.id]: !prev[superCat.id] }))}
+                onClick={() => setExpandedSuper((prev) => {
+                  const wasOpen = !!prev[superCat.id]
+                  const reset: Record<string, boolean> = {}
+                  SUPER_CATEGORIES.forEach((sc) => { reset[sc.id] = false })
+                  if (!wasOpen) reset[superCat.id] = true
+                  return reset
+                })}
               >
                 <span className="super-cat-icon">{superCat.icon}</span>
                 <span className="super-cat-name">{superCat.name}</span>
