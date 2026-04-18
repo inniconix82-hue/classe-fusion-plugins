@@ -1,4 +1,4 @@
-import type { Node } from '@xyflow/react'
+import type { Node, Edge } from '@xyflow/react'
 
 const OLLAMA_URL = 'http://localhost:11434'
 const DEFAULT_MODEL = 'tinyllama'
@@ -19,31 +19,64 @@ export function setOllamaModel(model: string) {
 
 export type OllamaStyle = 'concis' | 'structure' | 'detaille'
 
-function buildPromptFromNodes(nodes: Node[], style: OllamaStyle = 'concis'): string {
-  if (nodes.length === 0) {
-    return 'Aucun nœud sur le canvas.'
+function nodeLabel(node: Node): string {
+  const d = node.data as { label?: string; description?: string }
+  const label = d.label || 'Sans titre'
+  const desc = d.description ? ` (${d.description})` : ''
+  return `${label}${desc}`
+}
+
+function buildBranches(nodes: Node[], edges: Edge[]): string {
+  if (nodes.length === 0) return 'Aucun nœud sur le canvas.'
+
+  const nodeMap = new Map(nodes.map((n) => [n.id, n]))
+
+  // Find root nodes (no incoming edges)
+  const hasIncoming = new Set(edges.map((e) => e.target))
+  const roots = nodes.filter((n) => !hasIncoming.has(n.id) && n.type !== 'underlay')
+
+  // Build paths recursively from a node
+  function buildPath(nodeId: string, visited = new Set<string>()): string[][] {
+    if (visited.has(nodeId)) return [[]]
+    visited.add(nodeId)
+    const node = nodeMap.get(nodeId)
+    if (!node) return [[]]
+    const label = nodeLabel(node)
+    const children = edges.filter((e) => e.source === nodeId).map((e) => e.target)
+    if (children.length === 0) return [[label]]
+    return children.flatMap((child) =>
+      buildPath(child, new Set(visited)).map((path) => [label, ...path])
+    )
   }
 
-  const sections = nodes.map((node) => {
-    const d = node.data as { label?: string; description?: string; category?: string }
-    const label = d.label || 'Sans titre'
-    const desc = d.description || ''
-    const cat = d.category || ''
-    let line = `- ${label}`
-    if (cat) line += ` [${cat}]`
-    if (desc) line += ` : ${desc}`
-    return line
-  })
+  if (roots.length === 0 || edges.length === 0) {
+    // No structure — fallback to flat list
+    return nodes
+      .filter((n) => n.type !== 'underlay')
+      .map((n) => `- ${nodeLabel(n)}`)
+      .join('\n')
+  }
+
+  const branches = roots.flatMap((root) => buildPath(root.id))
+  return branches.map((path, i) => `Branche ${i + 1} : ${path.join(' → ')}`).join('\n')
+}
+
+function buildPromptFromNodes(nodes: Node[], style: OllamaStyle = 'concis', edges: Edge[] = []): string {
+  if (nodes.length === 0) return 'Aucun nœud sur le canvas.'
+
+  const structure = buildBranches(nodes, edges)
 
   const styleInstructions = {
     concis: `Réponds en bullet points uniquement. Maximum 5-7 points courts. Sois direct et actionnable. Pas d'introduction ni de conclusion.`,
-    structure: `Réponds avec des titres et sous-points. Structure claire en sections. Pas de longs paragraphes.`,
-    detaille: `Développe en paragraphes complets. Crée des liens narratifs entre les éléments. Propose des idées pour enrichir.`,
+    structure: `Réponds avec des titres et sous-points. Structure claire en sections. Respecte les branches distinctes.`,
+    detaille: `Développe en paragraphes complets. Crée des liens narratifs en respectant chaque branche. Propose des idées pour enrichir.`,
   }
 
-  return `Tu es un assistant professionnel. À partir de ces éléments de canvas :
+  return `Tu es un assistant professionnel. Voici la structure d'un canvas avec ses connexions :
 
-${sections.join('\n')}
+${structure}
+
+Chaque branche représente un chemin distinct dans le schéma. Respecte cette structure dans ta réponse.
 
 ${styleInstructions[style]}
 
@@ -58,9 +91,10 @@ export interface OllamaResponse {
 export async function generateFromNodes(
   nodes: Node[],
   onToken?: (token: string) => void,
-  style: OllamaStyle = 'concis'
+  style: OllamaStyle = 'concis',
+  edges: Edge[] = []
 ): Promise<OllamaResponse> {
-  const prompt = buildPromptFromNodes(nodes, style)
+  const prompt = buildPromptFromNodes(nodes, style, edges)
   const model = getOllamaModel()
 
   try {

@@ -518,13 +518,13 @@ function FlowCanvas() {
 
     const result = await generateFromNodes(nodes, (token) => {
       setOllamaResult((prev) => prev + token)
-    }, style)
+    }, style, edges)
 
     if (result.error) {
       setOllamaError(result.error)
     }
     setOllamaLoading(false)
-  }, [nodes])
+  }, [nodes, edges])
 
   const onSendToEditor = useCallback((text: string) => {
     const html = text
