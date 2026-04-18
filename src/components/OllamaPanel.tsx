@@ -22,6 +22,13 @@ const STYLE_OPTIONS: { value: OllamaStyle; icon: string; label: string; desc: st
   { value: 'cours', icon: '🎓', label: 'Cours', desc: 'Pédagogique et clair' },
 ]
 
+const SUGGESTED_MODELS: { name: string; label: string; desc: string; size: string; primary?: boolean }[] = [
+  { name: 'phi3', label: 'Phi-3', desc: 'Rapide et efficace', size: '2.3 Go', primary: true },
+  { name: 'tinyllama', label: 'TinyLlama', desc: 'Ultra léger', size: '0.6 Go' },
+  { name: 'mistral', label: 'Mistral 7B', desc: 'Très polyvalent', size: '4.1 Go' },
+  { name: 'llama3.2', label: 'Llama 3.2', desc: 'Dernière génération', size: '2.0 Go' },
+]
+
 const OllamaPanel: React.FC<OllamaPanelProps> = ({
   result,
   error,
@@ -40,21 +47,18 @@ const OllamaPanel: React.FC<OllamaPanelProps> = ({
   const [question, setQuestion] = useState('')
   const [kbCount, setKbCount] = useState(getKnowledgeBase().length)
   const [activeTab, setActiveTab] = useState<'generate' | 'mindmap'>('mindmap')
-  const [downloading, setDownloading] = useState(false)
-  const [downloadProgress, setDownloadProgress] = useState(0)
-  const [downloadLabel, setDownloadLabel] = useState('')
+  const [downloadingModels, setDownloadingModels] = useState<Record<string, number>>({})
+  const [showMoreModels, setShowMoreModels] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const handleDownloadModel = async () => {
-    setDownloading(true)
-    setDownloadProgress(0)
-    setDownloadLabel('Connexion...')
+  const handleDownloadModel = async (modelName: string) => {
+    setDownloadingModels((prev) => ({ ...prev, [modelName]: 0 }))
     onDownloadStateChange?.(true)
     try {
       const response = await fetch('http://localhost:11434/api/pull', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: model, stream: true }),
+        body: JSON.stringify({ name: modelName, stream: true }),
       })
       if (!response.ok) throw new Error()
       const reader = response.body!.getReader()
@@ -66,20 +70,19 @@ const OllamaPanel: React.FC<OllamaPanelProps> = ({
         for (const line of chunk.split('\n').filter(Boolean)) {
           try {
             const json = JSON.parse(line)
-            if (json.status) setDownloadLabel(json.status)
             if (json.total && json.completed) {
-              setDownloadProgress(Math.round((json.completed / json.total) * 100))
+              const pct = Math.round((json.completed / json.total) * 100)
+              setDownloadingModels((prev) => ({ ...prev, [modelName]: pct }))
             }
           } catch { /* skip */ }
         }
       }
-      setDownloadLabel('Modèle installé !')
-      setDownloadProgress(100)
-      listModels().then(setAvailableModels)
-    } catch {
-      setDownloadLabel('Erreur de téléchargement')
-    } finally {
-      setDownloading(false)
+      const updated = await listModels()
+      setAvailableModels(updated)
+      if (updated.length === 1) handleModelChange(updated[0])
+    } catch { /* ignore */ }
+    finally {
+      setDownloadingModels((prev) => { const n = { ...prev }; delete n[modelName]; return n })
       onDownloadStateChange?.(false)
     }
   }
@@ -179,24 +182,42 @@ const OllamaPanel: React.FC<OllamaPanelProps> = ({
       </div>
 
       <div className="ollama-model-selector">
-        <label className="ollama-label">Modèle :</label>
-        {availableModels.length > 0 ? (
-          <select
-            className="ollama-select"
-            value={model}
-            onChange={(e) => handleModelChange(e.target.value)}
-          >
-            {availableModels.map((m) => (
-              <option key={m} value={m}>{m}</option>
-            ))}
-          </select>
-        ) : (
-          <input
-            className="ollama-model-input"
-            value={model}
-            onChange={(e) => handleModelChange(e.target.value)}
-            placeholder="mistral"
-          />
+        <label className="ollama-label">Modèles :</label>
+        <div className="model-cards-grid">
+          {(showMoreModels ? SUGGESTED_MODELS : SUGGESTED_MODELS.filter((m) => m.primary || availableModels.some((a) => a.startsWith(m.name)))).map((m) => {
+            const isInstalled = availableModels.some((a) => a.startsWith(m.name))
+            const isActive = model.startsWith(m.name)
+            const dlProgress = downloadingModels[m.name]
+            const isDownloading = dlProgress !== undefined
+            return (
+              <button
+                key={m.name}
+                className={`model-card ${isInstalled && isActive ? 'active' : ''} ${isInstalled && !isActive ? 'installed' : ''}`}
+                onClick={() => isInstalled ? handleModelChange(availableModels.find((a) => a.startsWith(m.name))!) : !isDownloading && handleDownloadModel(m.name)}
+                disabled={isDownloading}
+              >
+                <span className="model-card-name">{m.label}</span>
+                <span className="model-card-desc">{m.desc}</span>
+                {isDownloading ? (
+                  <div className="model-card-progress">
+                    <div className="model-progress-bar">
+                      <div className="model-progress-fill" style={{ width: `${dlProgress}%` }} />
+                    </div>
+                    <span className="model-progress-pct">{dlProgress}%</span>
+                  </div>
+                ) : isInstalled ? (
+                  <span className="model-card-badge">{isActive ? '✅ Actif' : '✔ Installé'}</span>
+                ) : (
+                  <span className="model-card-size">⬇️ {m.size}</span>
+                )}
+              </button>
+            )
+          })}
+        </div>
+        {!showMoreModels && SUGGESTED_MODELS.some((m) => !m.primary && !availableModels.some((a) => a.startsWith(m.name))) && (
+          <button className="model-more-btn" onClick={() => setShowMoreModels(true)}>
+            + Autres modèles
+          </button>
         )}
       </div>
 
@@ -238,24 +259,8 @@ const OllamaPanel: React.FC<OllamaPanelProps> = ({
           </div>
 
           {availableModels.length === 0 && ollamaOnline === true && (
-            <div className="ollama-model-download" style={{ marginTop: 8 }}>
-              <div className="ollama-error" style={{ marginBottom: 8 }}>
-                <span className="ollama-error-icon">⚠️</span>
-                <span className="ollama-error-text">Aucun modèle installé.</span>
-              </div>
-              {downloading ? (
-                <>
-                  <div className="setup-progress-label" style={{ fontSize: 12, marginBottom: 4 }}>{downloadLabel}</div>
-                  <div className="setup-progress-bar">
-                    <div className="setup-progress-fill" style={{ width: `${downloadProgress}%` }} />
-                  </div>
-                  <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 4 }}>{downloadProgress}%</div>
-                </>
-              ) : (
-                <button className="ollama-generate-btn" onClick={handleDownloadModel} style={{ fontSize: 13 }}>
-                  ⬇ Télécharger {model}
-                </button>
-              )}
+            <div className="ollama-no-model-hint">
+              ↑ Installez un modèle ci-dessus pour commencer
             </div>
           )}
 
@@ -341,7 +346,11 @@ const OllamaPanel: React.FC<OllamaPanelProps> = ({
         </div>
       )}
 
-      {activeTab === 'generate' && (
+      {activeTab === 'generate' && availableModels.length === 0 && (
+        <div className="ollama-no-model-hint">↑ Installez un modèle pour générer du texte</div>
+      )}
+
+      {activeTab === 'generate' && availableModels.length > 0 && (
         <>
           <div className="ollama-style-selector">
             <label className="ollama-label">Mode de génération :</label>

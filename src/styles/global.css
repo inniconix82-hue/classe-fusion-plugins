@@ -1230,11 +1230,124 @@ body {
 }
 
 .ollama-model-selector {
-  padding: 12px 16px;
+  padding: 10px 16px 8px;
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 8px;
   border-bottom: 1px solid var(--border-color);
+}
+
+.model-cards-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.model-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 8px 10px;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: left;
+  min-height: 64px;
+}
+
+.model-card:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: var(--bg-secondary);
+}
+
+.model-card.installed {
+  border-color: #22c55e44;
+}
+
+.model-card.active {
+  border-color: var(--accent);
+  background: rgba(99, 102, 241, 0.12);
+}
+
+.model-card-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.model-card-desc {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.model-card-size {
+  font-size: 10px;
+  color: #60a5fa;
+  margin-top: 2px;
+}
+
+.model-card-badge {
+  font-size: 10px;
+  color: #22c55e;
+  margin-top: 2px;
+  font-weight: 600;
+}
+
+.model-card-progress {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  margin-top: 4px;
+}
+
+.model-progress-bar {
+  flex: 1;
+  height: 4px;
+  background: var(--bg-primary);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.model-progress-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 2px;
+  transition: width 0.3s;
+}
+
+.model-progress-pct {
+  font-size: 10px;
+  color: var(--text-muted);
+  min-width: 28px;
+}
+
+.model-more-btn {
+  background: none;
+  border: 1px dashed var(--border-color);
+  border-radius: 6px;
+  color: var(--text-muted);
+  font-size: 11px;
+  padding: 4px 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+  width: 100%;
+}
+
+.model-more-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.ollama-no-model-hint {
+  padding: 8px 16px;
+  font-size: 11px;
+  color: var(--text-muted);
+  font-style: italic;
+  text-align: center;
 }
 
 .ollama-label {

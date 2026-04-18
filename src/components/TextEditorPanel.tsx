@@ -1,6 +1,5 @@
 import React, { useRef, useCallback, useEffect } from 'react'
 import jsPDF from 'jspdf'
-import html2canvas from 'html2canvas'
 import { marked } from 'marked'
 
 interface TextEditorPanelProps {
@@ -40,110 +39,89 @@ const TextEditorPanel: React.FC<TextEditorPanelProps> = ({
     e.stopPropagation()
   }
 
-  const exportToPDF = useCallback(async () => {
+  const exportToPDF = useCallback(() => {
     const el = editorRef.current
-    if (!el) return
+    if (!el || !el.textContent?.trim()) return
 
-    // Inject a print-friendly stylesheet temporarily
-    const printStyle = document.createElement('style')
-    printStyle.textContent = `
-      .text-editor-content.pdf-export {
-        background: #ffffff !important;
-        color: #000000 !important;
-        padding: 40px 50px !important;
-        font-family: Georgia, 'Times New Roman', serif !important;
-        font-size: 14px !important;
-        line-height: 1.8 !important;
-      }
-      .text-editor-content.pdf-export * {
-        color: #000000 !important;
-      }
-      .text-editor-content.pdf-export h1 {
-        font-size: 28px !important;
-        font-weight: 700 !important;
-        margin: 20px 0 12px !important;
-        padding-bottom: 6px !important;
-        border-bottom: 2px solid #333 !important;
-      }
-      .text-editor-content.pdf-export h2 {
-        font-size: 22px !important;
-        font-weight: 600 !important;
-        margin: 16px 0 10px !important;
-        padding-bottom: 4px !important;
-        border-bottom: 1px solid #999 !important;
-      }
-      .text-editor-content.pdf-export h3 {
-        font-size: 17px !important;
-        font-weight: 600 !important;
-        margin: 12px 0 8px !important;
-      }
-      .text-editor-content.pdf-export p {
-        margin: 6px 0 !important;
-      }
-      .text-editor-content.pdf-export ul,
-      .text-editor-content.pdf-export ol {
-        padding-left: 24px !important;
-        margin: 8px 0 !important;
-      }
-      .text-editor-content.pdf-export li {
-        margin: 4px 0 !important;
-      }
-      .text-editor-content.pdf-export blockquote {
-        border-left: 3px solid #666 !important;
-        padding-left: 16px !important;
-        margin: 10px 0 !important;
-        font-style: italic !important;
-        color: #444 !important;
-      }
-    `
-    document.head.appendChild(printStyle)
-    el.classList.add('pdf-export')
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+    const margin = 20
+    const pageW = doc.internal.pageSize.getWidth()
+    const pageH = doc.internal.pageSize.getHeight()
+    const maxW = pageW - margin * 2
+    let y = margin + 5
 
-    const canvas = await html2canvas(el, {
-      backgroundColor: '#ffffff',
-      scale: 2,
-      useCORS: true,
-    })
+    const newPage = () => { doc.addPage(); y = margin + 5 }
+    const roomCheck = (need: number) => { if (y + need > pageH - margin) newPage() }
 
-    // Restore
-    el.classList.remove('pdf-export')
-    document.head.removeChild(printStyle)
+    function write(text: string, size: number, style: 'normal' | 'bold' | 'italic', indent = 0) {
+      const clean = text.replace(/\s+/g, ' ').trim()
+      if (!clean) return
+      doc.setFontSize(size)
+      doc.setFont('helvetica', style)
+      const lh = size * 0.38
+      const lines = doc.splitTextToSize(clean, maxW - indent) as string[]
+      lines.forEach((line) => { roomCheck(lh + 1); doc.text(line, margin + indent, y); y += lh + 1 })
+    }
 
-    const imgData = canvas.toDataURL('image/png')
-    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
-    const pageWidth = pdf.internal.pageSize.getWidth()
-    const pageHeight = pdf.internal.pageSize.getHeight()
-    const margin = 15
+    function processEl(node: Element) {
+      const tag = node.tagName?.toLowerCase()
+      const txt = (node.textContent || '').replace(/\s+/g, ' ').trim()
 
-    const imgWidth = pageWidth - margin * 2
-    const imgHeight = (canvas.height * imgWidth) / canvas.width
-
-    let y = margin
-    if (imgHeight <= pageHeight - margin * 2) {
-      pdf.addImage(imgData, 'PNG', margin, y, imgWidth, imgHeight)
-    } else {
-      // Multi-page
-      const ratio = canvas.width / imgWidth
-      let srcY = 0
-      const pageImgHeight = (pageHeight - margin * 2) * ratio
-
-      while (srcY < canvas.height) {
-        const pageCanvas = document.createElement('canvas')
-        pageCanvas.width = canvas.width
-        pageCanvas.height = Math.min(pageImgHeight, canvas.height - srcY)
-        const ctx = pageCanvas.getContext('2d')
-        if (ctx) {
-          ctx.drawImage(canvas, 0, srcY, canvas.width, pageCanvas.height, 0, 0, canvas.width, pageCanvas.height)
+      switch (tag) {
+        case 'h1':
+          y += 4; roomCheck(10)
+          write(txt, 20, 'bold')
+          doc.setDrawColor(80, 80, 200); doc.setLineWidth(0.4)
+          doc.line(margin, y + 1, pageW - margin, y + 1)
+          doc.setDrawColor(0, 0, 0); y += 5
+          break
+        case 'h2':
+          y += 3; roomCheck(8); write(txt, 15, 'bold'); y += 2
+          break
+        case 'h3':
+          y += 2; roomCheck(6); write(txt, 12, 'bold'); y += 1
+          break
+        case 'p':
+          if (txt) { roomCheck(5); write(txt, 11, 'normal'); y += 2 }
+          break
+        case 'ul':
+        case 'ol': {
+          let idx = 0
+          Array.from(node.children).forEach((li) => {
+            if (li.tagName?.toLowerCase() !== 'li') return
+            const liTxt = (li.textContent || '').replace(/\s+/g, ' ').trim()
+            const bullet = tag === 'ul' ? '•' : `${++idx}.`
+            roomCheck(5)
+            doc.setFontSize(11); doc.setFont('helvetica', 'normal')
+            doc.text(bullet, margin + 3, y)
+            const lines = doc.splitTextToSize(liTxt, maxW - 10) as string[]
+            lines.forEach((line, i) => { if (i > 0) roomCheck(5); doc.text(line, margin + 9, y); y += 5 })
+            y += 1
+          })
+          y += 2
+          break
         }
-        const pageData = pageCanvas.toDataURL('image/png')
-        const ph = (pageCanvas.height / ratio)
-        pdf.addImage(pageData, 'PNG', margin, margin, imgWidth, ph)
-        srcY += pageImgHeight
-        if (srcY < canvas.height) pdf.addPage()
+        case 'blockquote':
+          roomCheck(6); write(txt, 11, 'italic', 6); y += 2
+          break
+        case 'br':
+          y += 3
+          break
+        default:
+          if (node.children.length > 0) {
+            Array.from(node.children).forEach((child) => processEl(child))
+          } else if (txt) {
+            write(txt, 11, 'normal'); y += 2
+          }
       }
     }
 
-    pdf.save('document.pdf')
+    Array.from(el.children).forEach((child) => processEl(child))
+    if (y === margin + 5 && el.textContent?.trim()) {
+      write(el.textContent, 11, 'normal')
+    }
+
+    doc.save('document.pdf')
   }, [])
 
   const insertFromNodes = useCallback(() => {
