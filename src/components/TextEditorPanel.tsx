@@ -1,4 +1,4 @@
-import React, { useRef, useCallback, useEffect } from 'react'
+import React, { useRef, useCallback, useEffect, useState } from 'react'
 import jsPDF from 'jspdf'
 import { marked } from 'marked'
 
@@ -9,6 +9,14 @@ interface TextEditorPanelProps {
 }
 
 const FONT_SIZES = ['10', '12', '14', '16', '18', '24', '32', '48']
+const FONTS = [
+  { label: 'Défaut', value: '' },
+  { label: 'Georgia', value: 'Georgia, serif' },
+  { label: 'Times New Roman', value: "'Times New Roman', serif" },
+  { label: 'Arial', value: 'Arial, sans-serif' },
+  { label: 'Segoe UI', value: "'Segoe UI', sans-serif" },
+  { label: 'Courier New', value: "'Courier New', monospace" },
+]
 
 const TextEditorPanel: React.FC<TextEditorPanelProps> = ({
   onClose,
@@ -16,11 +24,13 @@ const TextEditorPanel: React.FC<TextEditorPanelProps> = ({
   onContentChange,
 }) => {
   const editorRef = useRef<HTMLDivElement>(null)
+  const [bgColor, setBgColor] = useState('#1a2744')
 
   useEffect(() => {
     if (editorRef.current && initialContent) {
       const html = String(marked.parse(initialContent, { async: false, breaks: true, gfm: true }))
       editorRef.current.innerHTML = html
+      editorRef.current.classList.add('ollama-formatted')
     }
   }, [initialContent])
 
@@ -213,6 +223,30 @@ const TextEditorPanel: React.FC<TextEditorPanelProps> = ({
           defaultValue="#f1f5f9"
         />
 
+        <input
+          type="color"
+          className="editor-color-input"
+          value={bgColor}
+          onChange={(e) => {
+            setBgColor(e.target.value)
+            if (editorRef.current) editorRef.current.style.backgroundColor = e.target.value
+          }}
+          title="Couleur de fond"
+        />
+
+        <div className="editor-toolbar-separator" />
+
+        <select
+          className="editor-select"
+          onChange={(e) => { if (editorRef.current) editorRef.current.style.fontFamily = e.target.value }}
+          defaultValue=""
+          title="Police"
+        >
+          {FONTS.map((f) => (
+            <option key={f.value} value={f.value}>{f.label}</option>
+          ))}
+        </select>
+
         <div className="editor-toolbar-separator" />
 
         <button className="editor-btn" onClick={() => exec('removeFormat')} title="Supprimer le formatage">✕</button>
@@ -225,6 +259,7 @@ const TextEditorPanel: React.FC<TextEditorPanelProps> = ({
         suppressContentEditableWarning
         onInput={handleInput}
         onKeyDown={handleKeyDown}
+        style={{ backgroundColor: bgColor }}
         data-placeholder="Commencez à écrire, ou générez du contenu avec Ollama..."
       />
 
