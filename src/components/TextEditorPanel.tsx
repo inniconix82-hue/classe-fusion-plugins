@@ -3,8 +3,6 @@ import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
 import { marked } from 'marked'
 
-marked.setOptions({ breaks: true, gfm: true } as Parameters<typeof marked.setOptions>[0])
-
 interface TextEditorPanelProps {
   onClose: () => void
   initialContent?: string
@@ -22,7 +20,7 @@ const TextEditorPanel: React.FC<TextEditorPanelProps> = ({
 
   useEffect(() => {
     if (editorRef.current && initialContent) {
-      const html = String(marked.parse(initialContent))
+      const html = String(marked.parse(initialContent, { async: false, breaks: true, gfm: true }))
       editorRef.current.innerHTML = html
     }
   }, [initialContent])
