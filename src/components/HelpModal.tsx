@@ -34,6 +34,7 @@ const SECTIONS = [
       'Onglet "Générer texte" → génère du contenu depuis les nodes du canvas',
       'Importer un PDF → alimenter la base de connaissances d\'Ollama',
       'Si Ollama est hors ligne → cliquer sur ▶ Lancer',
+      '🔒 Une connexion internet est uniquement nécessaire au téléchargement des modèles. Ensuite tout fonctionne en local, vos données ne quittent jamais votre machine.',
     ],
   },
   {

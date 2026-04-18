@@ -67,9 +67,22 @@ function buildPromptFromNodes(nodes: Node[], style: OllamaStyle = 'concis', edge
   const structure = buildBranches(nodes, edges)
 
   const styleInstructions = {
-    concis: `Réponds en bullet points uniquement. Maximum 5-7 points courts. Sois direct et actionnable. Pas d'introduction ni de conclusion.`,
-    structure: `Réponds avec des titres et sous-points. Structure claire en sections. Respecte les branches distinctes.`,
-    detaille: `Développe en paragraphes complets. Crée des liens narratifs en respectant chaque branche. Propose des idées pour enrichir.`,
+    concis: `Utilise ce format Markdown STRICT :
+# Titre principal (1 seul)
+- **terme clé** : explication courte (max 5-7 points)
+Pas d'introduction. Pas de conclusion. Seulement des bullets avec termes en gras.`,
+    structure: `Utilise ce format Markdown STRICT :
+# Titre principal
+## Section pour chaque branche
+- **point clé** : détail court
+Respecte une section H2 par branche distincte.`,
+    detaille: `Utilise ce format Markdown STRICT :
+# Titre principal
+## Section pour chaque branche
+Paragraphes développés. **Termes importants** en gras.
+### Sous-sections si nécessaire
+- listes pour les points clés
+Crée des liens narratifs entre les branches.`,
   }
 
   return `Tu es un assistant professionnel. Voici la structure d'un canvas avec ses connexions :
@@ -80,7 +93,7 @@ Chaque branche représente un chemin distinct dans le schéma. Respecte cette st
 
 ${styleInstructions[style]}
 
-Réponds en français.`
+IMPORTANT : Réponds UNIQUEMENT en Markdown valide. Réponds en français.`
 }
 
 export interface OllamaResponse {
