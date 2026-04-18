@@ -91,6 +91,8 @@ async function run() {
   console.log('🤖 Téléchargement de OllamaSetup.exe...')
   try {
     await downloadFile('https://ollama.com/download/OllamaSetup.exe', ollamaSetupPath)
+    // Wait for file handle to be fully released before zipping
+    await new Promise((r) => setTimeout(r, 2000))
     console.log('✅ OllamaSetup.exe inclus dans le package')
   } catch (err) {
     console.log('⚠️  Impossible de télécharger OllamaSetup.exe:', err.message)
