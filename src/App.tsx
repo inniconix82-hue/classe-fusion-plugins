@@ -37,6 +37,7 @@ import { useHistory } from './data/useHistory'
 import { exportToPNG, exportToPDF } from './data/exportUtils'
 import { generateFromNodes, askQuestion, hasInstalledModels, type OllamaStyle } from './data/ollamaService'
 import type { GenerateOptions } from './components/OllamaPanel'
+import TemplatesModal from './components/TemplatesModal'
 import SetupWizard from './components/SetupWizard'
 import CustomCategoriesModal from './components/CustomCategoriesModal'
 import { loadCustomCategories, saveCustomCategories } from './data/customCategories'
@@ -100,6 +101,8 @@ function FlowCanvas() {
   const [ollamaLoading, setOllamaLoading] = useState(false)
   const [showEditor, setShowEditor] = useState(false)
   const [editorContent, setEditorContent] = useState('')
+  const [rawMarkdown, setRawMarkdown] = useState('')
+  const [showTemplates, setShowTemplates] = useState(false)
   const [questionLoading, setQuestionLoading] = useState(false)
   const [showMinimap, setShowMinimap] = useState(true)
   const [showHelp, setShowHelp] = useState(false)
@@ -541,6 +544,7 @@ function FlowCanvas() {
   }, [nodes, edges])
 
   const onSendToEditor = useCallback((text: string) => {
+    setRawMarkdown(text)
     const html = text
       .split('\n')
       .filter((line) => line.trim())
@@ -597,6 +601,13 @@ function FlowCanvas() {
     }
   }, [nodes, edges, history, setNodes, setEdges])
 
+  const onApplyTemplate = useCallback((templateNodes: Node[], templateEdges: Edge[]) => {
+    history.push(nodes, edges)
+    setNodes(templateNodes)
+    setEdges(templateEdges)
+    setTimeout(() => fitView({ padding: 0.2 }), 100)
+  }, [nodes, edges, history, setNodes, setEdges, fitView])
+
   const onDuplicate = useCallback(() => {
     const selected = nodes.filter((n) => n.selected)
     if (selected.length === 0) return
@@ -630,6 +641,14 @@ function FlowCanvas() {
       if (showShortcuts) return
       const target = e.target as HTMLElement
       if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return
+
+      // Fixed shortcut: Ctrl/Cmd+M = toggle minimap
+      if ((e.ctrlKey || e.metaKey) && e.key === 'm') {
+        e.preventDefault()
+        e.stopImmediatePropagation()
+        setShowMinimap((v) => !v)
+        return
+      }
 
       for (const shortcut of shortcuts) {
         if (matchesShortcut(e, shortcut.keys)) {
@@ -771,6 +790,7 @@ function FlowCanvas() {
         }}
         onShowHelp={() => setShowHelp(true)}
         onManageCategories={() => setShowCustomCategories(true)}
+        onOpenTemplates={() => setShowTemplates(true)}
         collapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed((v) => !v)}
         isNetworkActive={isNetworkActive}
@@ -886,7 +906,15 @@ function FlowCanvas() {
         <TextEditorPanel
           onClose={() => setShowEditor(false)}
           initialContent={editorContent}
+          rawMarkdown={rawMarkdown}
           onContentChange={setEditorContent}
+        />
+      )}
+
+      {showTemplates && (
+        <TemplatesModal
+          onClose={() => setShowTemplates(false)}
+          onApply={onApplyTemplate}
         />
       )}
 

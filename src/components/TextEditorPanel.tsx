@@ -5,6 +5,7 @@ import { marked } from 'marked'
 interface TextEditorPanelProps {
   onClose: () => void
   initialContent?: string
+  rawMarkdown?: string
   onContentChange?: (html: string) => void
 }
 
@@ -21,6 +22,7 @@ const FONTS = [
 const TextEditorPanel: React.FC<TextEditorPanelProps> = ({
   onClose,
   initialContent = '',
+  rawMarkdown = '',
   onContentChange,
 }) => {
   const editorRef = useRef<HTMLDivElement>(null)
@@ -132,6 +134,47 @@ const TextEditorPanel: React.FC<TextEditorPanelProps> = ({
     }
 
     doc.save('document.pdf')
+  }, [])
+
+  const exportToTxt = useCallback(() => {
+    const el = editorRef.current
+    if (!el || !el.textContent?.trim()) return
+    const text = el.innerText || el.textContent || ''
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'document.txt'
+    a.click()
+    URL.revokeObjectURL(url)
+  }, [])
+
+  const exportToMd = useCallback(() => {
+    const md = rawMarkdown.trim()
+    if (!md) return
+    const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'document.md'
+    a.click()
+    URL.revokeObjectURL(url)
+  }, [rawMarkdown])
+
+  const exportToEmail = useCallback(() => {
+    const el = editorRef.current
+    if (!el) return
+    const text = (el.innerText || el.textContent || '').trim()
+    if (!text) return
+    if (text.length > 2000) {
+      navigator.clipboard.writeText(text).then(() => {
+        alert('Texte trop long pour l\'email — copié dans le presse-papier')
+      })
+      return
+    }
+    const subject = encodeURIComponent('Document')
+    const body = encodeURIComponent(text)
+    window.open(`mailto:?subject=${subject}&body=${body}`)
   }, [])
 
   const insertFromNodes = useCallback(() => {
@@ -266,6 +309,17 @@ const TextEditorPanel: React.FC<TextEditorPanelProps> = ({
       <div className="text-editor-footer">
         <button className="editor-clear-btn" onClick={() => { if (editorRef.current) editorRef.current.innerHTML = '' }}>
           🗑 Effacer
+        </button>
+        <button className="editor-export-btn editor-txt-btn" onClick={exportToTxt} title="Exporter en texte brut">
+          ⬇ .txt
+        </button>
+        {rawMarkdown && (
+          <button className="editor-export-btn editor-md-btn" onClick={exportToMd} title="Exporter le Markdown brut">
+            ⬇ .md
+          </button>
+        )}
+        <button className="editor-export-btn editor-email-btn" onClick={exportToEmail} title="Envoyer par email">
+          ✉ Email
         </button>
         <button className="editor-pdf-btn" onClick={exportToPDF}>
           📄 Exporter PDF

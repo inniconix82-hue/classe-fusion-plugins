@@ -19,6 +19,7 @@ interface SidebarProps {
   onAddUnderlay: () => void
   onShowHelp: () => void
   onManageCategories: () => void
+  onOpenTemplates: () => void
   collapsed?: boolean
   onToggleCollapse?: () => void
   isNetworkActive?: boolean
@@ -41,6 +42,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   onAddUnderlay,
   onShowHelp,
   onManageCategories,
+  onOpenTemplates,
   collapsed = false,
   onToggleCollapse,
   isNetworkActive = false,
@@ -185,6 +187,12 @@ const Sidebar: React.FC<SidebarProps> = ({
       <div className="sidebar-layout-controls">
         <button className="custom-cats-sidebar-btn" onClick={() => { setCustomCategories(loadCustomCategories()); onManageCategories() }} style={{ flex: 'none', width: '100%' }}>
           🗂️ Mes catégories
+        </button>
+      </div>
+
+      <div className="sidebar-layout-controls">
+        <button className="templates-sidebar-btn" onClick={onOpenTemplates} style={{ flex: 'none', width: '100%' }}>
+          🗂️ Templates
         </button>
       </div>
 
