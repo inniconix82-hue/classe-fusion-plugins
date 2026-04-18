@@ -1857,8 +1857,8 @@ body {
 
 .ollama-style-cards {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 5px;
   margin-top: 4px;
 }
 
@@ -1871,7 +1871,7 @@ body {
   border: 1px solid var(--border-color);
   border-radius: 8px;
   color: var(--text-secondary);
-  padding: 8px 6px;
+  padding: 6px 4px;
   cursor: pointer;
   transition: all 0.15s;
   text-align: center;
@@ -1890,20 +1890,18 @@ body {
 }
 
 .style-card-icon {
-  font-size: 18px;
+  font-size: 15px;
   line-height: 1;
 }
 
 .style-card-label {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
   color: inherit;
 }
 
 .style-card-desc {
-  font-size: 9px;
-  color: var(--text-muted);
-  line-height: 1.2;
+  display: none;
 }
 
 /* Instructions + filtres rapides */
