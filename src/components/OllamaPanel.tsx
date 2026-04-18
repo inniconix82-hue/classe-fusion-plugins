@@ -194,6 +194,7 @@ const OllamaPanel: React.FC<OllamaPanelProps> = ({
         <button className="ollama-close-btn" onClick={onClose}>×</button>
       </div>
 
+      <div className="ollama-panel-body">
       <div className="ollama-model-selector">
         <label className="ollama-label">Modèles :</label>
         <div className="model-cards-grid">
@@ -458,6 +459,7 @@ const OllamaPanel: React.FC<OllamaPanelProps> = ({
           </div>
         </>
       )}
+      </div>
     </div>
   )
 }

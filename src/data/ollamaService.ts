@@ -29,32 +29,32 @@ function nodeLabel(node: Node): string {
 function buildBranches(nodes: Node[], edges: Edge[]): string {
   if (nodes.length === 0) return 'Aucun nœud sur le canvas.'
 
-  const nodeMap = new Map(nodes.map((n) => [n.id, n]))
+  // Exclude structural nodes (router = junction point, underlay = background zone)
+  const contentNodes = nodes.filter((n) => n.type !== 'underlay' && n.type !== 'router')
+  if (contentNodes.length === 0) return 'Aucun nœud de contenu sur le canvas.'
 
-  // Find root nodes (no incoming edges)
-  const hasIncoming = new Set(edges.map((e) => e.target))
-  const roots = nodes.filter((n) => !hasIncoming.has(n.id) && n.type !== 'underlay')
+  const contentIds = new Set(contentNodes.map((n) => n.id))
+  const contentEdges = edges.filter((e) => contentIds.has(e.source) && contentIds.has(e.target))
+  const nodeMap = new Map(contentNodes.map((n) => [n.id, n]))
 
-  // Build paths recursively from a node
+  const hasIncoming = new Set(contentEdges.map((e) => e.target))
+  const roots = contentNodes.filter((n) => !hasIncoming.has(n.id))
+
   function buildPath(nodeId: string, visited = new Set<string>()): string[][] {
     if (visited.has(nodeId)) return [[]]
     visited.add(nodeId)
     const node = nodeMap.get(nodeId)
     if (!node) return [[]]
     const label = nodeLabel(node)
-    const children = edges.filter((e) => e.source === nodeId).map((e) => e.target)
+    const children = contentEdges.filter((e) => e.source === nodeId).map((e) => e.target)
     if (children.length === 0) return [[label]]
     return children.flatMap((child) =>
       buildPath(child, new Set(visited)).map((path) => [label, ...path])
     )
   }
 
-  if (roots.length === 0 || edges.length === 0) {
-    // No structure — fallback to flat list
-    return nodes
-      .filter((n) => n.type !== 'underlay')
-      .map((n) => `- ${nodeLabel(n)}`)
-      .join('\n')
+  if (roots.length === 0 || contentEdges.length === 0) {
+    return contentNodes.map((n) => `- ${nodeLabel(n)}`).join('\n')
   }
 
   const branches = roots.flatMap((root) => buildPath(root.id))
@@ -102,11 +102,15 @@ Explication claire. **Termes clés** en gras.
     : ''
 
   return `Tu es un assistant professionnel.${instructionBlock}
-Voici la structure d'un canvas avec ses connexions :
+Voici les étiquettes (labels) d'une carte mentale et leurs connexions :
 
 ${structure}
 
-Chaque branche représente un chemin distinct dans le schéma. Respecte cette structure dans ta réponse.
+RÈGLES IMPORTANTES :
+- Ces labels sont des concepts, noms ou idées — PAS des termes techniques à définir
+- Ne décris JAMAIS un label comme s'il était un objet informatique ou un composant logiciel
+- Traite chaque label comme un sujet ou un thème à développer selon son contexte
+- Chaque branche représente un chemin de pensée distinct dans la carte
 
 ${styleInstructions[style]}
 

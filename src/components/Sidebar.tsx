@@ -2,6 +2,17 @@ import React, { useState } from 'react'
 import { presetCategories, type PresetNode, type PresetCategory } from '../data/presets'
 import { loadCustomCategories } from '../data/customCategories'
 
+const SUPER_CATEGORIES: { id: string; name: string; icon: string; categoryIds: string[] }[] = [
+  { id: 'perso', name: 'Personnes & Équipe', icon: '👤', categoryIds: ['personnes'] },
+  { id: 'productivite', name: 'Productivité', icon: '⚡', categoryIds: ['outils', 'productivite', 'journee'] },
+  { id: 'projet', name: 'Gestion de Projet', icon: '🚀', categoryIds: ['gestion-projet'] },
+  { id: 'business', name: 'Business', icon: '💼', categoryIds: ['entreprise', 'finance', 'marketing', 'rh'] },
+  { id: 'creativite', name: 'Créativité & Médias', icon: '🎨', categoryIds: ['creativite', 'scenario', 'audiovisuel', 'contenu'] },
+  { id: 'tech', name: 'Tech & IA', icon: '🤖', categoryIds: ['ia', 'dev'] },
+  { id: 'social', name: 'Action Sociale', icon: '🤝', categoryIds: ['action-sociale'] },
+  { id: 'educ', name: 'Éducation & Événements', icon: '🎓', categoryIds: ['education', 'evenementiel'] },
+]
+
 interface SidebarProps {
   onSave: () => void
   onLoad: () => void
@@ -47,25 +58,11 @@ const Sidebar: React.FC<SidebarProps> = ({
   onToggleCollapse,
   isNetworkActive = false,
 }) => {
-  const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({
-    personnes: true,
-    outils: true,
-    productivite: true,
-    journee: false,
-    'gestion-projet': false,
-    entreprise: false,
-    finance: false,
-    marketing: false,
-    rh: false,
-    creativite: false,
-    scenario: false,
-    audiovisuel: false,
-    contenu: false,
-    ia: false,
-    dev: false,
-    education: false,
-    evenementiel: false,
+  const [expandedSuper, setExpandedSuper] = useState<Record<string, boolean>>({
+    perso: true, productivite: true, projet: false, business: false,
+    creativite: false, tech: false, social: false, educ: false,
   })
+  const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({})
 
   const [customCategories, setCustomCategories] = useState<PresetCategory[]>(() => loadCustomCategories())
 
@@ -211,55 +208,89 @@ const Sidebar: React.FC<SidebarProps> = ({
       <div className="sidebar-section-title">Glisser un node sur le canvas</div>
 
       <div className="sidebar-categories">
-        {[...customCategories, ...presetCategories].map((category) => {
+        {/* Custom categories first (flat, always visible) */}
+        {customCategories.map((category) => {
           const filteredNodes = searchQuery
-            ? category.nodes.filter(
-                (n) =>
-                  n.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                  n.description.toLowerCase().includes(searchQuery.toLowerCase())
-              )
+            ? category.nodes.filter((n) => n.label.toLowerCase().includes(searchQuery.toLowerCase()) || n.description.toLowerCase().includes(searchQuery.toLowerCase()))
             : category.nodes
-
           if (searchQuery && filteredNodes.length === 0) return null
+          const isExpanded = searchQuery ? true : !!expandedCategories[category.id]
+          return (
+            <div key={category.id} className="category-group">
+              <button className="category-header" onClick={() => toggleCategory(category.id)} style={{ borderLeftColor: category.color }}>
+                <span className="category-icon">{category.icon}</span>
+                <span className="category-name">{category.name}</span>
+                <span className="category-count">{filteredNodes.length}</span>
+                <span className={`category-chevron ${isExpanded ? 'expanded' : ''}`}>›</span>
+              </button>
+              {isExpanded && (
+                <div className="category-nodes">
+                  {filteredNodes.map((preset, i) => (
+                    <div key={`${preset.label}-${i}`} className="preset-node" draggable onDragStart={(e) => onDragStart(e, preset)} style={{ borderLeftColor: preset.color }}>
+                      <div className="preset-node-label">{preset.label}</div>
+                      <div className="preset-node-desc">{preset.description}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )
+        })}
 
-          const isExpanded = searchQuery ? true : expandedCategories[category.id]
+        {/* Preset categories grouped by super-category */}
+        {SUPER_CATEGORIES.map((superCat) => {
+          const cats = presetCategories.filter((c) => superCat.categoryIds.includes(c.id))
+          if (cats.length === 0) return null
+
+          // Filter for search
+          const catsWithNodes = cats.map((cat) => ({
+            ...cat,
+            filteredNodes: searchQuery
+              ? cat.nodes.filter((n) => n.label.toLowerCase().includes(searchQuery.toLowerCase()) || n.description.toLowerCase().includes(searchQuery.toLowerCase()))
+              : cat.nodes,
+          })).filter((c) => !searchQuery || c.filteredNodes.length > 0)
+
+          if (searchQuery && catsWithNodes.length === 0) return null
+
+          const isSuperExpanded = searchQuery ? true : !!expandedSuper[superCat.id]
+          const totalNodes = catsWithNodes.reduce((sum, c) => sum + c.filteredNodes.length, 0)
 
           return (
-          <div key={category.id} className="category-group">
-            <button
-              className="category-header"
-              onClick={() => toggleCategory(category.id)}
-              style={{ borderLeftColor: category.color }}
-            >
-              <span className="category-icon">{category.icon}</span>
-              <span className="category-name">{category.name}</span>
-              <span className="category-count">{filteredNodes.length}</span>
-              <span
-                className={`category-chevron ${
-                  isExpanded ? 'expanded' : ''
-                }`}
+            <div key={superCat.id} className="super-category-group">
+              <button
+                className="super-category-header"
+                onClick={() => setExpandedSuper((prev) => ({ ...prev, [superCat.id]: !prev[superCat.id] }))}
               >
-                ›
-              </span>
-            </button>
+                <span className="super-cat-icon">{superCat.icon}</span>
+                <span className="super-cat-name">{superCat.name}</span>
+                <span className="category-count">{totalNodes}</span>
+                <span className={`category-chevron ${isSuperExpanded ? 'expanded' : ''}`}>›</span>
+              </button>
 
-            {isExpanded && (
-              <div className="category-nodes">
-                {filteredNodes.map((preset, index) => (
-                  <div
-                    key={`${preset.label}-${index}`}
-                    className="preset-node"
-                    draggable
-                    onDragStart={(e) => onDragStart(e, preset)}
-                    style={{ borderLeftColor: preset.color }}
-                  >
-                    <div className="preset-node-label">{preset.label}</div>
-                    <div className="preset-node-desc">{preset.description}</div>
+              {isSuperExpanded && catsWithNodes.map((cat) => {
+                const isExpanded = searchQuery ? true : !!expandedCategories[cat.id]
+                return (
+                  <div key={cat.id} className="category-group category-group-nested">
+                    <button className="category-header" onClick={() => toggleCategory(cat.id)} style={{ borderLeftColor: cat.color }}>
+                      <span className="category-icon">{cat.icon}</span>
+                      <span className="category-name">{cat.name}</span>
+                      <span className="category-count">{cat.filteredNodes.length}</span>
+                      <span className={`category-chevron ${isExpanded ? 'expanded' : ''}`}>›</span>
+                    </button>
+                    {isExpanded && (
+                      <div className="category-nodes">
+                        {cat.filteredNodes.map((preset, i) => (
+                          <div key={`${preset.label}-${i}`} className="preset-node" draggable onDragStart={(e) => onDragStart(e, preset)} style={{ borderLeftColor: preset.color }}>
+                            <div className="preset-node-label">{preset.label}</div>
+                            <div className="preset-node-desc">{preset.description}</div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
+                )
+              })}
+            </div>
           )
         })}
       </div>
