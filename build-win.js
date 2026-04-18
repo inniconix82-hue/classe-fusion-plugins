@@ -86,20 +86,26 @@ async function run() {
   const appFolder = appPaths[0]
   console.log('✅ App packagée dans:', appFolder)
 
-  // 6. Download OllamaSetup.exe
-  const ollamaSetupPath = path.join(appFolder, 'OllamaSetup.exe')
-  console.log('🤖 Téléchargement de OllamaSetup.exe...')
-  try {
-    await downloadFile('https://ollama.com/download/OllamaSetup.exe', ollamaSetupPath)
-    // Wait for file handle to be fully released before zipping
-    await new Promise((r) => setTimeout(r, 2000))
-    console.log('✅ OllamaSetup.exe inclus dans le package')
-  } catch (err) {
-    console.log('⚠️  Impossible de télécharger OllamaSetup.exe:', err.message)
-    console.log('   Vous pouvez le télécharger manuellement depuis https://ollama.com/download')
+  // 6. Download OllamaSetup.exe (next to the ZIP, not inside the app)
+  const ollamaSetupPath = path.join(__dirname, 'release', 'OllamaSetup.exe')
+  const ollamaInApp = path.join(appFolder, 'OllamaSetup.exe')
+
+  // Remove stale copy inside app folder if any
+  if (fs.existsSync(ollamaInApp)) fs.unlinkSync(ollamaInApp)
+
+  if (fs.existsSync(ollamaSetupPath)) {
+    console.log('✅ OllamaSetup.exe déjà présent dans release/')
+  } else {
+    console.log('🤖 Téléchargement de OllamaSetup.exe dans release/...')
+    try {
+      await downloadFile('https://ollama.com/download/OllamaSetup.exe', ollamaSetupPath)
+      console.log('✅ OllamaSetup.exe téléchargé dans release/')
+    } catch (err) {
+      console.log('⚠️  Impossible de télécharger OllamaSetup.exe:', err.message)
+    }
   }
 
-  // 7. Create ZIP
+  // 7. Create ZIP (app only — OllamaSetup.exe is alongside)
   const zipName = 'Node-Organisation-Windows.zip'
   const zipPath = path.join(__dirname, 'release', zipName)
   if (fs.existsSync(zipPath)) fs.unlinkSync(zipPath)
@@ -109,7 +115,6 @@ async function run() {
   const releaseDir = path.join(__dirname, 'release')
   const folderName = path.basename(appFolder)
   if (isWin) {
-    // Zip the folder itself (not its contents) so extraction creates a subfolder
     execSync(
       `powershell -Command "Compress-Archive -Path '${appFolder}' -DestinationPath '${zipPath}' -Force"`,
       { stdio: 'inherit' }
@@ -118,9 +123,10 @@ async function run() {
     execSync(`cd "${releaseDir}" && zip -r "${zipPath}" "${folderName}"`, { stdio: 'inherit' })
   }
 
-  console.log(`\n🎉 ZIP créé : release/${zipName}`)
-  console.log('   Contient : Node Organisation.exe + OllamaSetup.exe')
-  console.log('   L\'utilisateur dézippe, installe Ollama, puis lance l\'app.')
+  console.log(`\n🎉 Prêt dans : release/`)
+  console.log(`   📦 ${zipName}  (l'app — dézipper et lancer Node Organisation.exe)`)
+  console.log(`   🤖 OllamaSetup.exe  (installer Ollama séparément)`)
+  console.log(`\n   Distribuer les deux fichiers ensemble.`)
 
   // Cleanup
   fs.rmSync(tmpDir, { recursive: true })
