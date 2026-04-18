@@ -80,6 +80,119 @@ body {
   border-radius: 3px;
 }
 
+/* Collapsed sidebar */
+.sidebar.sidebar-collapsed {
+  width: 52px;
+  min-width: 52px;
+  overflow: hidden;
+  cursor: pointer;
+  align-items: center;
+  padding: 10px 0;
+  gap: 4px;
+  transition: width 0.2s;
+}
+
+.sidebar-collapsed-icon {
+  font-size: 18px;
+  color: var(--accent);
+  margin-bottom: 6px;
+}
+
+.sidebar-collapsed-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+}
+
+.sidebar-collapsed-actions button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 6px;
+  border-radius: 6px;
+  width: 40px;
+  text-align: center;
+  transition: background 0.15s;
+}
+
+.sidebar-collapsed-actions button:hover {
+  background: var(--bg-tertiary);
+}
+
+.sidebar-collapsed-divider {
+  width: 32px;
+  height: 1px;
+  background: var(--border-color);
+  margin: 4px 0;
+}
+
+.sidebar-collapsed-categories {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  width: 100%;
+  overflow: hidden;
+}
+
+.sidebar-collapsed-cat {
+  font-size: 14px;
+  padding: 4px;
+  border-radius: 4px;
+  cursor: pointer;
+  width: 40px;
+  text-align: center;
+  transition: background 0.15s;
+}
+
+.sidebar-collapsed-cat:hover {
+  background: var(--bg-tertiary);
+}
+
+.sidebar-collapsed-network {
+  margin-top: auto;
+  font-size: 14px;
+  padding: 6px;
+}
+
+/* Sidebar footer with network indicator */
+.sidebar-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-top: 1px solid var(--border-color);
+  margin-top: auto;
+  flex-shrink: 0;
+}
+
+.network-indicator {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.sidebar-collapse-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: background 0.15s;
+}
+
+.sidebar-collapse-btn:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
 .sidebar-header {
   padding: 16px 16px 12px;
   border-bottom: 1px solid var(--border-color);
@@ -1581,29 +1694,55 @@ body {
   flex: 1;
 }
 
-.ollama-style-btn {
-  flex: 1;
+.ollama-style-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.ollama-style-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
   background: var(--bg-tertiary);
   border: 1px solid var(--border-color);
-  border-radius: 6px;
+  border-radius: 8px;
   color: var(--text-secondary);
-  font-size: 11px;
-  padding: 5px 4px;
+  padding: 8px 6px;
   cursor: pointer;
   transition: all 0.15s;
   text-align: center;
 }
 
-.ollama-style-btn:hover {
+.ollama-style-card:hover {
   border-color: var(--accent);
   color: var(--text-primary);
+  background: var(--bg-secondary);
 }
 
-.ollama-style-btn.active {
-  background: var(--accent);
+.ollama-style-card.active {
+  background: rgba(99, 102, 241, 0.15);
   border-color: var(--accent);
-  color: white;
+  color: var(--accent-hover);
+}
+
+.style-card-icon {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.style-card-label {
+  font-size: 11px;
   font-weight: 600;
+  color: inherit;
+}
+
+.style-card-desc {
+  font-size: 9px;
+  color: var(--text-muted);
+  line-height: 1.2;
 }
 
 .ollama-send-editor-btn {

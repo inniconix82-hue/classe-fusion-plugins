@@ -17,7 +17,7 @@ export function setOllamaModel(model: string) {
   localStorage.setItem(STORAGE_KEY, model)
 }
 
-export type OllamaStyle = 'concis' | 'structure' | 'detaille'
+export type OllamaStyle = 'synthese' | 'detaille' | 'reunion' | 'cours'
 
 function nodeLabel(node: Node): string {
   const d = node.data as { label?: string; description?: string }
@@ -61,21 +61,16 @@ function buildBranches(nodes: Node[], edges: Edge[]): string {
   return branches.map((path, i) => `Branche ${i + 1} : ${path.join(' → ')}`).join('\n')
 }
 
-function buildPromptFromNodes(nodes: Node[], style: OllamaStyle = 'concis', edges: Edge[] = []): string {
+function buildPromptFromNodes(nodes: Node[], style: OllamaStyle = 'synthese', edges: Edge[] = []): string {
   if (nodes.length === 0) return 'Aucun nœud sur le canvas.'
 
   const structure = buildBranches(nodes, edges)
 
   const styleInstructions = {
-    concis: `Utilise ce format Markdown STRICT :
+    synthese: `Utilise ce format Markdown STRICT :
 # Titre principal (1 seul)
 - **terme clé** : explication courte (max 5-7 points)
 Pas d'introduction. Pas de conclusion. Seulement des bullets avec termes en gras.`,
-    structure: `Utilise ce format Markdown STRICT :
-# Titre principal
-## Section pour chaque branche
-- **point clé** : détail court
-Respecte une section H2 par branche distincte.`,
     detaille: `Utilise ce format Markdown STRICT :
 # Titre principal
 ## Section pour chaque branche
@@ -83,6 +78,23 @@ Paragraphes développés. **Termes importants** en gras.
 ### Sous-sections si nécessaire
 - listes pour les points clés
 Crée des liens narratifs entre les branches.`,
+    reunion: `Utilise ce format Markdown STRICT pour un compte-rendu de réunion :
+# Ordre du jour / Sujet
+## Points abordés (une section H2 par branche)
+- **Décision** : ...
+- **Action** : responsable + délai
+## Prochaines étapes
+- liste des actions à mener`,
+    cours: `Utilise ce format Markdown STRICT pour un contenu pédagogique :
+# Titre du cours
+## Introduction
+Contexte et objectifs d'apprentissage.
+## Concept (une section H2 par branche)
+Explication claire. **Termes clés** en gras.
+### Exemple concret
+- points illustratifs
+## Résumé
+- **point essentiel** à retenir par concept`,
   }
 
   return `Tu es un assistant professionnel. Voici la structure d'un canvas avec ses connexions :
@@ -104,7 +116,7 @@ export interface OllamaResponse {
 export async function generateFromNodes(
   nodes: Node[],
   onToken?: (token: string) => void,
-  style: OllamaStyle = 'concis',
+  style: OllamaStyle = 'synthese',
   edges: Edge[] = []
 ): Promise<OllamaResponse> {
   const prompt = buildPromptFromNodes(nodes, style, edges)

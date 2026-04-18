@@ -106,7 +106,13 @@ function FlowCanvas() {
   const [showCustomCategories, setShowCustomCategories] = useState(false)
   const [nodeContextMenu, setNodeContextMenu] = useState<{ x: number; y: number; node: Node } | null>(null)
   const [saveToCategoryPicker, setSaveToCategoryPicker] = useState<Node | null>(null)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [isNetworkActive, setIsNetworkActive] = useState(false)
   const history = useHistory()
+
+  useEffect(() => {
+    if (showEditor) setSidebarCollapsed(true)
+  }, [showEditor])
 
   useEffect(() => {
     const wizardDone = localStorage.getItem('nodeorg-setup-done')
@@ -760,6 +766,9 @@ function FlowCanvas() {
         }}
         onShowHelp={() => setShowHelp(true)}
         onManageCategories={() => setShowCustomCategories(true)}
+        collapsed={sidebarCollapsed}
+        onToggleCollapse={() => setSidebarCollapsed((v) => !v)}
+        isNetworkActive={isNetworkActive}
       />
 
       {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
@@ -863,6 +872,7 @@ function FlowCanvas() {
           onSendToEditor={onSendToEditor}
           onAskQuestion={onAskQuestion}
           questionLoading={questionLoading}
+          onDownloadStateChange={setIsNetworkActive}
         />
       )}
 

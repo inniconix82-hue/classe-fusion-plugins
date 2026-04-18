@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { getOllamaModel, setOllamaModel, listModels, checkOllamaStatus, addToKnowledgeBase, getKnowledgeBase, clearKnowledgeBase } from '../data/ollamaService'
 
-export type OllamaStyle = 'concis' | 'structure' | 'detaille'
+import type { OllamaStyle } from '../data/ollamaService'
 
 interface OllamaPanelProps {
   result: string
@@ -12,12 +12,14 @@ interface OllamaPanelProps {
   onSendToEditor: (text: string) => void
   onAskQuestion: (question: string) => void
   questionLoading: boolean
+  onDownloadStateChange?: (active: boolean) => void
 }
 
-const STYLE_OPTIONS: { value: OllamaStyle; label: string; desc: string }[] = [
-  { value: 'concis', label: '⚡ Concis', desc: 'Bullet points, 5 lignes max' },
-  { value: 'structure', label: '📐 Structuré', desc: 'Titres + sous-points' },
-  { value: 'detaille', label: '📖 Détaillé', desc: 'Paragraphes complets' },
+const STYLE_OPTIONS: { value: OllamaStyle; icon: string; label: string; desc: string }[] = [
+  { value: 'synthese', icon: '📝', label: 'Synthèse', desc: 'Bullet points concis' },
+  { value: 'detaille', icon: '📄', label: 'Détaillé', desc: 'Paragraphes complets' },
+  { value: 'reunion', icon: '📋', label: 'Réunion', desc: 'Compte-rendu structuré' },
+  { value: 'cours', icon: '🎓', label: 'Cours', desc: 'Pédagogique et clair' },
 ]
 
 const OllamaPanel: React.FC<OllamaPanelProps> = ({
@@ -29,11 +31,12 @@ const OllamaPanel: React.FC<OllamaPanelProps> = ({
   onSendToEditor,
   onAskQuestion,
   questionLoading,
+  onDownloadStateChange,
 }) => {
   const [model, setModel] = useState(getOllamaModel())
   const [availableModels, setAvailableModels] = useState<string[]>([])
   const [ollamaOnline, setOllamaOnline] = useState<boolean | null>(null)
-  const [style, setStyle] = useState<OllamaStyle>('concis')
+  const [style, setStyle] = useState<OllamaStyle>('synthese')
   const [question, setQuestion] = useState('')
   const [kbCount, setKbCount] = useState(getKnowledgeBase().length)
   const [activeTab, setActiveTab] = useState<'generate' | 'mindmap'>('mindmap')
@@ -46,6 +49,7 @@ const OllamaPanel: React.FC<OllamaPanelProps> = ({
     setDownloading(true)
     setDownloadProgress(0)
     setDownloadLabel('Connexion...')
+    onDownloadStateChange?.(true)
     try {
       const response = await fetch('http://localhost:11434/api/pull', {
         method: 'POST',
@@ -76,6 +80,7 @@ const OllamaPanel: React.FC<OllamaPanelProps> = ({
       setDownloadLabel('Erreur de téléchargement')
     } finally {
       setDownloading(false)
+      onDownloadStateChange?.(false)
     }
   }
 
@@ -339,16 +344,17 @@ const OllamaPanel: React.FC<OllamaPanelProps> = ({
       {activeTab === 'generate' && (
         <>
           <div className="ollama-style-selector">
-            <label className="ollama-label">Style :</label>
-            <div className="ollama-style-options">
+            <label className="ollama-label">Mode de génération :</label>
+            <div className="ollama-style-cards">
               {STYLE_OPTIONS.map((opt) => (
                 <button
                   key={opt.value}
-                  className={`ollama-style-btn ${style === opt.value ? 'active' : ''}`}
+                  className={`ollama-style-card ${style === opt.value ? 'active' : ''}`}
                   onClick={() => setStyle(opt.value)}
-                  title={opt.desc}
                 >
-                  {opt.label}
+                  <span className="style-card-icon">{opt.icon}</span>
+                  <span className="style-card-label">{opt.label}</span>
+                  <span className="style-card-desc">{opt.desc}</span>
                 </button>
               ))}
             </div>

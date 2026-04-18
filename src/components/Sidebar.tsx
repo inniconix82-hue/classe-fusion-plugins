@@ -19,6 +19,9 @@ interface SidebarProps {
   onAddUnderlay: () => void
   onShowHelp: () => void
   onManageCategories: () => void
+  collapsed?: boolean
+  onToggleCollapse?: () => void
+  isNetworkActive?: boolean
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
@@ -38,6 +41,9 @@ const Sidebar: React.FC<SidebarProps> = ({
   onAddUnderlay,
   onShowHelp,
   onManageCategories,
+  collapsed = false,
+  onToggleCollapse,
+  isNetworkActive = false,
 }) => {
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({
     personnes: true,
@@ -73,6 +79,32 @@ const Sidebar: React.FC<SidebarProps> = ({
   const onDragStart = (event: React.DragEvent, preset: PresetNode) => {
     event.dataTransfer.setData('application/reactflow', JSON.stringify(preset))
     event.dataTransfer.effectAllowed = 'move'
+  }
+
+  if (collapsed) {
+    const allCategories = [...customCategories, ...presetCategories]
+    return (
+      <aside className="sidebar sidebar-collapsed" onClick={onToggleCollapse} title="Cliquer pour agrandir">
+        <div className="sidebar-collapsed-icon" title="Agrandir la sidebar">⬡</div>
+        <div className="sidebar-collapsed-actions">
+          <button title="Sauvegarder" onClick={(e) => { e.stopPropagation(); onSave() }}>💾</button>
+          <button title="Ouvrir" onClick={(e) => { e.stopPropagation(); onLoad() }}>📂</button>
+          <button title="Ollama IA" onClick={(e) => { e.stopPropagation(); onToggleOllama() }}>🤖</button>
+          <button title="Éditeur de document" onClick={(e) => { e.stopPropagation(); onToggleEditor() }}>📝</button>
+        </div>
+        <div className="sidebar-collapsed-divider" />
+        <div className="sidebar-collapsed-categories">
+          {allCategories.map((cat) => (
+            <div key={cat.id} className="sidebar-collapsed-cat" title={cat.name} style={{ color: cat.color }}>
+              {cat.icon}
+            </div>
+          ))}
+        </div>
+        <div className="sidebar-collapsed-network" title={isNetworkActive ? 'Téléchargement en cours' : 'Tout local'}>
+          {isNetworkActive ? '🟡' : '🟢'}
+        </div>
+      </aside>
+    )
   }
 
   return (
@@ -222,6 +254,16 @@ const Sidebar: React.FC<SidebarProps> = ({
           </div>
           )
         })}
+      </div>
+
+      <div className="sidebar-footer">
+        <div className="network-indicator" title={isNetworkActive ? 'Téléchargement en cours' : 'Tout fonctionne en local'}>
+          <span>{isNetworkActive ? '🟡' : '🟢'}</span>
+          <span>{isNetworkActive ? 'Réseau actif' : 'Local'}</span>
+        </div>
+        <button className="sidebar-collapse-btn" onClick={onToggleCollapse} title="Réduire la sidebar">
+          ◀
+        </button>
       </div>
     </aside>
   )
