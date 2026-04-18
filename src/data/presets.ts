@@ -1256,22 +1256,40 @@ export const presetCategories: PresetCategory[] = [
     icon: '🤝',
     color: '#059669',
     nodes: [
+      // Accompagnement
       { type: 'custom', label: 'Bénéficiaire', description: 'Personne accompagnée', category: 'action-sociale', color: '#059669' },
       { type: 'custom', label: 'Situation familiale', description: 'Contexte et entourage', category: 'action-sociale', color: '#059669' },
+      { type: 'custom', label: 'Actes vie quotidienne', description: 'Soutien à l\'autonomie au quotidien', category: 'action-sociale', color: '#059669' },
+      { type: 'custom', label: 'Posture éducative', description: 'Adapter sa posture aux besoins', category: 'action-sociale', color: '#10b981' },
+      // Projet éducatif
       { type: 'custom', label: 'Projet individualisé', description: 'PPI / PAP / contrat de projet', category: 'action-sociale', color: '#10b981' },
       { type: 'custom', label: 'Objectif', description: 'But de l\'accompagnement', category: 'action-sociale', color: '#10b981' },
       { type: 'custom', label: 'Axe de travail', description: 'Domaine d\'intervention', category: 'action-sociale', color: '#34d399' },
       { type: 'custom', label: 'Action mise en place', description: 'Dispositif ou activité', category: 'action-sociale', color: '#6ee7b7' },
       { type: 'custom', label: 'Évaluation', description: 'Bilan et ajustement', category: 'action-sociale', color: '#059669' },
+      // Observation et relation
+      { type: 'custom', label: 'Observation', description: 'Repérer besoins, difficultés, ressources', category: 'action-sociale', color: '#0d9488' },
+      { type: 'custom', label: 'Relation éducative', description: 'Écoute, lien de confiance, cadre', category: 'action-sociale', color: '#14b8a6' },
+      { type: 'custom', label: 'Frein identifié', description: 'Obstacle à l\'inclusion', category: 'action-sociale', color: '#ef4444' },
+      { type: 'custom', label: 'Compétence à développer', description: 'Autonomie, socialisation, etc.', category: 'action-sociale', color: '#f59e0b' },
+      // Équipe et communication
+      { type: 'custom', label: 'Réunion de synthèse', description: 'Point d\'équipe pluridisciplinaire', category: 'action-sociale', color: '#6366f1' },
+      { type: 'custom', label: 'Transmission', description: 'Infos utiles, relève, cahier de liaison', category: 'action-sociale', color: '#6366f1' },
+      { type: 'custom', label: 'Écrit professionnel', description: 'Rapport, note, compte-rendu', category: 'action-sociale', color: '#818cf8' },
+      { type: 'custom', label: 'Travail d\'équipe', description: 'Coopération, rôles, suivi partagé', category: 'action-sociale', color: '#8b5cf6' },
+      // Institutionnel et partenarial
       { type: 'custom', label: 'Partenaire', description: 'Association, service, institution', category: 'action-sociale', color: '#0d9488' },
       { type: 'custom', label: 'Orientation', description: 'Vers un service ou dispositif', category: 'action-sociale', color: '#14b8a6' },
       { type: 'custom', label: 'Réseau', description: 'Liens institutionnels et associatifs', category: 'action-sociale', color: '#0f766e' },
-      { type: 'custom', label: 'Frein identifié', description: 'Obstacle à l\'inclusion', category: 'action-sociale', color: '#ef4444' },
-      { type: 'custom', label: 'Compétence à développer', description: 'Autonomie, socialisation, etc.', category: 'action-sociale', color: '#f59e0b' },
-      { type: 'custom', label: 'Réunion de synthèse', description: 'Point d\'équipe pluridisciplinaire', category: 'action-sociale', color: '#6366f1' },
+      { type: 'custom', label: 'Cadre institutionnel', description: 'Fonctionnement, règles, projet établissement', category: 'action-sociale', color: '#475569' },
+      { type: 'custom', label: 'Cadre légal', description: 'Droits des usagers, confidentialité', category: 'action-sociale', color: '#475569' },
+      // Situations spécifiques
       { type: 'custom', label: 'Signalement', description: 'Alerte ou rapport de situation', category: 'action-sociale', color: '#dc2626' },
       { type: 'custom', label: 'Inclusion scolaire', description: 'Suivi et intégration en milieu scolaire', category: 'action-sociale', color: '#3b82f6' },
       { type: 'custom', label: 'Insertion professionnelle', description: 'Formation, emploi, stage', category: 'action-sociale', color: '#8b5cf6' },
+      { type: 'custom', label: 'Médiation', description: 'Gestion de conflit, régulation', category: 'action-sociale', color: '#f59e0b' },
+      { type: 'custom', label: 'Activité éducative', description: 'Support, atelier, sortie', category: 'action-sociale', color: '#10b981' },
+      { type: 'custom', label: 'Éthique', description: 'Respect, bientraitance, déontologie', category: 'action-sociale', color: '#64748b' },
     ],
   },
 ]
