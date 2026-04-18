@@ -1,14 +1,20 @@
 import React, { useState, useEffect, useRef } from 'react'
+import type { Node } from '@xyflow/react'
 import { getOllamaModel, setOllamaModel, listModels, checkOllamaStatus, addToKnowledgeBase, getKnowledgeBase, clearKnowledgeBase } from '../data/ollamaService'
-
 import type { OllamaStyle } from '../data/ollamaService'
+
+export interface GenerateOptions {
+  instructions?: string
+  categoryFilter?: string | null
+}
 
 interface OllamaPanelProps {
   result: string
   error: string | null
   loading: boolean
+  nodes?: Node[]
   onClose: () => void
-  onGenerate: (style: OllamaStyle) => void
+  onGenerate: (style: OllamaStyle, options?: GenerateOptions) => void
   onSendToEditor: (text: string) => void
   onAskQuestion: (question: string) => void
   questionLoading: boolean
@@ -33,6 +39,7 @@ const OllamaPanel: React.FC<OllamaPanelProps> = ({
   result,
   error,
   loading,
+  nodes = [],
   onClose,
   onGenerate,
   onSendToEditor,
@@ -49,7 +56,13 @@ const OllamaPanel: React.FC<OllamaPanelProps> = ({
   const [activeTab, setActiveTab] = useState<'generate' | 'mindmap'>('mindmap')
   const [downloadingModels, setDownloadingModels] = useState<Record<string, number>>({})
   const [showMoreModels, setShowMoreModels] = useState(false)
+  const [instructions, setInstructions] = useState('')
+  const [categoryFilter, setCategoryFilter] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const nodeCategories = Array.from(
+    new Set(nodes.filter((n) => n.type !== 'underlay' && n.type !== 'sticky' && n.type !== 'router').map((n) => (n.data as any).category).filter(Boolean))
+  ) as string[]
 
   const handleDownloadModel = async (modelName: string) => {
     setDownloadingModels((prev) => ({ ...prev, [modelName]: 0 }))
@@ -369,10 +382,44 @@ const OllamaPanel: React.FC<OllamaPanelProps> = ({
             </div>
           </div>
 
+          {nodeCategories.length > 0 && (
+            <div className="ollama-filter-section">
+              <label className="ollama-label">Filtrer par catégorie :</label>
+              <div className="ollama-filter-btns">
+                <button
+                  className={`ollama-filter-btn ${categoryFilter === null ? 'active' : ''}`}
+                  onClick={() => setCategoryFilter(null)}
+                >
+                  Tous
+                </button>
+                {nodeCategories.map((cat) => (
+                  <button
+                    key={cat}
+                    className={`ollama-filter-btn ${categoryFilter === cat ? 'active' : ''}`}
+                    onClick={() => setCategoryFilter(cat === categoryFilter ? null : cat)}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="ollama-instructions-section">
+            <textarea
+              className="ollama-instructions-input"
+              value={instructions}
+              onChange={(e) => setInstructions(e.target.value)}
+              onKeyDown={(e) => e.stopPropagation()}
+              placeholder="Instructions spécifiques... ex: uniquement la branche Jean-Claude, uniquement les décisions, ignorer les nodes sans priorité..."
+              rows={2}
+            />
+          </div>
+
           <div className="ollama-actions">
             <button
               className="ollama-generate-btn"
-              onClick={() => onGenerate(style)}
+              onClick={() => onGenerate(style, { instructions: instructions.trim() || undefined, categoryFilter })}
               disabled={loading}
             >
               {loading ? (
@@ -381,7 +428,7 @@ const OllamaPanel: React.FC<OllamaPanelProps> = ({
                   Génération en cours...
                 </>
               ) : (
-                <>✨ Générer depuis les nodes</>
+                <>✨ Générer depuis les nodes{categoryFilter ? ` (${categoryFilter})` : ''}</>
               )}
             </button>
           </div>

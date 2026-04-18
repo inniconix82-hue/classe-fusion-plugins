@@ -36,6 +36,7 @@ import { type Shortcut, type NodeShortcut, loadShortcuts, loadNodeShortcuts, mat
 import { useHistory } from './data/useHistory'
 import { exportToPNG, exportToPDF } from './data/exportUtils'
 import { generateFromNodes, askQuestion, hasInstalledModels, type OllamaStyle } from './data/ollamaService'
+import type { GenerateOptions } from './components/OllamaPanel'
 import SetupWizard from './components/SetupWizard'
 import CustomCategoriesModal from './components/CustomCategoriesModal'
 import { loadCustomCategories, saveCustomCategories } from './data/customCategories'
@@ -520,14 +521,18 @@ function FlowCanvas() {
     exportToPDF('organisation', nodes)
   }, [nodes])
 
-  const onOllamaGenerate = useCallback(async (style: OllamaStyle) => {
+  const onOllamaGenerate = useCallback(async (style: OllamaStyle, options?: GenerateOptions) => {
     setOllamaLoading(true)
     setOllamaResult('')
     setOllamaError(null)
 
-    const result = await generateFromNodes(nodes, (token) => {
+    const filteredNodes = options?.categoryFilter
+      ? nodes.filter((n) => (n.data as any).category === options.categoryFilter)
+      : nodes
+
+    const result = await generateFromNodes(filteredNodes, (token) => {
       setOllamaResult((prev) => prev + token)
-    }, style, edges)
+    }, style, edges, options?.instructions || '')
 
     if (result.error) {
       setOllamaError(result.error)
@@ -867,6 +872,7 @@ function FlowCanvas() {
           result={ollamaResult}
           error={ollamaError}
           loading={ollamaLoading}
+          nodes={nodes}
           onClose={() => setShowOllama(false)}
           onGenerate={onOllamaGenerate}
           onSendToEditor={onSendToEditor}

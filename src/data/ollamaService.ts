@@ -61,7 +61,7 @@ function buildBranches(nodes: Node[], edges: Edge[]): string {
   return branches.map((path, i) => `Branche ${i + 1} : ${path.join(' → ')}`).join('\n')
 }
 
-function buildPromptFromNodes(nodes: Node[], style: OllamaStyle = 'synthese', edges: Edge[] = []): string {
+function buildPromptFromNodes(nodes: Node[], style: OllamaStyle = 'synthese', edges: Edge[] = [], instructions = ''): string {
   if (nodes.length === 0) return 'Aucun nœud sur le canvas.'
 
   const structure = buildBranches(nodes, edges)
@@ -97,7 +97,12 @@ Explication claire. **Termes clés** en gras.
 - **point essentiel** à retenir par concept`,
   }
 
-  return `Tu es un assistant professionnel. Voici la structure d'un canvas avec ses connexions :
+  const instructionBlock = instructions.trim()
+    ? `\nINSTRUCTIONS SPÉCIFIQUES (priorité absolue) :\n${instructions.trim()}\n`
+    : ''
+
+  return `Tu es un assistant professionnel.${instructionBlock}
+Voici la structure d'un canvas avec ses connexions :
 
 ${structure}
 
@@ -117,9 +122,10 @@ export async function generateFromNodes(
   nodes: Node[],
   onToken?: (token: string) => void,
   style: OllamaStyle = 'synthese',
-  edges: Edge[] = []
+  edges: Edge[] = [],
+  instructions = ''
 ): Promise<OllamaResponse> {
-  const prompt = buildPromptFromNodes(nodes, style, edges)
+  const prompt = buildPromptFromNodes(nodes, style, edges, instructions)
   const model = getOllamaModel()
 
   try {
