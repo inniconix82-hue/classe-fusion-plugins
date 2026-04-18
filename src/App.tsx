@@ -111,8 +111,8 @@ function FlowCanvas() {
   const history = useHistory()
 
   useEffect(() => {
-    if (showEditor) setSidebarCollapsed(true)
-  }, [showEditor])
+    if (showEditor || showOllama) setSidebarCollapsed(true)
+  }, [showEditor, showOllama])
 
   useEffect(() => {
     const wizardDone = localStorage.getItem('nodeorg-setup-done')
