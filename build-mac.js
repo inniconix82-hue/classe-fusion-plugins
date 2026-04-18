@@ -69,7 +69,10 @@ async function run() {
   console.log('🗜️  Création du ZIP...')
   const releaseDir = path.join(__dirname, 'release')
   const folderName = path.basename(appFolder)
-  execSync(`cd "${releaseDir}" && zip -r "${zipPath}" "${folderName}"`, { stdio: 'inherit' })
+  execSync(
+    `ditto -c -k --sequesterRsrc --keepParent "${appFolder}" "${zipPath}"`,
+    { stdio: 'inherit' }
+  )
 
   console.log(`\n🎉 ZIP créé : release/${zipName}`)
   console.log('   L\'utilisateur dézippe et glisse "Node Organisation.app" dans Applications.')
