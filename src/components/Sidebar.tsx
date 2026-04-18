@@ -40,6 +40,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   onManageCategories,
 }) => {
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({
+    personnes: true,
     outils: true,
     productivite: true,
     journee: false,

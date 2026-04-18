@@ -16,6 +16,42 @@ export interface PresetCategory {
 
 export const presetCategories: PresetCategory[] = [
   {
+    id: 'personnes',
+    name: 'Personnes',
+    icon: '👤',
+    color: '#7c3aed',
+    nodes: [
+      {
+        type: 'personne',
+        label: 'Contact',
+        description: 'Rôle / Fonction',
+        category: 'personnes',
+        color: '#7c3aed',
+      },
+      {
+        type: 'personne',
+        label: 'Client',
+        description: 'Client / Partenaire',
+        category: 'personnes',
+        color: '#9333ea',
+      },
+      {
+        type: 'personne',
+        label: 'Équipe',
+        description: 'Responsable d\'équipe',
+        category: 'personnes',
+        color: '#6d28d9',
+      },
+      {
+        type: 'personne',
+        label: 'Expert',
+        description: 'Consultant / Spécialiste',
+        category: 'personnes',
+        color: '#4f46e5',
+      },
+    ],
+  },
+  {
     id: 'outils',
     name: 'Outils',
     icon: '🔧',

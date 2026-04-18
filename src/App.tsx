@@ -24,6 +24,7 @@ import StickyNoteNode from './components/StickyNoteNode'
 import RouterNode from './components/RouterNode'
 import VignetteNode from './components/VignetteNode'
 import UnderlayNode from './components/UnderlayNode'
+import PersonneNode from './components/PersonneNode'
 import HelpModal from './components/HelpModal'
 import Sidebar from './components/Sidebar'
 import ShortcutsModal from './components/ShortcutsModal'
@@ -45,6 +46,7 @@ const nodeTypes = {
   router: RouterNode,
   vignette: VignetteNode,
   underlay: UnderlayNode,
+  personne: PersonneNode,
 }
 
 const edgeTypes = {
@@ -181,6 +183,7 @@ function FlowCanvas() {
       if (preset.type === 'sticky') nodeType = 'sticky'
       else if (preset.type === 'router') nodeType = 'router'
       else if (preset.type === 'vignette') nodeType = 'vignette'
+      else if (preset.type === 'personne') nodeType = 'personne'
 
       const newNodeId = getNextNodeId()
       const newNode: Node = {

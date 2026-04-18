@@ -1,6 +1,9 @@
 import React, { useRef, useCallback, useEffect } from 'react'
 import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
+import { marked } from 'marked'
+
+marked.setOptions({ breaks: true, gfm: true } as Parameters<typeof marked.setOptions>[0])
 
 interface TextEditorPanelProps {
   onClose: () => void
@@ -19,9 +22,10 @@ const TextEditorPanel: React.FC<TextEditorPanelProps> = ({
 
   useEffect(() => {
     if (editorRef.current && initialContent) {
-      editorRef.current.innerHTML = initialContent
+      const html = String(marked.parse(initialContent))
+      editorRef.current.innerHTML = html
     }
-  }, [])
+  }, [initialContent])
 
   const exec = useCallback((command: string, value?: string) => {
     editorRef.current?.focus()

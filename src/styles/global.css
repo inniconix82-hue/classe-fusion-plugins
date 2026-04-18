@@ -452,6 +452,113 @@ body {
    Sticky Note Node
    ============================== */
 
+/* ==============================
+   Personne Node
+   ============================== */
+
+.personne-node {
+  background: var(--bg-card);
+  border: 2px solid var(--personne-color, #7c3aed);
+  border-radius: 12px;
+  min-width: 140px;
+  max-width: 200px;
+  cursor: grab;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px 12px 10px;
+  gap: 6px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+  transition: all 0.15s;
+  font-size: 12px;
+}
+
+.personne-node:hover {
+  box-shadow: 0 4px 18px rgba(124, 58, 237, 0.35);
+  transform: translateY(-1px);
+}
+
+.personne-node.selected {
+  box-shadow: 0 0 0 2px var(--personne-color, #7c3aed), 0 4px 18px rgba(124, 58, 237, 0.4);
+}
+
+.personne-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+
+.personne-initials {
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.5px;
+}
+
+.personne-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  width: 100%;
+  text-align: center;
+}
+
+.personne-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.2;
+  word-break: break-word;
+}
+
+.personne-role {
+  font-size: 10px;
+  color: var(--personne-color, #a78bfa);
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.personne-role-placeholder {
+  color: var(--text-muted);
+  font-style: italic;
+  font-weight: 400;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.personne-node:hover .personne-role-placeholder {
+  opacity: 0.6;
+}
+
+.personne-name-input,
+.personne-role-input {
+  width: 100%;
+  text-align: center;
+  font-family: inherit;
+  background: var(--bg-primary);
+  border: 1px solid var(--personne-color, #7c3aed);
+  border-radius: 4px;
+  padding: 2px 4px;
+  color: var(--text-primary);
+  outline: none;
+  font-size: 11px;
+}
+
+.personne-name-input {
+  font-weight: 700;
+}
+
+.personne-role-input {
+  font-size: 10px;
+  color: #a78bfa;
+}
+
 .sticky-note-node {
   background: rgba(253, 224, 71, 0.1);
   border: 2px dashed #fde047;
