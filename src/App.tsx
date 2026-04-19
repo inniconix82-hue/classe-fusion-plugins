@@ -105,6 +105,9 @@ function FlowCanvas() {
   const [showTemplates, setShowTemplates] = useState(false)
   const [questionLoading, setQuestionLoading] = useState(false)
   const [showMinimap, setShowMinimap] = useState(true)
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    try { return (localStorage.getItem('nodeorg-theme') as 'dark' | 'light') || 'dark' } catch { return 'dark' }
+  })
   const [showHelp, setShowHelp] = useState(false)
   const [showSetupWizard, setShowSetupWizard] = useState(false)
   const [showCustomCategories, setShowCustomCategories] = useState(false)
@@ -117,6 +120,11 @@ function FlowCanvas() {
   useEffect(() => {
     if (showEditor || showOllama) setSidebarCollapsed(true)
   }, [showEditor, showOllama])
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme)
+    localStorage.setItem('nodeorg-theme', theme)
+  }, [theme])
 
   useEffect(() => {
     const wizardDone = localStorage.getItem('nodeorg-setup-done')
@@ -791,6 +799,8 @@ function FlowCanvas() {
         onShowHelp={() => setShowHelp(true)}
         onManageCategories={() => setShowCustomCategories(true)}
         onOpenTemplates={() => setShowTemplates(true)}
+        theme={theme}
+        onToggleTheme={() => setTheme((t) => t === 'dark' ? 'light' : 'dark')}
         collapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed((v) => !v)}
         isNetworkActive={isNetworkActive}
@@ -953,14 +963,14 @@ function FlowCanvas() {
                 const data = node.data as any
                 return data?.color || '#64748b'
               }}
-              maskColor="rgba(0, 0, 0, 0.2)"
+              maskColor={theme === 'light' ? 'rgba(0, 0, 0, 0.08)' : 'rgba(0, 0, 0, 0.2)'}
             />
           )}
           <Background
             variant={BackgroundVariant.Dots}
             gap={20}
             size={1}
-            color="#334155"
+            color={theme === 'light' ? '#cbd5e1' : '#334155'}
           />
           <Panel position="top-right" className="panel-info">
             <div className="info-badge">

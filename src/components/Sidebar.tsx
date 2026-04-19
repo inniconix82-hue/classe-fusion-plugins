@@ -31,6 +31,8 @@ interface SidebarProps {
   onShowHelp: () => void
   onManageCategories: () => void
   onOpenTemplates: () => void
+  theme?: 'dark' | 'light'
+  onToggleTheme?: () => void
   collapsed?: boolean
   onToggleCollapse?: () => void
   isNetworkActive?: boolean
@@ -54,6 +56,8 @@ const Sidebar: React.FC<SidebarProps> = ({
   onShowHelp,
   onManageCategories,
   onOpenTemplates,
+  theme = 'dark',
+  onToggleTheme,
   collapsed = false,
   onToggleCollapse,
   isNetworkActive = false,
@@ -87,6 +91,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           <button title="Ouvrir" onClick={(e) => { e.stopPropagation(); onLoad() }}>📂</button>
           <button title="Ollama IA" onClick={(e) => { e.stopPropagation(); onToggleOllama() }}>🤖</button>
           <button title="Éditeur de document" onClick={(e) => { e.stopPropagation(); onToggleEditor() }}>📝</button>
+          <button title={theme === 'dark' ? 'Mode clair' : 'Mode sombre'} onClick={(e) => { e.stopPropagation(); onToggleTheme?.() }}>{theme === 'dark' ? '☀️' : '🌙'}</button>
         </div>
         <div className="sidebar-collapsed-divider" />
         <div className="sidebar-collapsed-categories">
@@ -169,6 +174,12 @@ const Sidebar: React.FC<SidebarProps> = ({
       <div className="sidebar-layout-controls">
         <button className="layout-btn" onClick={onToggleMinimap} style={{ flex: 'none', width: '100%' }}>
           {showMinimap ? '🗺️ Masquer minimap' : '🗺️ Afficher minimap'}
+        </button>
+      </div>
+
+      <div className="sidebar-layout-controls">
+        <button className="layout-btn" onClick={onToggleTheme} style={{ flex: 'none', width: '100%' }}>
+          {theme === 'dark' ? '☀️ Mode clair' : '🌙 Mode sombre'}
         </button>
       </div>
 
