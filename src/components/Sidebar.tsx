@@ -65,6 +65,8 @@ const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const [expandedSuper, setExpandedSuper] = useState<Record<string, boolean>>({})
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({})
+  const [focusedSuperCat, setFocusedSuperCat] = useState<string | null>(null)
+  const [popoverCatId, setPopoverCatId] = useState<string | null>(null)
 
   const [customCategories, setCustomCategories] = useState<PresetCategory[]>(() => loadCustomCategories())
 
@@ -108,28 +110,65 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   if (collapsed) {
     const allCategories = [...customCategories, ...presetCategories]
+    const popoverCat = popoverCatId ? allCategories.find((c) => c.id === popoverCatId) : null
+
     return (
-      <aside className="sidebar sidebar-collapsed" onClick={onToggleCollapse} title="Cliquer pour agrandir">
-        <div className="sidebar-collapsed-icon" title="Agrandir la sidebar">⬡</div>
-        <div className="sidebar-collapsed-actions">
-          <button title="Sauvegarder" onClick={(e) => { e.stopPropagation(); onSave() }}>💾</button>
-          <button title="Ouvrir" onClick={(e) => { e.stopPropagation(); onLoad() }}>📂</button>
-          <button title="Ollama IA" onClick={(e) => { e.stopPropagation(); onToggleOllama() }}>🤖</button>
-          <button title="Éditeur de document" onClick={(e) => { e.stopPropagation(); onToggleEditor() }}>📝</button>
-          <button title={theme === 'dark' ? 'Mode clair' : 'Mode sombre'} onClick={(e) => { e.stopPropagation(); onToggleTheme?.() }}>{theme === 'dark' ? '☀️' : '🌙'}</button>
-        </div>
-        <div className="sidebar-collapsed-divider" />
-        <div className="sidebar-collapsed-categories">
-          {allCategories.map((cat) => (
-            <div key={cat.id} className="sidebar-collapsed-cat" title={cat.name} style={{ color: cat.color }}>
-              {cat.icon}
+      <>
+        <aside className="sidebar sidebar-collapsed" onClick={() => { setPopoverCatId(null); onToggleCollapse?.() }} title="Cliquer pour agrandir">
+          <div className="sidebar-collapsed-icon" title="Agrandir la sidebar">⬡</div>
+          <div className="sidebar-collapsed-actions">
+            <button title="Sauvegarder" onClick={(e) => { e.stopPropagation(); onSave() }}>💾</button>
+            <button title="Ouvrir" onClick={(e) => { e.stopPropagation(); onLoad() }}>📂</button>
+            <button title="Ollama IA" onClick={(e) => { e.stopPropagation(); onToggleOllama() }}>🤖</button>
+            <button title="Éditeur de document" onClick={(e) => { e.stopPropagation(); onToggleEditor() }}>📝</button>
+            <button title={theme === 'dark' ? 'Mode clair' : 'Mode sombre'} onClick={(e) => { e.stopPropagation(); onToggleTheme?.() }}>{theme === 'dark' ? '☀️' : '🌙'}</button>
+          </div>
+          <div className="sidebar-collapsed-divider" />
+          <div className="sidebar-collapsed-categories">
+            {allCategories.map((cat) => (
+              <div
+                key={cat.id}
+                className={`sidebar-collapsed-cat${popoverCatId === cat.id ? ' active' : ''}`}
+                title={cat.name}
+                style={{ color: cat.color }}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setPopoverCatId(popoverCatId === cat.id ? null : cat.id)
+                }}
+              >
+                {cat.icon}
+              </div>
+            ))}
+          </div>
+          <div className="sidebar-collapsed-network" title={isNetworkActive ? 'Téléchargement en cours' : 'Tout local'}>
+            {isNetworkActive ? '🟡' : '🟢'}
+          </div>
+        </aside>
+
+        {popoverCat && (
+          <div className="cat-popover" onClick={(e) => e.stopPropagation()}>
+            <div className="cat-popover-header" style={{ color: popoverCat.color }}>
+              <span>{popoverCat.icon}</span>
+              <span>{popoverCat.name}</span>
+              <button className="cat-popover-close" onClick={() => setPopoverCatId(null)}>×</button>
             </div>
-          ))}
-        </div>
-        <div className="sidebar-collapsed-network" title={isNetworkActive ? 'Téléchargement en cours' : 'Tout local'}>
-          {isNetworkActive ? '🟡' : '🟢'}
-        </div>
-      </aside>
+            <div className="cat-popover-nodes">
+              {popoverCat.nodes.map((preset, i) => (
+                <div
+                  key={i}
+                  className="preset-node"
+                  draggable
+                  onDragStart={(e) => { onDragStart(e, preset); setPopoverCatId(null) }}
+                  style={{ borderLeftColor: preset.color }}
+                >
+                  <div className="preset-node-label">{preset.label}</div>
+                  <div className="preset-node-desc">{preset.description}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </>
     )
   }
 
@@ -238,7 +277,14 @@ const Sidebar: React.FC<SidebarProps> = ({
         />
       </div>
 
-      <div className="sidebar-section-title">Glisser un node sur le canvas</div>
+      <div className="sidebar-section-title">
+        Glisser un node sur le canvas
+        {focusedSuperCat && (
+          <button className="focus-reset-btn" onClick={() => setFocusedSuperCat(null)} title="Afficher tout">
+            ✕ {SUPER_CATEGORIES.find(s => s.id === focusedSuperCat)?.name}
+          </button>
+        )}
+      </div>
 
       <div className="sidebar-categories">
         {/* Custom categories first (flat, always visible) */}
@@ -272,6 +318,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
         {/* Preset categories grouped by super-category */}
         {SUPER_CATEGORIES.map((superCat) => {
+          if (focusedSuperCat && focusedSuperCat !== superCat.id) return null
           const cats = presetCategories.filter((c) => superCat.categoryIds.includes(c.id))
           if (cats.length === 0) return null
 
@@ -307,6 +354,13 @@ const Sidebar: React.FC<SidebarProps> = ({
                 <span className="super-cat-icon">{superCat.icon}</span>
                 <span className="super-cat-name">{superCat.name}</span>
                 <span className="category-count">{totalNodes}</span>
+                <button
+                  className={`focus-cat-btn${focusedSuperCat === superCat.id ? ' active' : ''}`}
+                  title={focusedSuperCat === superCat.id ? 'Afficher tout' : 'Afficher uniquement'}
+                  onClick={(e) => { e.stopPropagation(); setFocusedSuperCat(focusedSuperCat === superCat.id ? null : superCat.id) }}
+                >
+                  {focusedSuperCat === superCat.id ? '✕' : '👁'}
+                </button>
                 <span className={`category-chevron ${isSuperExpanded ? 'expanded' : ''}`}>›</span>
               </button>
 

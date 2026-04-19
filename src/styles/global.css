@@ -3047,6 +3047,100 @@ body {
 }
 
 /* ==============================
+   Category popover (collapsed sidebar)
+   ============================== */
+
+.cat-popover {
+  position: fixed;
+  left: 48px;
+  top: 0;
+  width: 240px;
+  height: 100vh;
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  z-index: 200;
+  box-shadow: 4px 0 16px rgba(0,0,0,0.3);
+}
+
+.cat-popover-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.cat-popover-close {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 18px;
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+.cat-popover-close:hover { color: var(--text-primary); }
+
+.cat-popover-nodes {
+  overflow-y: auto;
+  flex: 1;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sidebar-collapsed-cat.active {
+  background: rgba(99, 102, 241, 0.2);
+  border-radius: 6px;
+}
+
+/* ==============================
+   Focus filter (expanded sidebar)
+   ============================== */
+
+.focus-cat-btn {
+  background: none;
+  border: none;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 1px 4px;
+  border-radius: 4px;
+  opacity: 0.5;
+  transition: opacity 0.15s;
+  line-height: 1;
+}
+
+.focus-cat-btn:hover { opacity: 1; }
+.focus-cat-btn.active { opacity: 1; color: var(--accent); }
+
+.focus-reset-btn {
+  background: var(--accent);
+  border: none;
+  border-radius: 4px;
+  color: white;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 6px;
+  cursor: pointer;
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.focus-reset-btn:hover { opacity: 0.85; }
+
+.sidebar-section-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ==============================
    Super-category (tiroirs thématiques)
    ============================== */
 
