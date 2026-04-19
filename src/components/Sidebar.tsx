@@ -250,8 +250,19 @@ const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       <div className="sidebar-layout-controls">
-        <button className="layout-btn" onClick={onToggleTheme} style={{ flex: 'none', width: '100%' }}>
-          {theme === 'dark' ? '☀️ Mode clair' : '🌙 Mode sombre'}
+        <button
+          className={`theme-btn${theme === 'dark' ? ' active' : ''}`}
+          onClick={() => theme !== 'dark' && onToggleTheme?.()}
+          title="Thème sombre"
+        >
+          🌙 Sombre
+        </button>
+        <button
+          className={`theme-btn${theme === 'light' ? ' active' : ''}`}
+          onClick={() => theme !== 'light' && onToggleTheme?.()}
+          title="Thème clair"
+        >
+          ☀️ Clair
         </button>
       </div>
 

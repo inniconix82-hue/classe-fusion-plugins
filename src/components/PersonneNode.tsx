@@ -1,5 +1,6 @@
 import React, { memo, useState, useRef, useEffect, useCallback } from 'react'
 import { Handle, Position, type NodeProps } from '@xyflow/react'
+import { useLayoutDirection } from '../data/LayoutContext'
 
 export interface PersonneNodeData {
   label: string
@@ -19,6 +20,9 @@ function getInitials(name: string): string {
 }
 
 const PersonneNode = memo(({ data, selected }: NodeProps) => {
+  const layoutDir = useLayoutDirection()
+  const targetPos = layoutDir === 'LR' ? Position.Left : Position.Top
+  const sourcePos = layoutDir === 'LR' ? Position.Right : Position.Bottom
   const { label, description, color } = data as unknown as PersonneNodeData
   const [isEditing, setIsEditing] = useState(false)
   const [editLabel, setEditLabel] = useState(label as string)
@@ -70,7 +74,7 @@ const PersonneNode = memo(({ data, selected }: NodeProps) => {
     >
       <Handle
         type="target"
-        position={Position.Top}
+        position={targetPos}
         className="node-handle"
         style={{ backgroundColor: nodeColor }}
       />
@@ -119,7 +123,7 @@ const PersonneNode = memo(({ data, selected }: NodeProps) => {
 
       <Handle
         type="source"
-        position={Position.Bottom}
+        position={sourcePos}
         className="node-handle"
         style={{ backgroundColor: nodeColor }}
       />

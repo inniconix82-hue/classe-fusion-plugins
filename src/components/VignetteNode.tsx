@@ -1,5 +1,6 @@
 import React, { memo, useState, useRef, useCallback } from 'react'
 import { Handle, Position, type NodeProps } from '@xyflow/react'
+import { useLayoutDirection } from '../data/LayoutContext'
 
 export interface VignetteNodeData {
   label: string
@@ -10,6 +11,9 @@ export interface VignetteNodeData {
 }
 
 const VignetteNode = memo(({ data, selected }: NodeProps) => {
+  const layoutDir = useLayoutDirection()
+  const targetPos = layoutDir === 'LR' ? Position.Left : Position.Top
+  const sourcePos = layoutDir === 'LR' ? Position.Right : Position.Bottom
   const { label, imageData, color } = data as unknown as VignetteNodeData
   const [editLabel, setEditLabel] = useState(label as string)
   const [isEditingLabel, setIsEditingLabel] = useState(false)
@@ -71,7 +75,7 @@ const VignetteNode = memo(({ data, selected }: NodeProps) => {
     >
       <Handle
         type="target"
-        position={Position.Top}
+        position={targetPos}
         className="node-handle"
         style={{ backgroundColor: color as string }}
       />
@@ -139,7 +143,7 @@ const VignetteNode = memo(({ data, selected }: NodeProps) => {
 
       <Handle
         type="source"
-        position={Position.Bottom}
+        position={sourcePos}
         className="node-handle"
         style={{ backgroundColor: color as string }}
       />

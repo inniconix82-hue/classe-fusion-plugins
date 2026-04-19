@@ -31,6 +31,7 @@ import ShortcutsModal from './components/ShortcutsModal'
 import OllamaPanel from './components/OllamaPanel'
 import TextEditorPanel from './components/TextEditorPanel'
 import { type LayoutDirection, getLayoutedElements } from './data/layoutUtils'
+import { LayoutContext } from './data/LayoutContext'
 import { type PresetNode } from './data/presets'
 import { type Shortcut, type NodeShortcut, loadShortcuts, loadNodeShortcuts, matchesShortcut, saveNodeShortcuts } from './data/shortcuts'
 import { useHistory } from './data/useHistory'
@@ -928,6 +929,7 @@ function FlowCanvas() {
         />
       )}
 
+      <LayoutContext.Provider value={layoutDirection}>
       <div className="canvas-container" ref={reactFlowWrapper}>
         <ReactFlow
           nodes={nodes}
@@ -979,6 +981,7 @@ function FlowCanvas() {
           </Panel>
         </ReactFlow>
       </div>
+      </LayoutContext.Provider>
     </div>
   )
 }
