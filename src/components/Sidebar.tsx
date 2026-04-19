@@ -13,6 +13,7 @@ const SUPER_CATEGORIES: { id: string; name: string; icon: string; categoryIds: s
   { id: 'tech', name: 'Tech & IA', icon: '🤖', categoryIds: ['ia', 'dev'] },
   { id: 'social', name: 'Action Sociale', icon: '🤝', categoryIds: ['action-sociale'] },
   { id: 'educ', name: 'Éducation & Événements', icon: '🎓', categoryIds: ['education', 'evenementiel'] },
+  { id: 'detective', name: 'Enquête & Analyse', icon: '🕵️', categoryIds: ['detective'] },
 ]
 
 interface SidebarProps {

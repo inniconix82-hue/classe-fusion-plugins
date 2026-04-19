@@ -4,6 +4,8 @@ export interface PresetNode {
   description: string
   category: string
   color: string
+  subtype?: string
+  score?: number
 }
 
 export interface PresetCategory {
@@ -1290,6 +1292,20 @@ export const presetCategories: PresetCategory[] = [
       { type: 'custom', label: 'Médiation', description: 'Gestion de conflit, régulation', category: 'action-sociale', color: '#f59e0b' },
       { type: 'custom', label: 'Activité éducative', description: 'Support, atelier, sortie', category: 'action-sociale', color: '#10b981' },
       { type: 'custom', label: 'Éthique', description: 'Respect, bientraitance, déontologie', category: 'action-sociale', color: '#64748b' },
+    ],
+  },
+  {
+    id: 'detective',
+    name: 'Enquête',
+    icon: '🕵️',
+    color: '#ef4444',
+    nodes: [
+      { type: 'detective', label: 'Suspect',      description: 'Mobile, alibi',      category: 'detective', color: '#ef4444', subtype: 'suspect'   },
+      { type: 'detective', label: 'Témoin',      description: 'Déclaration',        category: 'detective', color: '#3b82f6', subtype: 'temoin'    },
+      { type: 'detective', label: 'Lieu',        description: 'Date / heure',       category: 'detective', color: '#10b981', subtype: 'lieu'      },
+      { type: 'detective', label: 'Indice',      description: 'Description preuve', category: 'detective', color: '#eab308', subtype: 'indice'    },
+      { type: 'detective', label: 'Hypothèse',   description: 'Théorie',            category: 'detective', color: '#f97316', subtype: 'hypothese', score: 5 },
+      { type: 'detective', label: 'Fait établi', description: 'Source confirmée',   category: 'detective', color: '#64748b', subtype: 'fait'      },
     ],
   },
 ]

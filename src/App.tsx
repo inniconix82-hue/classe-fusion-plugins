@@ -20,11 +20,13 @@ import '@xyflow/react/dist/style.css'
 
 import CustomNode from './components/CustomNode'
 import CustomEdge from './components/CustomEdge'
+import { LINK_TYPES } from './components/CustomEdge'
 import StickyNoteNode from './components/StickyNoteNode'
 import RouterNode from './components/RouterNode'
 import VignetteNode from './components/VignetteNode'
 import UnderlayNode from './components/UnderlayNode'
 import PersonneNode from './components/PersonneNode'
+import DetectiveNode from './components/DetectiveNode'
 import HelpModal from './components/HelpModal'
 import Sidebar from './components/Sidebar'
 import ShortcutsModal from './components/ShortcutsModal'
@@ -51,6 +53,7 @@ const nodeTypes = {
   vignette: VignetteNode,
   underlay: UnderlayNode,
   personne: PersonneNode,
+  detective: DetectiveNode,
 }
 
 const edgeTypes = {
@@ -149,6 +152,7 @@ function FlowCanvas() {
   const [showSetupWizard, setShowSetupWizard] = useState(false)
   const [showCustomCategories, setShowCustomCategories] = useState(false)
   const [nodeContextMenu, setNodeContextMenu] = useState<{ x: number; y: number; node: Node } | null>(null)
+  const [edgeContextMenu, setEdgeContextMenu] = useState<{ x: number; y: number; edge: Edge } | null>(null)
   const [saveToCategoryPicker, setSaveToCategoryPicker] = useState<Node | null>(null)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [isNetworkActive, setIsNetworkActive] = useState(false)
@@ -211,6 +215,7 @@ function FlowCanvas() {
     const pos = screenToFlowPosition({ x: event.clientX, y: event.clientY })
     lastClickPosRef.current = pos
     setNodeContextMenu(null)
+    setEdgeContextMenu(null)
   }, [screenToFlowPosition])
 
   const onConnect: OnConnect = useCallback(
@@ -248,6 +253,7 @@ function FlowCanvas() {
       else if (preset.type === 'router') nodeType = 'router'
       else if (preset.type === 'vignette') nodeType = 'vignette'
       else if (preset.type === 'personne') nodeType = 'personne'
+      else if (preset.type === 'detective') nodeType = 'detective'
 
       const newNodeId = getNextNodeId()
       const newNode: Node = {
@@ -259,6 +265,8 @@ function FlowCanvas() {
           description: preset.description,
           color: preset.color,
           category: preset.category,
+          ...(preset.subtype ? { subtype: preset.subtype } : {}),
+          ...(preset.score !== undefined ? { score: preset.score } : {}),
         },
       }
 
@@ -440,12 +448,13 @@ function FlowCanvas() {
 
   // Bring clicked node to the front so it renders above overlapping siblings
   const onNodeClick = useCallback((_event: React.MouseEvent, node: Node) => {
+    setEdgeContextMenu(null)
     setNodes((nds) => {
       const idx = nds.findIndex((n) => n.id === node.id)
       if (idx === -1 || idx === nds.length - 1) return nds
       return [...nds.slice(0, idx), ...nds.slice(idx + 1), nds[idx]]
     })
-  }, [setNodes])
+  }, [setNodes, setEdgeContextMenu])
 
   const onNodesDelete = useCallback(
     (deletedNodes: Node[]) => {
@@ -487,9 +496,9 @@ function FlowCanvas() {
   const onEdgeContextMenu = useCallback(
     (event: React.MouseEvent, edge: Edge) => {
       event.preventDefault()
-      setEdges((eds) => eds.filter((e) => e.id !== edge.id))
+      setEdgeContextMenu({ x: event.clientX, y: event.clientY, edge })
     },
-    [setEdges]
+    []
   )
 
   const onNodeContextMenu = useCallback((event: React.MouseEvent, node: Node) => {
@@ -666,7 +675,8 @@ function FlowCanvas() {
       preset.type === 'sticky' ? 'sticky' :
       preset.type === 'router' ? 'router' :
       preset.type === 'vignette' ? 'vignette' :
-      preset.type === 'personne' ? 'personne' : 'custom'
+      preset.type === 'personne' ? 'personne' :
+      preset.type === 'detective' ? 'detective' : 'custom'
     const base = lastClickPosRef.current
     const pos = findFreePosition(base.x, base.y, nodes)
     history.push(nodes, edges)
@@ -681,6 +691,8 @@ function FlowCanvas() {
           description: preset.description,
           color: preset.color,
           category: preset.category,
+          ...(preset.subtype ? { subtype: preset.subtype } : {}),
+          ...(preset.score !== undefined ? { score: preset.score } : {}),
         },
       },
     ])
@@ -928,6 +940,44 @@ function FlowCanvas() {
             }}
           >
             🗑 Supprimer ce node
+          </button>
+        </div>
+      )}
+
+      {/* Edge context menu */}
+      {edgeContextMenu && (
+        <div
+          className="node-context-menu"
+          style={{ top: edgeContextMenu.y, left: edgeContextMenu.x }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="edge-menu-title">Type de connexion</div>
+          {Object.entries(LINK_TYPES).map(([key, lt]) => (
+            <button
+              key={key}
+              className="node-context-item edge-type-item"
+              style={{ borderLeft: `3px solid ${lt.color}` }}
+              onClick={() => {
+                setEdges((eds) => eds.map((e) =>
+                  e.id === edgeContextMenu.edge.id
+                    ? { ...e, data: { ...e.data, linkType: key }, animated: key !== 'non_etabli' }
+                    : e
+                ))
+                setEdgeContextMenu(null)
+              }}
+            >
+              <span style={{ color: lt.color }}>●</span> {lt.label}
+            </button>
+          ))}
+          <div className="node-context-divider" />
+          <button
+            className="node-context-item node-context-danger"
+            onClick={() => {
+              setEdges((eds) => eds.filter((e) => e.id !== edgeContextMenu.edge.id))
+              setEdgeContextMenu(null)
+            }}
+          >
+            🗑 Supprimer ce lien
           </button>
         </div>
       )}

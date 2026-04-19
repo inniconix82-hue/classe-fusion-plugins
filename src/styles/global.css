@@ -3443,3 +3443,209 @@ body {
   border-top: 1px solid var(--border-color);
   text-align: center;
 }
+
+/* ==============================
+   Detective / Murder Board Nodes
+   ============================== */
+
+.detective-node {
+  background: var(--bg-secondary);
+  border: 2px solid var(--det-color, #ef4444);
+  border-radius: 10px;
+  width: 200px;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+  transition: box-shadow 0.15s, transform 0.1s;
+}
+
+.detective-node.selected {
+  box-shadow: 0 0 0 3px var(--det-color, #ef4444), 0 4px 20px rgba(0,0,0,0.4);
+  transform: translateY(-1px);
+}
+
+.det-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  color: white;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.det-icon { font-size: 14px; }
+
+.det-type { flex: 1; }
+
+.det-score-badge {
+  background: rgba(0,0,0,0.25);
+  border-radius: 10px;
+  padding: 1px 6px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.det-image-area {
+  position: relative;
+  background: var(--bg-tertiary);
+  height: 90px;
+  cursor: pointer;
+  overflow: hidden;
+  border-bottom: 1px solid var(--border-color);
+  transition: background 0.15s;
+}
+
+.det-image-area:hover { background: var(--bg-primary); }
+
+.det-image-area.drag-over { background: rgba(99,102,241,0.15); outline: 2px dashed var(--accent); }
+
+.det-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.det-image-change {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: rgba(0,0,0,0.6);
+  border: none;
+  border-radius: 50%;
+  color: white;
+  width: 22px;
+  height: 22px;
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.det-image-area:hover .det-image-change { opacity: 1; }
+
+.det-image-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 4px;
+  color: var(--text-muted);
+  font-size: 20px;
+}
+
+.det-image-hint {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.det-body {
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.det-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.3;
+}
+
+.det-desc {
+  font-size: 11px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.det-placeholder {
+  color: var(--text-muted);
+  font-style: italic;
+  font-size: 11px;
+  font-weight: 400;
+}
+
+.det-score-bar {
+  position: relative;
+  height: 14px;
+  background: var(--bg-tertiary);
+  border-radius: 7px;
+  overflow: hidden;
+  margin-top: 2px;
+}
+
+.det-score-fill {
+  height: 100%;
+  border-radius: 7px;
+  transition: width 0.3s ease;
+}
+
+.det-score-text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+}
+
+.det-input, .det-textarea {
+  width: 100%;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 5px;
+  color: var(--text-primary);
+  font-size: 12px;
+  padding: 4px 7px;
+  outline: none;
+  resize: none;
+}
+
+.det-input:focus, .det-textarea:focus {
+  border-color: var(--det-color, var(--accent));
+}
+
+.det-score-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.det-score-label {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.det-score-slider {
+  width: 100%;
+  cursor: pointer;
+}
+
+/* ==============================
+   Edge context menu
+   ============================== */
+
+.edge-menu-title {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  padding: 6px 12px 2px;
+}
+
+.edge-type-item {
+  padding-left: 10px !important;
+  gap: 8px;
+  font-size: 12px;
+}

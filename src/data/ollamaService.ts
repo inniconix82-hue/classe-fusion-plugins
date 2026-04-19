@@ -61,8 +61,44 @@ function buildBranches(nodes: Node[], edges: Edge[]): string {
   return branches.map((path, i) => `Branche ${i + 1} : ${path.join(' → ')}`).join('\n')
 }
 
+function buildDetectivePrompt(nodes: Node[], edges: Edge[], instructions: string): string {
+  const structure = buildBranches(nodes, edges)
+  const instructionBlock = instructions.trim()
+    ? `\nINSTRUCTIONS SPÉCIFIQUES :\n${instructions.trim()}\n`
+    : ''
+  return `Tu es un assistant d'analyse factuelle pour une enquête.${instructionBlock}
+Voici les éléments de l'enquête (nodes) et leurs connexions :
+
+${structure}
+
+RÈGLES STRICTES — ANTI-HALLUCINATION :
+- Utilise UNIQUEMENT les informations des nodes fournis ci-dessus
+- Si une connexion n'est pas présente dans les nodes, réponds "non établi"
+- Ne complète JAMAIS avec des informations extérieures ou inventées
+- Cite le node source pour chaque affirmation (ex: "[Indice clé]")
+- Si tu ne trouves pas la source dans les nodes, ne réponds pas sur ce point
+
+Format de réponse Markdown :
+# Synthèse de l'enquête
+## Suspects identifiés
+- **[Nom]** : [Mobile/Alibi] — source : [node]
+## Indices disponibles
+- [Indice] — source : [node]
+## Hypothèses
+- **[Hypothèse]** (probabilité : X/10) — basé sur : [nodes sources]
+## Faits établis
+- [Fait] — confirmé par : [node]
+## Points non établis
+- [Éléments manquants ou contradictoires]
+
+Réponds uniquement en français.`
+}
+
 function buildPromptFromNodes(nodes: Node[], style: OllamaStyle = 'synthese', edges: Edge[] = [], instructions = ''): string {
   if (nodes.length === 0) return 'Aucun nœud sur le canvas.'
+
+  const hasDetective = nodes.some((n) => n.type === 'detective')
+  if (hasDetective) return buildDetectivePrompt(nodes, edges, instructions)
 
   const structure = buildBranches(nodes, edges)
 
