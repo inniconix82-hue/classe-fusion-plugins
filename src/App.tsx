@@ -60,6 +60,40 @@ const edgeTypes = {
 let nodeIdCounter = 0
 const getNextNodeId = () => `node_${++nodeIdCounter}`
 
+function findFreePosition(
+  baseX: number,
+  baseY: number,
+  existingNodes: Node[],
+  nodeW = 180,
+  nodeH = 80
+): { x: number; y: number } {
+  const GAP = 20
+  const SW = nodeW + GAP
+  const SH = nodeH + GAP
+  const candidates = [
+    [0, 0], [SW, 0], [-SW, 0], [0, SH], [0, -SH],
+    [SW, SH], [-SW, SH], [SW, -SH], [-SW, -SH],
+    [2 * SW, 0], [-2 * SW, 0], [0, 2 * SH], [0, -2 * SH],
+    [2 * SW, SH], [-2 * SW, SH],
+  ]
+  for (const [dx, dy] of candidates) {
+    const x = baseX + dx
+    const y = baseY + dy
+    const overlaps = existingNodes.some((n) => {
+      const nw = (n.measured?.width as number) ?? nodeW
+      const nh = (n.measured?.height as number) ?? nodeH
+      return (
+        x < n.position.x + nw + GAP &&
+        x + nodeW + GAP > n.position.x &&
+        y < n.position.y + nh + GAP &&
+        y + nodeH + GAP > n.position.y
+      )
+    })
+    if (!overlaps) return { x, y }
+  }
+  return { x: baseX + Math.random() * 300 + 100, y: baseY + Math.random() * 200 + 100 }
+}
+
 const defaultEdgeOptions = {
   type: 'custom',
   animated: true,
@@ -404,6 +438,15 @@ function FlowCanvas() {
     // Editing is handled inside the CustomNode component
   }, [])
 
+  // Bring clicked node to the front so it renders above overlapping siblings
+  const onNodeClick = useCallback((_event: React.MouseEvent, node: Node) => {
+    setNodes((nds) => {
+      const idx = nds.findIndex((n) => n.id === node.id)
+      if (idx === -1 || idx === nds.length - 1) return nds
+      return [...nds.slice(0, idx), ...nds.slice(idx + 1), nds[idx]]
+    })
+  }, [setNodes])
+
   const onNodesDelete = useCallback(
     (deletedNodes: Node[]) => {
       const deletedIds = new Set(deletedNodes.map((n) => n.id))
@@ -581,16 +624,16 @@ function FlowCanvas() {
       return
     }
 
-    // Find the last selected node to connect to, or place freely
     const selectedNode = nodes.find((n) => n.selected)
-    const baseX = selectedNode ? selectedNode.position.x + 200 : 200 + Math.random() * 300
-    const baseY = selectedNode ? selectedNode.position.y + 100 : 200 + Math.random() * 200
+    const baseX = selectedNode ? selectedNode.position.x + 200 : lastClickPosRef.current.x
+    const baseY = selectedNode ? selectedNode.position.y + 100 : lastClickPosRef.current.y
+    const pos = findFreePosition(baseX, baseY, nodes)
 
     const newId = getNextNodeId()
     const newNode: Node = {
       id: newId,
       type: 'custom',
-      position: { x: baseX, y: baseY },
+      position: pos,
       data: {
         label: result.title,
         description: result.description,
@@ -624,14 +667,15 @@ function FlowCanvas() {
       preset.type === 'router' ? 'router' :
       preset.type === 'vignette' ? 'vignette' :
       preset.type === 'personne' ? 'personne' : 'custom'
-    const pos = lastClickPosRef.current
+    const base = lastClickPosRef.current
+    const pos = findFreePosition(base.x, base.y, nodes)
     history.push(nodes, edges)
     setNodes((nds) => [
       ...nds,
       {
         id: newId,
         type: nodeType,
-        position: { x: pos.x, y: pos.y },
+        position: pos,
         data: {
           label: preset.label,
           description: preset.description,
@@ -992,6 +1036,7 @@ function FlowCanvas() {
           onConnect={onConnect}
           onDrop={onDrop}
           onDragOver={onDragOver}
+          onNodeClick={onNodeClick}
           onNodeDoubleClick={onNodeDoubleClick}
           onEdgeContextMenu={onEdgeContextMenu}
           onNodeContextMenu={onNodeContextMenu}
