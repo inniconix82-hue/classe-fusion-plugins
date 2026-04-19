@@ -39,6 +39,7 @@ import { exportToPNG, exportToPDF } from './data/exportUtils'
 import { generateFromNodes, askQuestion, hasInstalledModels, type OllamaStyle } from './data/ollamaService'
 import type { GenerateOptions } from './components/OllamaPanel'
 import TemplatesModal from './components/TemplatesModal'
+import QuickSearchModal from './components/QuickSearchModal'
 import SetupWizard from './components/SetupWizard'
 import CustomCategoriesModal from './components/CustomCategoriesModal'
 import { loadCustomCategories, saveCustomCategories } from './data/customCategories'
@@ -104,6 +105,7 @@ function FlowCanvas() {
   const [editorContent, setEditorContent] = useState('')
   const [rawMarkdown, setRawMarkdown] = useState('')
   const [showTemplates, setShowTemplates] = useState(false)
+  const [showQuickSearch, setShowQuickSearch] = useState(false)
   const [questionLoading, setQuestionLoading] = useState(false)
   const [showMinimap, setShowMinimap] = useState(true)
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
@@ -167,6 +169,15 @@ function FlowCanvas() {
     })
   }, [nodes.map((n) => n.type === 'underlay' ? (n.data as any).collapsed : null).join(',')])
   const { screenToFlowPosition, fitView } = useReactFlow()
+
+  // Track last pane click position (flow coordinates) for contextual node placement
+  const lastClickPosRef = useRef<{ x: number; y: number }>({ x: 300, y: 200 })
+
+  const onPaneClick = useCallback((event: React.MouseEvent) => {
+    const pos = screenToFlowPosition({ x: event.clientX, y: event.clientY })
+    lastClickPosRef.current = pos
+    setNodeContextMenu(null)
+  }, [screenToFlowPosition])
 
   const onConnect: OnConnect = useCallback(
     (params: Connection) => {
@@ -485,8 +496,15 @@ function FlowCanvas() {
 
   const onPaste = useCallback(() => {
     if (clipboardRef.current.length === 0) return
-    const offset = 150
     const idMap: Record<string, string> = {}
+
+    // Center the pasted group around the last click position
+    const xs = clipboardRef.current.map((n) => n.position.x)
+    const ys = clipboardRef.current.map((n) => n.position.y)
+    const centerX = (Math.min(...xs) + Math.max(...xs)) / 2
+    const centerY = (Math.min(...ys) + Math.max(...ys)) / 2
+    const dx = lastClickPosRef.current.x - centerX
+    const dy = lastClickPosRef.current.y - centerY
 
     const newNodes = clipboardRef.current.map((n) => {
       const newId = getNextNodeId()
@@ -494,13 +512,12 @@ function FlowCanvas() {
       return {
         ...n,
         id: newId,
-        position: { x: n.position.x + offset, y: n.position.y + offset },
+        position: { x: n.position.x + dx, y: n.position.y + dy },
         selected: true,
         data: { ...n.data },
       }
     })
 
-    // Recreate edges between pasted nodes
     const newEdges: Edge[] = clipboardEdgesRef.current
       .filter((e) => idMap[e.source] && idMap[e.target])
       .map((e) => ({
@@ -511,18 +528,8 @@ function FlowCanvas() {
         data: { ...e.data },
       }))
 
-    setNodes((nds) =>
-      nds.map((n) => ({ ...n, selected: false })).concat(newNodes)
-    )
-    if (newEdges.length > 0) {
-      setEdges((eds) => [...eds, ...newEdges])
-    }
-
-    // Shift clipboard offset for next paste
-    clipboardRef.current = clipboardRef.current.map((n) => ({
-      ...n,
-      position: { x: n.position.x + offset, y: n.position.y + offset },
-    }))
+    setNodes((nds) => nds.map((n) => ({ ...n, selected: false })).concat(newNodes))
+    if (newEdges.length > 0) setEdges((eds) => [...eds, ...newEdges])
   }, [setNodes, setEdges])
 
   const onExportPNG = useCallback(() => {
@@ -610,6 +617,31 @@ function FlowCanvas() {
     }
   }, [nodes, edges, history, setNodes, setEdges])
 
+  const onAddNodeFromSearch = useCallback((preset: import('./data/presets').PresetNode) => {
+    const newId = getNextNodeId()
+    const nodeType =
+      preset.type === 'sticky' ? 'sticky' :
+      preset.type === 'router' ? 'router' :
+      preset.type === 'vignette' ? 'vignette' :
+      preset.type === 'personne' ? 'personne' : 'custom'
+    const pos = lastClickPosRef.current
+    history.push(nodes, edges)
+    setNodes((nds) => [
+      ...nds,
+      {
+        id: newId,
+        type: nodeType,
+        position: { x: pos.x, y: pos.y },
+        data: {
+          label: preset.label,
+          description: preset.description,
+          color: preset.color,
+          category: preset.category,
+        },
+      },
+    ])
+  }, [nodes, edges, history, setNodes])
+
   const onApplyTemplate = useCallback((templateNodes: Node[], templateEdges: Edge[]) => {
     history.push(nodes, edges)
     setNodes(templateNodes)
@@ -620,11 +652,16 @@ function FlowCanvas() {
   const onDuplicate = useCallback(() => {
     const selected = nodes.filter((n) => n.selected)
     if (selected.length === 0) return
-    const offset = 150
+    const xs = selected.map((n) => n.position.x)
+    const ys = selected.map((n) => n.position.y)
+    const centerX = (Math.min(...xs) + Math.max(...xs)) / 2
+    const centerY = (Math.min(...ys) + Math.max(...ys)) / 2
+    const dx = lastClickPosRef.current.x - centerX
+    const dy = lastClickPosRef.current.y - centerY
     const newNodes = selected.map((n) => ({
       ...n,
       id: getNextNodeId(),
-      position: { x: n.position.x + offset, y: n.position.y + offset },
+      position: { x: n.position.x + dx, y: n.position.y + dy },
       selected: true,
       data: { ...n.data },
     }))
@@ -650,6 +687,14 @@ function FlowCanvas() {
       if (showShortcuts) return
       const target = e.target as HTMLElement
       if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return
+
+      // Shift+Space = quick search dialog
+      if (e.shiftKey && e.code === 'Space') {
+        e.preventDefault()
+        e.stopImmediatePropagation()
+        setShowQuickSearch((v) => !v)
+        return
+      }
 
       // Fixed shortcut: Ctrl/Cmd+M = toggle minimap
       if ((e.ctrlKey || e.metaKey) && e.key === 'm') {
@@ -692,14 +737,14 @@ function FlowCanvas() {
           e.stopImmediatePropagation()
           const newId = getNextNodeId()
           const nodeType = ns.nodeType === 'sticky' ? 'sticky' : ns.nodeType === 'router' ? 'router' : ns.nodeType === 'vignette' ? 'vignette' : 'custom'
-          const center = { x: 300, y: 200 }
+          const pos = lastClickPosRef.current
           history.push(nodes, edges)
           setNodes((nds) => [
             ...nds,
             {
               id: newId,
               type: nodeType,
-              position: { x: center.x + Math.random() * 60, y: center.y + Math.random() * 60 },
+              position: { x: pos.x + Math.random() * 20 - 10, y: pos.y + Math.random() * 20 - 10 },
               data: {
                 label: ns.nodeLabel,
                 description: '',
@@ -789,10 +834,11 @@ function FlowCanvas() {
         onAddUnderlay={() => {
           const id = getNextNodeId()
           history.push(nodes, edges)
+          const pos = lastClickPosRef.current
           setNodes((nds) => [...nds, {
             id,
             type: 'underlay',
-            position: { x: 100, y: 100 },
+            position: { x: pos.x - 150, y: pos.y - 100 },
             style: { width: 300, height: 200, zIndex: -1 },
             data: { label: 'Zone', color: '#6366f1' },
           }])
@@ -929,6 +975,13 @@ function FlowCanvas() {
         />
       )}
 
+      {showQuickSearch && (
+        <QuickSearchModal
+          onClose={() => setShowQuickSearch(false)}
+          onAddNode={onAddNodeFromSearch}
+        />
+      )}
+
       <LayoutContext.Provider value={layoutDirection}>
       <div className="canvas-container" ref={reactFlowWrapper}>
         <ReactFlow
@@ -943,7 +996,7 @@ function FlowCanvas() {
           onEdgeContextMenu={onEdgeContextMenu}
           onNodeContextMenu={onNodeContextMenu}
           onNodesDelete={onNodesDelete}
-          onPaneClick={() => setNodeContextMenu(null)}
+          onPaneClick={onPaneClick}
           onNodeDragStart={onNodeDragStart}
           onNodeDrag={onNodeDrag}
           onNodeDragStop={onNodeDragStop}
