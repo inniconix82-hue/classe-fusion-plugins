@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { presetCategories, type PresetNode, type PresetCategory } from '../data/presets'
 import { loadCustomCategories } from '../data/customCategories'
 import { buildEmbeddingIndex, semanticSearch, isEmbeddingReady } from '../data/embeddingService'
+import { classifySearchIntent } from '../data/ollamaService'
 
 const SUPER_CATEGORIES: { id: string; name: string; icon: string; categoryIds: string[] }[] = [
   { id: 'perso', name: 'Personnes & Équipe', icon: '👤', categoryIds: ['personnes'] },
@@ -72,6 +73,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   const [searchQuery, setSearchQuery] = useState('')
   const [semanticMatches, setSemanticMatches] = useState<Set<string>>(new Set())
+  const [intentCategories, setIntentCategories] = useState<Set<string>>(new Set())
   const searchTimeoutRef = useRef<number>()
 
   useEffect(() => {
@@ -84,15 +86,21 @@ const Sidebar: React.FC<SidebarProps> = ({
   useEffect(() => {
     if (!searchQuery.trim()) {
       setSemanticMatches(new Set())
+      setIntentCategories(new Set())
       return
     }
     clearTimeout(searchTimeoutRef.current)
     searchTimeoutRef.current = window.setTimeout(async () => {
-      if (!isEmbeddingReady()) return
-      const keys = presetCategories.flatMap((cat) => cat.nodes.map((_, i) => `${cat.id}:${i}`))
-      const matches = await semanticSearch(searchQuery, keys)
-      setSemanticMatches(matches)
-    }, 400)
+      // Semantic embedding search
+      if (isEmbeddingReady()) {
+        const keys = presetCategories.flatMap((cat) => cat.nodes.map((_, i) => `${cat.id}:${i}`))
+        const matches = await semanticSearch(searchQuery, keys)
+        setSemanticMatches(matches)
+      }
+      // Intent classification via LLM
+      const catIds = await classifySearchIntent(searchQuery)
+      setIntentCategories(new Set(catIds))
+    }, 600)
     return () => clearTimeout(searchTimeoutRef.current)
   }, [searchQuery])
 
@@ -322,14 +330,15 @@ const Sidebar: React.FC<SidebarProps> = ({
           const cats = presetCategories.filter((c) => superCat.categoryIds.includes(c.id))
           if (cats.length === 0) return null
 
-          // Filter for search (text + semantic)
+          // Filter for search (text + semantic embeddings + LLM intent)
           const catsWithNodes = cats.map((cat) => ({
             ...cat,
             filteredNodes: searchQuery
               ? cat.nodes.filter((n, i) => {
                   const textMatch = n.label.toLowerCase().includes(searchQuery.toLowerCase()) || n.description.toLowerCase().includes(searchQuery.toLowerCase())
                   const semMatch = semanticMatches.has(`${cat.id}:${i}`)
-                  return textMatch || semMatch
+                  const intentMatch = intentCategories.has(cat.id)
+                  return textMatch || semMatch || intentMatch
                 })
               : cat.nodes,
           })).filter((c) => !searchQuery || c.filteredNodes.length > 0)

@@ -347,3 +347,43 @@ Réponds en français.`
     return { title: '', description: '', error: message }
   }
 }
+
+// Maps intent labels returned by the model to actual category IDs
+const INTENT_TO_CATEGORIES: Record<string, string[]> = {
+  personnes:    ['personnes'],
+  projet:       ['gestion-projet'],
+  finance:      ['finance'],
+  business:     ['entreprise', 'finance', 'marketing', 'rh'],
+  creativite:   ['creativite', 'scenario', 'audiovisuel', 'contenu'],
+  tech:         ['ia', 'dev'],
+  social:       ['action-sociale'],
+  education:    ['education'],
+  productivite: ['outils', 'productivite', 'journee'],
+  evenementiel: ['evenementiel'],
+}
+
+export async function classifySearchIntent(query: string): Promise<string[]> {
+  const model = getOllamaModel()
+  const prompt = `Tu aides à classifier une requête de recherche pour une application de carte mentale.
+Requête : "${query}"
+
+Choisis 1 à 3 catégories pertinentes parmi cette liste exacte :
+personnes, projet, finance, business, creativite, tech, social, education, productivite, evenementiel
+
+Réponds UNIQUEMENT avec les noms de catégories séparés par des virgules. Rien d'autre.`
+
+  try {
+    const res = await fetch(`${OLLAMA_URL}/api/generate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model, prompt, stream: false }),
+    })
+    if (!res.ok) return []
+    const json = await res.json()
+    const text = (json.response || '').toLowerCase()
+    const matched = Object.keys(INTENT_TO_CATEGORIES).filter((k) => text.includes(k))
+    return matched.flatMap((k) => INTENT_TO_CATEGORIES[k])
+  } catch {
+    return []
+  }
+}
