@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { type CustomCategory } from '../data/customCategories'
-import { loadCustomCategories, saveCustomCategories } from '../data/customCategories'
+import { loadCustomCategories, saveCustomCategories, exportCategoriesToJSON, importCategoriesFromJSON } from '../data/customCategories'
 import { type PresetNode } from '../data/presets'
 
 interface CustomCategoriesModalProps {
@@ -28,6 +28,7 @@ function generateId(): string {
 const CustomCategoriesModal: React.FC<CustomCategoriesModalProps> = ({ onClose }) => {
   const [categories, setCategories] = useState<CustomCategory[]>(() => loadCustomCategories())
   const [expandedCat, setExpandedCat] = useState<string | null>(null)
+  const importRef = React.useRef<HTMLInputElement>(null)
 
   // New category form
   const [showNewCatForm, setShowNewCatForm] = useState(false)
@@ -44,6 +45,32 @@ const CustomCategoriesModal: React.FC<CustomCategoriesModalProps> = ({ onClose }
   const handleSave = () => {
     saveCustomCategories(categories)
     onClose()
+  }
+
+  const handleExport = () => {
+    saveCustomCategories(categories)
+    exportCategoriesToJSON(categories)
+  }
+
+  const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    try {
+      const imported = await importCategoriesFromJSON(file)
+      const merge = window.confirm(
+        `${imported.length} catégorie(s) trouvée(s).\n\nCliquez OK pour fusionner avec vos catégories actuelles, ou Annuler pour remplacer.`
+      )
+      if (merge) {
+        const existingIds = new Set(categories.map((c) => c.id))
+        const newOnes = imported.filter((c) => !existingIds.has(c.id))
+        setCategories((prev) => [...prev, ...newOnes])
+      } else {
+        setCategories(imported)
+      }
+    } catch (err: any) {
+      alert(`Erreur d'importation : ${err.message}`)
+    }
+    if (importRef.current) importRef.current.value = ''
   }
 
   const handleAddCategory = () => {
@@ -108,7 +135,16 @@ const CustomCategoriesModal: React.FC<CustomCategoriesModalProps> = ({ onClose }
       <div className="modal-content custom-cats-modal">
         <div className="modal-header">
           <h2>🗂️ Mes catégories</h2>
-          <button className="modal-close" onClick={onClose}>✕</button>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <button className="modal-btn" onClick={handleExport} title="Exporter les catégories en JSON" style={{ fontSize: 12 }}>
+              ⬇ Exporter
+            </button>
+            <button className="modal-btn" onClick={() => importRef.current?.click()} title="Importer depuis un fichier JSON" style={{ fontSize: 12 }}>
+              ⬆ Importer
+            </button>
+            <input ref={importRef} type="file" accept=".json" style={{ display: 'none' }} onChange={handleImportFile} />
+            <button className="modal-close" onClick={onClose}>✕</button>
+          </div>
         </div>
 
         <div className="custom-cats-body">

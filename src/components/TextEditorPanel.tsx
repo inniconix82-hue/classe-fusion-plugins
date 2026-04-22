@@ -9,14 +9,48 @@ interface TextEditorPanelProps {
   onContentChange?: (html: string) => void
 }
 
-const FONT_SIZES = ['10', '12', '14', '16', '18', '24', '32', '48']
+const FONT_SIZES = ['10', '11', '12', '14', '16', '18', '20', '24', '28', '32', '48']
 const FONTS = [
   { label: 'Défaut', value: '' },
+  { label: 'Arial', value: 'Arial, sans-serif' },
+  { label: 'Helvetica', value: 'Helvetica, sans-serif' },
+  { label: 'Segoe UI', value: "'Segoe UI', sans-serif" },
+  { label: 'Verdana', value: 'Verdana, sans-serif' },
+  { label: 'Tahoma', value: 'Tahoma, sans-serif' },
+  { label: 'Trebuchet MS', value: "'Trebuchet MS', sans-serif" },
   { label: 'Georgia', value: 'Georgia, serif' },
   { label: 'Times New Roman', value: "'Times New Roman', serif" },
-  { label: 'Arial', value: 'Arial, sans-serif' },
-  { label: 'Segoe UI', value: "'Segoe UI', sans-serif" },
+  { label: 'Palatino', value: "'Palatino Linotype', Palatino, serif" },
   { label: 'Courier New', value: "'Courier New', monospace" },
+  { label: 'Consolas', value: "Consolas, 'Courier New', monospace" },
+  { label: 'Impact', value: 'Impact, sans-serif' },
+]
+
+const QUICK_LAYOUTS = [
+  {
+    label: '📋 Compte-rendu',
+    html: `<h1>Compte-rendu de réunion</h1><p><strong>Date :</strong> ${new Date().toLocaleDateString('fr-FR')}</p><p><strong>Participants :</strong> </p><h2>Ordre du jour</h2><ul><li>Point 1</li><li>Point 2</li></ul><h2>Décisions prises</h2><ul><li></li></ul><h2>Actions à suivre</h2><ul><li><strong>Responsable :</strong> Action — Échéance : </li></ul>`,
+  },
+  {
+    label: '📧 Email professionnel',
+    html: `<p>Madame, Monsieur,</p><p>Je me permets de vous contacter au sujet de </p><p></p><p>Cordialement,<br/><strong>Votre nom</strong></p>`,
+  },
+  {
+    label: '📑 Rapport',
+    html: `<h1>Rapport</h1><h2>Introduction</h2><p></p><h2>Développement</h2><p></p><h2>Conclusion</h2><p></p><h2>Recommandations</h2><ul><li></li></ul>`,
+  },
+  {
+    label: '💡 Note rapide',
+    html: `<h2>Note</h2><p></p><h3>Points clés</h3><ul><li></li><li></li></ul>`,
+  },
+  {
+    label: '🗂️ Fiche projet',
+    html: `<h1>Fiche projet</h1><p><strong>Nom du projet :</strong> </p><p><strong>Chef de projet :</strong> </p><p><strong>Date de début :</strong> ${new Date().toLocaleDateString('fr-FR')}</p><h2>Objectifs</h2><ul><li></li></ul><h2>Ressources</h2><ul><li></li></ul><h2>Jalons</h2><ul><li></li></ul>`,
+  },
+  {
+    label: '📊 Analyse SWOT',
+    html: `<h1>Analyse SWOT</h1><h2>Forces (Strengths)</h2><ul><li></li></ul><h2>Faiblesses (Weaknesses)</h2><ul><li></li></ul><h2>Opportunités (Opportunities)</h2><ul><li></li></ul><h2>Menaces (Threats)</h2><ul><li></li></ul>`,
+  },
 ]
 
 const TextEditorPanel: React.FC<TextEditorPanelProps> = ({
@@ -27,6 +61,7 @@ const TextEditorPanel: React.FC<TextEditorPanelProps> = ({
 }) => {
   const editorRef = useRef<HTMLDivElement>(null)
   const [bgColor, setBgColor] = useState('#1a2744')
+  const [showLayoutMenu, setShowLayoutMenu] = useState(false)
 
   useEffect(() => {
     if (editorRef.current && initialContent) {
@@ -293,6 +328,43 @@ const TextEditorPanel: React.FC<TextEditorPanelProps> = ({
         <div className="editor-toolbar-separator" />
 
         <button className="editor-btn" onClick={() => exec('removeFormat')} title="Supprimer le formatage">✕</button>
+        <button className="editor-btn" onClick={() => exec('strikeThrough')} title="Barré" style={{ textDecoration: 'line-through' }}>S</button>
+
+        <div className="editor-toolbar-separator" />
+
+        <div className="editor-layout-menu-wrapper">
+          <button
+            className="editor-btn editor-layout-btn"
+            onClick={() => setShowLayoutMenu((v) => !v)}
+            title="Mise en page rapide"
+          >
+            📄 Modèles
+          </button>
+          {showLayoutMenu && (
+            <div className="editor-layout-menu">
+              {QUICK_LAYOUTS.map((tpl) => (
+                <button
+                  key={tpl.label}
+                  className="editor-layout-item"
+                  onClick={() => {
+                    if (editorRef.current) {
+                      const isEmpty = !editorRef.current.textContent?.trim()
+                      if (!isEmpty && !window.confirm('Remplacer le contenu actuel par ce modèle ?')) {
+                        setShowLayoutMenu(false)
+                        return
+                      }
+                      editorRef.current.innerHTML = tpl.html
+                      handleInput()
+                    }
+                    setShowLayoutMenu(false)
+                  }}
+                >
+                  {tpl.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       <div

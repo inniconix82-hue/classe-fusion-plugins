@@ -44,6 +44,7 @@ import TemplatesModal from './components/TemplatesModal'
 import QuickSearchModal from './components/QuickSearchModal'
 import SetupWizard from './components/SetupWizard'
 import CustomCategoriesModal from './components/CustomCategoriesModal'
+import WelcomeScreen from './components/WelcomeScreen'
 import { loadCustomCategories, saveCustomCategories } from './data/customCategories'
 
 const nodeTypes = {
@@ -151,6 +152,9 @@ function FlowCanvas() {
   const [showHelp, setShowHelp] = useState(false)
   const [showSetupWizard, setShowSetupWizard] = useState(false)
   const [showCustomCategories, setShowCustomCategories] = useState(false)
+  const [showWelcome, setShowWelcome] = useState(() => {
+    try { return !localStorage.getItem('nodeorg-welcome-done') } catch { return false }
+  })
   const [nodeContextMenu, setNodeContextMenu] = useState<{ x: number; y: number; node: Node } | null>(null)
   const [edgeContextMenu, setEdgeContextMenu] = useState<{ x: number; y: number; edge: Edge } | null>(null)
   const [saveToCategoryPicker, setSaveToCategoryPicker] = useState<Node | null>(null)
@@ -860,6 +864,19 @@ function FlowCanvas() {
 
   return (
     <div className="app-container">
+      {showWelcome && (
+        <WelcomeScreen
+          onManageCategories={() => {
+            setShowWelcome(false)
+            localStorage.setItem('nodeorg-welcome-done', '1')
+            setShowCustomCategories(true)
+          }}
+          onEnterApp={() => {
+            setShowWelcome(false)
+            localStorage.setItem('nodeorg-welcome-done', '1')
+          }}
+        />
+      )}
       {showSetupWizard && (
         <SetupWizard
           onComplete={(model) => {
@@ -900,6 +917,10 @@ function FlowCanvas() {
           }])
         }}
         onShowHelp={() => setShowHelp(true)}
+        onShowWelcome={() => {
+          localStorage.removeItem('nodeorg-welcome-done')
+          setShowWelcome(true)
+        }}
         onManageCategories={() => setShowCustomCategories(true)}
         onOpenTemplates={() => setShowTemplates(true)}
         theme={theme}

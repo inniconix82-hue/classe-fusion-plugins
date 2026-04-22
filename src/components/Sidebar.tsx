@@ -34,6 +34,7 @@ interface SidebarProps {
   onShowHelp: () => void
   onManageCategories: () => void
   onOpenTemplates: () => void
+  onShowWelcome?: () => void
   theme?: 'dark' | 'light'
   onToggleTheme?: () => void
   collapsed?: boolean
@@ -59,6 +60,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   onShowHelp,
   onManageCategories,
   onOpenTemplates,
+  onShowWelcome,
   theme = 'dark',
   onToggleTheme,
   collapsed = false,
@@ -284,6 +286,14 @@ const Sidebar: React.FC<SidebarProps> = ({
           🗂️ Templates
         </button>
       </div>
+
+      {onShowWelcome && (
+        <div className="sidebar-layout-controls">
+          <button className="layout-btn" onClick={onShowWelcome} style={{ flex: 'none', width: '100%' }}>
+            🏠 Accueil
+          </button>
+        </div>
+      )}
 
       <div className="sidebar-divider" />
 
