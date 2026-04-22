@@ -212,10 +212,34 @@ const TextEditorPanel: React.FC<TextEditorPanelProps> = ({
     window.open(`mailto:?subject=${subject}&body=${body}`)
   }, [])
 
-  const insertFromNodes = useCallback(() => {
-    // Triggered externally via ref - just focus
-    editorRef.current?.focus()
-  }, [])
+  const autoLayout = useCallback(() => {
+    const el = editorRef.current
+    if (!el) return
+    const text = el.innerText || el.textContent || ''
+    if (!text.trim()) return
+    // Convert current plain text to structured markdown then render
+    const lines = text.split('\n').map((l) => l.trimEnd())
+    const mdLines: string[] = []
+    let prevBlank = false
+    for (const line of lines) {
+      const trimmed = line.trimStart()
+      if (!trimmed) { if (!prevBlank) mdLines.push(''); prevBlank = true; continue }
+      prevBlank = false
+      // Detect headings heuristic: short line, no punctuation at end, not a list
+      if (trimmed.length < 60 && !trimmed.endsWith('.') && !trimmed.endsWith(',') && !/^[-•*\d]/.test(trimmed) && mdLines.length > 0) {
+        mdLines.push(`\n## ${trimmed}`)
+      } else if (/^[-•*]\s/.test(trimmed)) {
+        mdLines.push(`- ${trimmed.replace(/^[-•*]\s+/, '')}`)
+      } else {
+        mdLines.push(trimmed)
+      }
+    }
+    const md = mdLines.join('\n').trim()
+    const html = String(marked.parse(md, { async: false, breaks: true, gfm: true }))
+    el.innerHTML = html
+    el.classList.add('ollama-formatted')
+    handleInput()
+  }, [handleInput])
 
   // Expose insertContent for external use
   ;(TextEditorPanel as any)._insert = (html: string) => {
@@ -273,6 +297,10 @@ const TextEditorPanel: React.FC<TextEditorPanelProps> = ({
         <button className="editor-btn" onClick={() => exec('bold')} title="Gras (Ctrl+B)">
           <strong>B</strong>
         </button>
+        <button className="editor-btn editor-autolayout-btn" onClick={autoLayout} title="Mise en page automatique — structure le texte en titres et paragraphes">
+          ✨ Auto
+        </button>
+        <div className="editor-toolbar-separator" />
         <button className="editor-btn editor-btn-italic" onClick={() => exec('italic')} title="Italique (Ctrl+I)">
           <em>I</em>
         </button>

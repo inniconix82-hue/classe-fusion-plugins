@@ -165,6 +165,12 @@ function FlowCanvas() {
   })
   const [nodeContextMenu, setNodeContextMenu] = useState<{ x: number; y: number; node: Node } | null>(null)
   const [edgeContextMenu, setEdgeContextMenu] = useState<{ x: number; y: number; edge: Edge } | null>(null)
+  const [connectMenu, setConnectMenu] = useState<{
+    screenX: number; screenY: number
+    flowX: number; flowY: number
+    fromNodeId: string
+    fromHandleId?: string | null
+  } | null>(null)
   const [saveToCategoryPicker, setSaveToCategoryPicker] = useState<Node | null>(null)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [isNetworkActive, setIsNetworkActive] = useState(false)
@@ -228,6 +234,23 @@ function FlowCanvas() {
     lastClickPosRef.current = pos
     setNodeContextMenu(null)
     setEdgeContextMenu(null)
+    setConnectMenu(null)
+  }, [screenToFlowPosition])
+
+  const onConnectEnd = useCallback((event: MouseEvent | TouchEvent, connectionState: any) => {
+    // Only show menu when dropped in empty space (no valid target)
+    if (connectionState.isValid || !connectionState.fromNode) return
+    const clientX = 'clientX' in event ? event.clientX : (event as TouchEvent).touches[0].clientX
+    const clientY = 'clientY' in event ? event.clientY : (event as TouchEvent).touches[0].clientY
+    const flowPos = screenToFlowPosition({ x: clientX, y: clientY })
+    setConnectMenu({
+      screenX: clientX,
+      screenY: clientY,
+      flowX: flowPos.x,
+      flowY: flowPos.y,
+      fromNodeId: connectionState.fromNode.id,
+      fromHandleId: connectionState.fromHandle?.id ?? null,
+    })
   }, [screenToFlowPosition])
 
   const onConnect: OnConnect = useCallback(
@@ -999,6 +1022,80 @@ function FlowCanvas() {
         </div>
       )}
 
+      {/* Blender-style connect menu */}
+      {connectMenu && (
+        <div
+          className="connect-menu"
+          style={{ top: connectMenu.screenY, left: connectMenu.screenX }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="connect-menu-title">Créer et connecter</div>
+
+          <div className="connect-menu-connectors">
+            {['', 'ET', 'OU', 'SI', 'ALORS', 'SINON'].map((connector) => (
+              <button
+                key={connector || 'none'}
+                className={`connect-connector-btn ${connector === '' ? 'connect-connector-none' : ''}`}
+                title={connector || 'Lien simple'}
+                data-active="false"
+                onClick={(e) => {
+                  // toggle selection — store on the button's parent
+                  const btns = (e.currentTarget.parentElement as HTMLElement).querySelectorAll('.connect-connector-btn')
+                  btns.forEach((b) => b.setAttribute('data-active', 'false'))
+                  e.currentTarget.setAttribute('data-active', 'true')
+                  ;(e.currentTarget.parentElement as HTMLElement).dataset.connector = connector
+                }}
+              >
+                {connector || '→'}
+              </button>
+            ))}
+          </div>
+
+          <div className="connect-menu-section">Nouveau node</div>
+          {[
+            { type: 'custom',    label: '⬡ Node',        color: '#6366f1' },
+            { type: 'sticky',    label: '📝 Sticky',     color: '#fde047' },
+            { type: 'personne',  label: '👤 Personne',   color: '#7c3aed' },
+            { type: 'detective', label: '🔍 Enquête',    color: '#ef4444' },
+            { type: 'vignette',  label: '🖼️ Vignette',  color: '#94a3b8' },
+          ].map(({ type, label, color }) => (
+            <button
+              key={type}
+              className="connect-menu-item"
+              style={{ borderLeft: `3px solid ${color}` }}
+              onClick={() => {
+                const connector = (document.querySelector('.connect-menu-connectors') as HTMLElement)?.dataset.connector ?? ''
+                const newId = getNextNodeId()
+                const newNode: Node = {
+                  id: newId,
+                  type,
+                  position: { x: connectMenu.flowX - 90, y: connectMenu.flowY - 30 },
+                  data: { label: label.replace(/^[^\s]+\s/, ''), description: '', color, category: 'custom' },
+                }
+                const newEdge: Edge = {
+                  id: `e-${connectMenu.fromNodeId}-${newId}`,
+                  source: connectMenu.fromNodeId,
+                  target: newId,
+                  type: 'custom',
+                  animated: true,
+                  data: { label: connector },
+                  style: { stroke: color, strokeWidth: 2 },
+                }
+                history.push(nodes, edges)
+                setNodes((nds) => [...nds, newNode])
+                setEdges((eds) => [...eds, newEdge])
+                setConnectMenu(null)
+              }}
+            >
+              {label}
+            </button>
+          ))}
+
+          <div className="connect-menu-divider" />
+          <button className="connect-menu-cancel" onClick={() => setConnectMenu(null)}>Annuler</button>
+        </div>
+      )}
+
       {/* Edge context menu */}
       {edgeContextMenu && (
         <div
@@ -1006,6 +1103,34 @@ function FlowCanvas() {
           style={{ top: edgeContextMenu.y, left: edgeContextMenu.x }}
           onClick={(e) => e.stopPropagation()}
         >
+          <div className="edge-menu-title">Connecteur logique</div>
+          <div className="edge-connectors-row">
+            {['ET', 'OU', 'SI', 'ALORS', 'SINON'].map((c) => (
+              <button
+                key={c}
+                className="edge-connector-chip"
+                style={{ opacity: (edgeContextMenu.edge.data as any)?.label === c ? 1 : 0.6 }}
+                onClick={() => {
+                  setEdges((eds) => eds.map((e) =>
+                    e.id === edgeContextMenu.edge.id
+                      ? { ...e, data: { ...e.data, label: (e.data as any)?.label === c ? '' : c } }
+                      : e
+                  ))
+                  setEdgeContextMenu(null)
+                }}
+              >{c}</button>
+            ))}
+            {(edgeContextMenu.edge.data as any)?.label && (
+              <button className="edge-connector-chip edge-connector-clear"
+                onClick={() => {
+                  setEdges((eds) => eds.map((e) =>
+                    e.id === edgeContextMenu.edge.id ? { ...e, data: { ...e.data, label: '' } } : e
+                  ))
+                  setEdgeContextMenu(null)
+                }}>✕</button>
+            )}
+          </div>
+          <div className="node-context-divider" />
           <div className="edge-menu-title">Type de connexion</div>
           {Object.entries(LINK_TYPES).map(([key, lt]) => (
             <button
@@ -1139,6 +1264,7 @@ function FlowCanvas() {
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
+          onConnectEnd={onConnectEnd}
           onDrop={onDrop}
           onDragOver={onDragOver}
           onNodeClick={onNodeClick}
