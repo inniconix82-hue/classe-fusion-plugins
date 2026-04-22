@@ -58,7 +58,25 @@ async function run() {
 
   const appPaths = await packager(packagerOptions)
 
-  const appFolder = appPaths[0]
+  const appFolder = appPaths && appPaths[0]
+
+  if (!appFolder) {
+    // Cross-compilation to macOS is not supported on Linux — fall back to a portable source ZIP
+    console.log('⚠️  Packaging macOS natif impossible sur Linux — création d\'un ZIP source portable...')
+    const zipName = 'Node-Organisation-Mac-portable.zip'
+    const zipPath = path.join(__dirname, 'release', zipName)
+    if (!fs.existsSync(path.join(__dirname, 'release'))) fs.mkdirSync(path.join(__dirname, 'release'))
+    if (fs.existsSync(zipPath)) fs.unlinkSync(zipPath)
+    execSync(
+      `zip -r "${zipPath}" dist dist-electron package.json main.js preload.js -x "*.DS_Store"`,
+      { stdio: 'inherit', cwd: __dirname }
+    )
+    console.log(`\n✅ ZIP portable créé : release/${zipName}`)
+    console.log('   Sur Mac : git pull && npm install && npm run electron:dev')
+    fs.rmSync(tmpDir, { recursive: true })
+    return
+  }
+
   console.log('✅ App packagée dans:', appFolder)
 
   // 5. Create ZIP
