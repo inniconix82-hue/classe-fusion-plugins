@@ -3906,3 +3906,57 @@ body {
   border-color: var(--accent);
   color: var(--text-primary);
 }
+
+.welcome-continue-block {
+  margin-bottom: 20px;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.welcome-continue-btn {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  padding: 14px 28px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: opacity 0.15s, transform 0.15s;
+  min-width: 280px;
+  justify-content: center;
+}
+
+.welcome-continue-btn:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.welcome-continue-mode {
+  font-size: 12px;
+  font-weight: 500;
+  opacity: 0.85;
+  background: rgba(255,255,255,0.2);
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.welcome-skip-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-muted);
+  cursor: pointer;
+  margin-top: 16px;
+  user-select: none;
+}
+
+.welcome-skip-checkbox {
+  cursor: pointer;
+  accent-color: var(--accent);
+}

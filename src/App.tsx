@@ -34,7 +34,7 @@ import OllamaPanel from './components/OllamaPanel'
 import TextEditorPanel from './components/TextEditorPanel'
 import { type LayoutDirection, getLayoutedElements } from './data/layoutUtils'
 import { LayoutContext } from './data/LayoutContext'
-import { type PresetNode, type TaskMode } from './data/presets'
+import { type PresetNode, type TaskMode, TASK_MODES } from './data/presets'
 import { type Shortcut, type NodeShortcut, loadShortcuts, loadNodeShortcuts, matchesShortcut, saveNodeShortcuts } from './data/shortcuts'
 import { useHistory } from './data/useHistory'
 import { exportToPNG, exportToPDF } from './data/exportUtils'
@@ -44,7 +44,7 @@ import TemplatesModal from './components/TemplatesModal'
 import QuickSearchModal from './components/QuickSearchModal'
 import SetupWizard from './components/SetupWizard'
 import CustomCategoriesModal from './components/CustomCategoriesModal'
-import WelcomeScreen from './components/WelcomeScreen'
+import WelcomeScreen, { SKIP_KEY } from './components/WelcomeScreen'
 import { loadCustomCategories, saveCustomCategories } from './data/customCategories'
 
 const nodeTypes = {
@@ -153,9 +153,15 @@ function FlowCanvas() {
   const [showSetupWizard, setShowSetupWizard] = useState(false)
   const [showCustomCategories, setShowCustomCategories] = useState(false)
   const [showWelcome, setShowWelcome] = useState(() => {
-    try { return !localStorage.getItem('nodeorg-welcome-done') } catch { return false }
+    try { return !localStorage.getItem(SKIP_KEY) } catch { return true }
   })
-  const [activeTaskMode, setActiveTaskMode] = useState<TaskMode | null>(null)
+  const [activeTaskMode, setActiveTaskMode] = useState<TaskMode | null>(() => {
+    try {
+      const saved = localStorage.getItem('nodeorg-last-task-mode')
+      if (saved) return TASK_MODES.find((m) => m.id === saved) ?? null
+    } catch {}
+    return null
+  })
   const [nodeContextMenu, setNodeContextMenu] = useState<{ x: number; y: number; node: Node } | null>(null)
   const [edgeContextMenu, setEdgeContextMenu] = useState<{ x: number; y: number; edge: Edge } | null>(null)
   const [saveToCategoryPicker, setSaveToCategoryPicker] = useState<Node | null>(null)
@@ -875,15 +881,19 @@ function FlowCanvas() {
     <div className="app-container">
       {showWelcome && (
         <WelcomeScreen
+          hasAutosave={!!loadAutoSave()}
+          lastTaskMode={activeTaskMode}
+          onContinue={() => setShowWelcome(false)}
           onManageCategories={() => {
             setShowWelcome(false)
-            localStorage.setItem('nodeorg-welcome-done', '1')
             setShowCustomCategories(true)
           }}
           onEnterApp={(taskMode?: TaskMode) => {
             setShowWelcome(false)
-            localStorage.setItem('nodeorg-welcome-done', '1')
-            setActiveTaskMode(taskMode ?? null)
+            const mode = taskMode ?? null
+            setActiveTaskMode(mode)
+            if (mode) localStorage.setItem('nodeorg-last-task-mode', mode.id)
+            else localStorage.removeItem('nodeorg-last-task-mode')
           }}
         />
       )}
@@ -929,7 +939,7 @@ function FlowCanvas() {
         onShowHelp={() => setShowHelp(true)}
         activeSuperCatIds={activeTaskMode && activeTaskMode.id !== 'all' ? activeTaskMode.superCatIds : null}
         onShowWelcome={() => {
-          localStorage.removeItem('nodeorg-welcome-done')
+          localStorage.removeItem(SKIP_KEY)
           setShowWelcome(true)
         }}
         onManageCategories={() => setShowCustomCategories(true)}

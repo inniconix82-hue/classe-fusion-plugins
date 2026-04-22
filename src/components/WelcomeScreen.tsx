@@ -6,11 +6,23 @@ import type { CustomCategory } from '../data/customCategories'
 interface WelcomeScreenProps {
   onManageCategories: () => void
   onEnterApp: (taskMode?: TaskMode) => void
+  onContinue: () => void
+  hasAutosave: boolean
+  lastTaskMode: TaskMode | null
 }
 
-const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onManageCategories, onEnterApp }) => {
+const SKIP_KEY = 'nodeorg-skip-welcome'
+
+const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
+  onManageCategories,
+  onEnterApp,
+  onContinue,
+  hasAutosave,
+  lastTaskMode,
+}) => {
   const importRef = useRef<HTMLInputElement>(null)
   const [selectedTask, setSelectedTask] = useState<string | null>(null)
+  const [skipOnStartup, setSkipOnStartup] = useState(false)
 
   const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -19,6 +31,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onManageCategories, onEnt
       const imported = await importCategoriesFromJSON(file)
       saveCustomCategories(imported as CustomCategory[])
       alert(`${imported.length} catégorie(s) importée(s) avec succès.`)
+      maybeSkip()
       onEnterApp()
     } catch (err: any) {
       alert(`Erreur d'importation : ${err.message}`)
@@ -26,9 +39,20 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onManageCategories, onEnt
     if (importRef.current) importRef.current.value = ''
   }
 
+  const maybeSkip = () => {
+    if (skipOnStartup) localStorage.setItem(SKIP_KEY, '1')
+    else localStorage.removeItem(SKIP_KEY)
+  }
+
   const handleStart = () => {
     const mode = TASK_MODES.find((m) => m.id === selectedTask) ?? undefined
+    maybeSkip()
     onEnterApp(mode)
+  }
+
+  const handleContinue = () => {
+    maybeSkip()
+    onContinue()
   }
 
   return (
@@ -36,7 +60,21 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onManageCategories, onEnt
       <div className="welcome-content">
         <div className="welcome-logo">⬡</div>
         <h1 className="welcome-title">Node Organisation</h1>
-        <p className="welcome-subtitle">Quelle tâche souhaitez-vous réaliser ?</p>
+
+        {hasAutosave && (
+          <div className="welcome-continue-block">
+            <button className="welcome-continue-btn" onClick={handleContinue}>
+              ▶ Continuer le projet en cours
+              {lastTaskMode && (
+                <span className="welcome-continue-mode">{lastTaskMode.icon} {lastTaskMode.name}</span>
+              )}
+            </button>
+          </div>
+        )}
+
+        <p className="welcome-subtitle">
+          {hasAutosave ? 'Ou démarrer une nouvelle tâche :' : 'Quelle tâche souhaitez-vous réaliser ?'}
+        </p>
 
         <div className="welcome-task-grid">
           {TASK_MODES.map((mode) => (
@@ -58,7 +96,9 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onManageCategories, onEnt
             onClick={handleStart}
             disabled={!selectedTask}
           >
-            {selectedTask ? `Démarrer — ${TASK_MODES.find(m => m.id === selectedTask)?.name}` : 'Choisir une tâche ci-dessus'}
+            {selectedTask
+              ? `Démarrer — ${TASK_MODES.find(m => m.id === selectedTask)?.name}`
+              : 'Choisir une tâche ci-dessus'}
           </button>
 
           <div className="welcome-secondary-actions">
@@ -73,12 +113,19 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onManageCategories, onEnt
 
         <input ref={importRef} type="file" accept=".json" style={{ display: 'none' }} onChange={handleImport} />
 
-        <button className="welcome-skip" onClick={() => onEnterApp()}>
-          Passer et charger tout →
-        </button>
+        <label className="welcome-skip-label">
+          <input
+            type="checkbox"
+            checked={skipOnStartup}
+            onChange={(e) => setSkipOnStartup(e.target.checked)}
+            className="welcome-skip-checkbox"
+          />
+          Ne plus afficher au démarrage
+        </label>
       </div>
     </div>
   )
 }
 
+export { SKIP_KEY }
 export default WelcomeScreen
