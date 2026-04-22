@@ -1,3 +1,70 @@
+export interface TaskMode {
+  id: string
+  name: string
+  icon: string
+  description: string
+  superCatIds: string[]   // which SUPER_CATEGORIES to show
+  ollamaStyle?: 'synthese' | 'detaille' | 'reunion' | 'cours'
+}
+
+export const TASK_MODES: TaskMode[] = [
+  {
+    id: 'all',
+    name: 'Tout charger',
+    icon: '🌐',
+    description: 'Accès à toutes les catégories sans restriction.',
+    superCatIds: ['perso', 'productivite', 'projet', 'business', 'creativite', 'tech', 'social', 'educ', 'detective'],
+  },
+  {
+    id: 'detective',
+    name: 'Murder Board',
+    icon: '🕵️',
+    description: 'Tableau d\'enquête : suspects, indices, lieux, hypothèses.',
+    superCatIds: ['detective', 'perso'],
+    ollamaStyle: 'detaille',
+  },
+  {
+    id: 'reunion',
+    name: 'Réunion',
+    icon: '📋',
+    description: 'Ordre du jour, décisions, actions et participants.',
+    superCatIds: ['perso', 'projet', 'productivite'],
+    ollamaStyle: 'reunion',
+  },
+  {
+    id: 'scenario',
+    name: 'Scénario / Créativité',
+    icon: '🎭',
+    description: 'Story-board, personnages, séquences, médias.',
+    superCatIds: ['creativite', 'perso'],
+    ollamaStyle: 'detaille',
+  },
+  {
+    id: 'business',
+    name: 'Business / Projet',
+    icon: '💼',
+    description: 'Stratégie, finances, marketing, équipes et planning.',
+    superCatIds: ['business', 'perso', 'projet'],
+    ollamaStyle: 'synthese',
+  },
+  {
+    id: 'education',
+    name: 'Formation / Cours',
+    icon: '🎓',
+    description: 'Contenus pédagogiques, séquences, objectifs.',
+    superCatIds: ['educ', 'perso'],
+    ollamaStyle: 'cours',
+  },
+  {
+    id: 'social',
+    name: 'Action Sociale',
+    icon: '🤝',
+    description: 'Accompagnement, projets individualisés, réseau.',
+    superCatIds: ['social', 'perso'],
+    ollamaStyle: 'detaille',
+  },
+]
+
 export interface PresetNode {
   type: string
   label: string

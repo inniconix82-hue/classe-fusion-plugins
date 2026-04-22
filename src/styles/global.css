@@ -3792,3 +3792,117 @@ body {
 .welcome-skip:hover {
   color: var(--text-secondary);
 }
+
+/* ==============================
+   Welcome Screen — Task Selection
+   ============================== */
+
+.welcome-task-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin-bottom: 28px;
+  max-width: 760px;
+  width: 100%;
+}
+
+.welcome-task-card {
+  background: var(--bg-card);
+  border: 2px solid var(--border-color);
+  border-radius: 12px;
+  padding: 18px 14px;
+  cursor: pointer;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+}
+
+.welcome-task-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+}
+
+.welcome-task-card.selected {
+  border-color: var(--accent);
+  background: linear-gradient(135deg, var(--bg-card), rgba(99, 102, 241, 0.1));
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+}
+
+.welcome-task-card.task-all {
+  border-style: dashed;
+}
+
+.welcome-task-icon {
+  font-size: 28px;
+  line-height: 1;
+}
+
+.welcome-task-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.welcome-task-desc {
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.welcome-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.welcome-btn-primary {
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 13px 32px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.15s;
+  min-width: 260px;
+}
+
+.welcome-btn-primary:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.welcome-btn-primary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.welcome-secondary-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.welcome-btn-secondary {
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.welcome-btn-secondary:hover {
+  border-color: var(--accent);
+  color: var(--text-primary);
+}

@@ -1,14 +1,16 @@
-import React, { useRef } from 'react'
+import React, { useRef, useState } from 'react'
 import { importCategoriesFromJSON, saveCustomCategories } from '../data/customCategories'
+import { TASK_MODES, type TaskMode } from '../data/presets'
 import type { CustomCategory } from '../data/customCategories'
 
 interface WelcomeScreenProps {
   onManageCategories: () => void
-  onEnterApp: () => void
+  onEnterApp: (taskMode?: TaskMode) => void
 }
 
 const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onManageCategories, onEnterApp }) => {
   const importRef = useRef<HTMLInputElement>(null)
+  const [selectedTask, setSelectedTask] = useState<string | null>(null)
 
   const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -24,43 +26,55 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onManageCategories, onEnt
     if (importRef.current) importRef.current.value = ''
   }
 
+  const handleStart = () => {
+    const mode = TASK_MODES.find((m) => m.id === selectedTask) ?? undefined
+    onEnterApp(mode)
+  }
+
   return (
     <div className="welcome-screen">
       <div className="welcome-content">
         <div className="welcome-logo">⬡</div>
         <h1 className="welcome-title">Node Organisation</h1>
-        <p className="welcome-subtitle">Comment voulez-vous commencer ?</p>
+        <p className="welcome-subtitle">Quelle tâche souhaitez-vous réaliser ?</p>
 
-        <div className="welcome-cards">
-          <button className="welcome-card" onClick={onManageCategories}>
-            <div className="welcome-card-icon">🗂️</div>
-            <div className="welcome-card-title">Gérer mes catégories</div>
-            <div className="welcome-card-desc">
-              Créez vos propres catégories de nodes avant de démarrer — idéal pour personnaliser l'outil à votre métier.
-            </div>
+        <div className="welcome-task-grid">
+          {TASK_MODES.map((mode) => (
+            <button
+              key={mode.id}
+              className={`welcome-task-card ${selectedTask === mode.id ? 'selected' : ''} ${mode.id === 'all' ? 'task-all' : ''}`}
+              onClick={() => setSelectedTask(mode.id)}
+            >
+              <span className="welcome-task-icon">{mode.icon}</span>
+              <span className="welcome-task-name">{mode.name}</span>
+              <span className="welcome-task-desc">{mode.description}</span>
+            </button>
+          ))}
+        </div>
+
+        <div className="welcome-actions">
+          <button
+            className="welcome-btn-primary"
+            onClick={handleStart}
+            disabled={!selectedTask}
+          >
+            {selectedTask ? `Démarrer — ${TASK_MODES.find(m => m.id === selectedTask)?.name}` : 'Choisir une tâche ci-dessus'}
           </button>
 
-          <button className="welcome-card" onClick={() => importRef.current?.click()}>
-            <div className="welcome-card-icon">⬆️</div>
-            <div className="welcome-card-title">Importer des catégories</div>
-            <div className="welcome-card-desc">
-              Chargez un fichier de catégories existant (.json) partagé par votre équipe ou généré par un outil externe.
-            </div>
-          </button>
-
-          <button className="welcome-card welcome-card-primary" onClick={onEnterApp}>
-            <div className="welcome-card-icon">🚀</div>
-            <div className="welcome-card-title">Accéder à l'application</div>
-            <div className="welcome-card-desc">
-              Démarrez directement sur le canvas et organisez vos idées en nodes connectés.
-            </div>
-          </button>
+          <div className="welcome-secondary-actions">
+            <button className="welcome-btn-secondary" onClick={onManageCategories}>
+              🗂️ Gérer mes catégories
+            </button>
+            <button className="welcome-btn-secondary" onClick={() => importRef.current?.click()}>
+              ⬆️ Importer des catégories
+            </button>
+          </div>
         </div>
 
         <input ref={importRef} type="file" accept=".json" style={{ display: 'none' }} onChange={handleImport} />
 
-        <button className="welcome-skip" onClick={onEnterApp}>
-          Ne plus afficher cet écran au démarrage →
+        <button className="welcome-skip" onClick={() => onEnterApp()}>
+          Passer et charger tout →
         </button>
       </div>
     </div>

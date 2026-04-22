@@ -35,6 +35,7 @@ interface SidebarProps {
   onManageCategories: () => void
   onOpenTemplates: () => void
   onShowWelcome?: () => void
+  activeSuperCatIds?: string[] | null
   theme?: 'dark' | 'light'
   onToggleTheme?: () => void
   collapsed?: boolean
@@ -61,6 +62,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   onManageCategories,
   onOpenTemplates,
   onShowWelcome,
+  activeSuperCatIds = null,
   theme = 'dark',
   onToggleTheme,
   collapsed = false,
@@ -73,6 +75,10 @@ const Sidebar: React.FC<SidebarProps> = ({
   const [popoverCatId, setPopoverCatId] = useState<string | null>(null)
 
   const [customCategories, setCustomCategories] = useState<PresetCategory[]>(() => loadCustomCategories())
+
+  const visibleSuperCats = activeSuperCatIds
+    ? SUPER_CATEGORIES.filter((sc) => activeSuperCatIds.includes(sc.id))
+    : SUPER_CATEGORIES
 
   const [searchQuery, setSearchQuery] = useState('')
   const [semanticMatches, setSemanticMatches] = useState<Set<string>>(new Set())
@@ -289,8 +295,8 @@ const Sidebar: React.FC<SidebarProps> = ({
 
       {onShowWelcome && (
         <div className="sidebar-layout-controls">
-          <button className="layout-btn" onClick={onShowWelcome} style={{ flex: 'none', width: '100%' }}>
-            🏠 Accueil
+          <button className="layout-btn" onClick={onShowWelcome} style={{ flex: 'none', width: '100%' }} title="Changer de mode ou de tâche">
+            🏠 {activeSuperCatIds ? 'Changer de mode' : 'Accueil'}
           </button>
         </div>
       )}
@@ -311,7 +317,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         Glisser un node sur le canvas
         {focusedSuperCat && (
           <button className="focus-reset-btn" onClick={() => setFocusedSuperCat(null)} title="Afficher tout">
-            ✕ {SUPER_CATEGORIES.find(s => s.id === focusedSuperCat)?.name}
+            ✕ {visibleSuperCats.find(s => s.id === focusedSuperCat)?.name}
           </button>
         )}
       </div>
@@ -347,7 +353,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         })}
 
         {/* Preset categories grouped by super-category */}
-        {SUPER_CATEGORIES.map((superCat) => {
+        {visibleSuperCats.map((superCat) => {
           if (focusedSuperCat && focusedSuperCat !== superCat.id) return null
           const cats = presetCategories.filter((c) => superCat.categoryIds.includes(c.id))
           if (cats.length === 0) return null
@@ -377,7 +383,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                 onClick={() => setExpandedSuper((prev) => {
                   const wasOpen = !!prev[superCat.id]
                   const reset: Record<string, boolean> = {}
-                  SUPER_CATEGORIES.forEach((sc) => { reset[sc.id] = false })
+                  visibleSuperCats.forEach((sc) => { reset[sc.id] = false })
                   if (!wasOpen) reset[superCat.id] = true
                   return reset
                 })}

@@ -34,7 +34,7 @@ import OllamaPanel from './components/OllamaPanel'
 import TextEditorPanel from './components/TextEditorPanel'
 import { type LayoutDirection, getLayoutedElements } from './data/layoutUtils'
 import { LayoutContext } from './data/LayoutContext'
-import { type PresetNode } from './data/presets'
+import { type PresetNode, type TaskMode } from './data/presets'
 import { type Shortcut, type NodeShortcut, loadShortcuts, loadNodeShortcuts, matchesShortcut, saveNodeShortcuts } from './data/shortcuts'
 import { useHistory } from './data/useHistory'
 import { exportToPNG, exportToPDF } from './data/exportUtils'
@@ -155,6 +155,7 @@ function FlowCanvas() {
   const [showWelcome, setShowWelcome] = useState(() => {
     try { return !localStorage.getItem('nodeorg-welcome-done') } catch { return false }
   })
+  const [activeTaskMode, setActiveTaskMode] = useState<TaskMode | null>(null)
   const [nodeContextMenu, setNodeContextMenu] = useState<{ x: number; y: number; node: Node } | null>(null)
   const [edgeContextMenu, setEdgeContextMenu] = useState<{ x: number; y: number; edge: Edge } | null>(null)
   const [saveToCategoryPicker, setSaveToCategoryPicker] = useState<Node | null>(null)
@@ -744,46 +745,54 @@ function FlowCanvas() {
   // Keyboard shortcuts
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (showShortcuts) return
       const target = e.target as HTMLElement
       if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return
-
-      // Shift+Space = quick search dialog
-      if (e.shiftKey && e.code === 'Space') {
-        e.preventDefault()
-        e.stopImmediatePropagation()
-        setShowQuickSearch((v) => !v)
-        return
-      }
-
-      // Fixed shortcut: Ctrl/Cmd+M = toggle minimap
-      if ((e.ctrlKey || e.metaKey) && e.key === 'm') {
-        e.preventDefault()
-        e.stopImmediatePropagation()
-        setShowMinimap((v) => !v)
-        return
-      }
 
       for (const shortcut of shortcuts) {
         if (matchesShortcut(e, shortcut.keys)) {
           e.preventDefault()
           e.stopImmediatePropagation()
           switch (shortcut.id) {
+            // Fichier
             case 'save': onSave(); break
             case 'load': onLoad(); break
             case 'new': onClear(); break
-            case 'layout': onAutoLayout(); break
-            case 'direction': onToggleDirection(); break
-            case 'fitview': fitView({ padding: 0.2 }); break
+            // Édition
             case 'undo': onUndo(); break
             case 'redo': onRedo(); break
             case 'selectall': onSelectAll(); break
             case 'copy': onCopy(); break
             case 'paste': onPaste(); break
             case 'duplicate': onDuplicate(); break
+            case 'disconnect': onDisconnectSelected(); break
+            // Vue & Layout
+            case 'layout': onAutoLayout(); break
+            case 'direction': onToggleDirection(); break
+            case 'fitview': fitView({ padding: 0.2 }); break
+            case 'minimap': setShowMinimap((v) => !v); break
+            case 'addunderlay': {
+              const id = getNextNodeId()
+              history.push(nodes, edges)
+              const pos = lastClickPosRef.current
+              setNodes((nds) => [...nds, {
+                id, type: 'underlay',
+                position: { x: pos.x - 150, y: pos.y - 100 },
+                style: { width: 300, height: 200, zIndex: -1 },
+                data: { label: 'Zone', color: '#6366f1' },
+              }])
+              break
+            }
+            // Panneaux
+            case 'ollama': setShowOllama((v) => !v); break
+            case 'editor': setShowEditor((v) => !v); break
+            case 'quicksearch': setShowQuickSearch((v) => !v); break
+            case 'templates': setShowTemplates((v) => !v); break
+            case 'categories': setShowCustomCategories((v) => !v); break
+            case 'shortcuts': setShowShortcuts((v) => !v); break
+            case 'help': setShowHelp((v) => !v); break
+            // Export
             case 'exportpng': onExportPNG(); break
             case 'exportpdf': onExportPDF(); break
-            case 'disconnect': onDisconnectSelected(); break
           }
           return
         }
@@ -820,7 +829,7 @@ function FlowCanvas() {
     // Use capture phase to intercept before React Flow swallows the event
     window.addEventListener('keydown', handler, true)
     return () => window.removeEventListener('keydown', handler, true)
-  }, [shortcuts, nodeShortcuts, showShortcuts, onSave, onLoad, onClear, onAutoLayout, onToggleDirection, fitView, onUndo, onRedo, onSelectAll, onCopy, onPaste, onDuplicate, onExportPNG, onExportPDF, onDisconnectSelected, nodes, edges, history, setNodes])
+  }, [shortcuts, nodeShortcuts, onSave, onLoad, onClear, onAutoLayout, onToggleDirection, fitView, onUndo, onRedo, onSelectAll, onCopy, onPaste, onDuplicate, onExportPNG, onExportPDF, onDisconnectSelected, nodes, edges, history, setNodes, setShowMinimap, setShowOllama, setShowEditor, setShowQuickSearch, setShowTemplates, setShowCustomCategories, setShowShortcuts, setShowHelp])
 
   const onNodeDragStart = useCallback((_event: React.MouseEvent, node: Node) => {
     if (node.type !== 'underlay') return
@@ -871,9 +880,10 @@ function FlowCanvas() {
             localStorage.setItem('nodeorg-welcome-done', '1')
             setShowCustomCategories(true)
           }}
-          onEnterApp={() => {
+          onEnterApp={(taskMode?: TaskMode) => {
             setShowWelcome(false)
             localStorage.setItem('nodeorg-welcome-done', '1')
+            setActiveTaskMode(taskMode ?? null)
           }}
         />
       )}
@@ -917,6 +927,7 @@ function FlowCanvas() {
           }])
         }}
         onShowHelp={() => setShowHelp(true)}
+        activeSuperCatIds={activeTaskMode && activeTaskMode.id !== 'all' ? activeTaskMode.superCatIds : null}
         onShowWelcome={() => {
           localStorage.removeItem('nodeorg-welcome-done')
           setShowWelcome(true)

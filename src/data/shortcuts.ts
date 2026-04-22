@@ -14,21 +14,35 @@ export interface NodeShortcut {
 }
 
 export const defaultShortcuts: Shortcut[] = [
-  { id: 'save', label: 'Sauvegarder', keys: 'Ctrl+S', description: 'Sauvegarder le projet' },
-  { id: 'load', label: 'Ouvrir', keys: 'Ctrl+O', description: 'Ouvrir un projet' },
-  { id: 'new', label: 'Nouveau', keys: 'Ctrl+N', description: 'Nouveau projet vide' },
-  { id: 'layout', label: 'Auto Layout', keys: 'Ctrl+L', description: 'Réorganiser les nodes' },
-  { id: 'direction', label: 'Changer direction', keys: 'Ctrl+D', description: 'Basculer vertical / horizontal' },
-  { id: 'fitview', label: 'Zoom adapté', keys: 'Ctrl+F', description: 'Adapter le zoom au contenu' },
-  { id: 'selectall', label: 'Tout sélectionner', keys: 'Ctrl+A', description: 'Sélectionner tous les nodes' },
-  { id: 'undo', label: 'Annuler', keys: 'Ctrl+Z', description: 'Annuler la dernière action' },
-  { id: 'redo', label: 'Refaire', keys: 'Ctrl+Y', description: 'Refaire l\'action annulée' },
-  { id: 'copy', label: 'Copier', keys: 'Ctrl+C', description: 'Copier les nodes sélectionnés' },
-  { id: 'paste', label: 'Coller', keys: 'Ctrl+V', description: 'Coller les nodes copiés' },
-  { id: 'duplicate', label: 'Dupliquer', keys: 'Ctrl+Shift+D', description: 'Dupliquer la sélection' },
-  { id: 'exportpng', label: 'Export PNG', keys: 'Ctrl+Shift+P', description: 'Exporter en image PNG' },
-  { id: 'exportpdf', label: 'Export PDF', keys: 'Ctrl+Shift+E', description: 'Exporter en PDF' },
-  { id: 'disconnect', label: 'Déconnecter', keys: 'Ctrl+Shift+X', description: 'Supprimer les connexions des nodes sélectionnés' },
+  // Fichier
+  { id: 'save',        label: 'Sauvegarder',      keys: 'Ctrl+S',         description: 'Sauvegarder le projet' },
+  { id: 'load',        label: 'Ouvrir',            keys: 'Ctrl+O',         description: 'Ouvrir un projet' },
+  { id: 'new',         label: 'Nouveau',            keys: 'Ctrl+N',         description: 'Nouveau projet vide' },
+  // Édition
+  { id: 'undo',        label: 'Annuler',            keys: 'Ctrl+Z',         description: 'Annuler la dernière action' },
+  { id: 'redo',        label: 'Refaire',            keys: 'Ctrl+Y',         description: 'Refaire l\'action annulée' },
+  { id: 'selectall',   label: 'Tout sélectionner', keys: 'Ctrl+A',         description: 'Sélectionner tous les nodes' },
+  { id: 'copy',        label: 'Copier',             keys: 'Ctrl+C',         description: 'Copier les nodes sélectionnés' },
+  { id: 'paste',       label: 'Coller',             keys: 'Ctrl+V',         description: 'Coller les nodes copiés' },
+  { id: 'duplicate',   label: 'Dupliquer',          keys: 'Ctrl+Shift+D',   description: 'Dupliquer la sélection' },
+  { id: 'disconnect',  label: 'Déconnecter',        keys: 'Ctrl+Shift+X',   description: 'Supprimer les connexions des nodes sélectionnés' },
+  // Vue & Layout
+  { id: 'layout',      label: 'Auto Layout',        keys: 'Ctrl+L',         description: 'Réorganiser les nodes' },
+  { id: 'direction',   label: 'Changer direction',  keys: 'Ctrl+D',         description: 'Basculer vertical / horizontal' },
+  { id: 'fitview',     label: 'Zoom adapté',        keys: 'Ctrl+F',         description: 'Adapter le zoom au contenu' },
+  { id: 'minimap',     label: 'Minimap',            keys: 'Ctrl+M',         description: 'Afficher / masquer la minimap' },
+  { id: 'addunderlay', label: 'Zone de groupe',     keys: 'Ctrl+G',         description: 'Ajouter une zone de regroupement' },
+  // Panneaux
+  { id: 'ollama',      label: 'Panneau IA',         keys: 'Ctrl+I',         description: 'Ouvrir / fermer le panneau Ollama' },
+  { id: 'editor',      label: 'Éditeur de texte',   keys: 'Ctrl+E',         description: 'Ouvrir / fermer l\'éditeur de document' },
+  { id: 'quicksearch', label: 'Recherche rapide',   keys: 'Shift+Space',    description: 'Ouvrir la recherche rapide de nodes' },
+  { id: 'templates',   label: 'Templates',          keys: 'Ctrl+T',         description: 'Ouvrir les templates' },
+  { id: 'categories',  label: 'Mes catégories',     keys: 'Ctrl+Shift+C',   description: 'Gérer les catégories personnalisées' },
+  { id: 'shortcuts',   label: 'Raccourcis',         keys: 'Ctrl+K',         description: 'Afficher la liste des raccourcis' },
+  { id: 'help',        label: 'Aide',               keys: 'F1',             description: 'Ouvrir l\'aide' },
+  // Export
+  { id: 'exportpng',   label: 'Export PNG',         keys: 'Ctrl+Shift+P',   description: 'Exporter en image PNG' },
+  { id: 'exportpdf',   label: 'Export PDF',         keys: 'Ctrl+Shift+E',   description: 'Exporter en PDF' },
 ]
 
 const STORAGE_KEY = 'nodeorg-shortcuts'
