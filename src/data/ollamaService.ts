@@ -20,45 +20,68 @@ export function setOllamaModel(model: string) {
 export type OllamaStyle = 'synthese' | 'detaille' | 'reunion' | 'cours'
 
 function nodeLabel(node: Node): string {
-  const d = node.data as { label?: string; description?: string }
+  const d = node.data as { label?: string; description?: string; category?: string }
   const label = d.label || 'Sans titre'
-  const desc = d.description ? ` (${d.description})` : ''
-  return `${label}${desc}`
+  const desc = d.description ? ` — ${d.description}` : ''
+  const cat = d.category ? ` [${d.category}]` : ''
+  return `${label}${desc}${cat}`
+}
+
+function edgeConnector(edge: Edge): string {
+  const label = ((edge.data as any)?.label as string || '').trim().toUpperCase()
+  const linkType = (edge.data as any)?.linkType as string | undefined
+
+  // Semantic logical connectors take priority
+  const logicalConnectors = ['ET', 'OU', 'SI', 'ALORS', 'SINON', 'DONC', 'CAR', 'MAIS', 'SAUF']
+  if (logicalConnectors.includes(label)) return `--${label}→`
+
+  // Named edge type (detective mode)
+  if (linkType && linkType !== 'lié') return `--[${linkType}]→`
+
+  // Free text label
+  if (label) return `--"${label}"→`
+
+  return '→'
 }
 
 function buildBranches(nodes: Node[], edges: Edge[]): string {
   if (nodes.length === 0) return 'Aucun nœud sur le canvas.'
 
-  // Exclude structural nodes (router = junction point, underlay = background zone)
   const contentNodes = nodes.filter((n) => n.type !== 'underlay' && n.type !== 'router')
   if (contentNodes.length === 0) return 'Aucun nœud de contenu sur le canvas.'
 
   const contentIds = new Set(contentNodes.map((n) => n.id))
   const contentEdges = edges.filter((e) => contentIds.has(e.source) && contentIds.has(e.target))
   const nodeMap = new Map(contentNodes.map((n) => [n.id, n]))
+  const edgeMap = new Map(contentEdges.map((e) => [`${e.source}→${e.target}`, e]))
 
   const hasIncoming = new Set(contentEdges.map((e) => e.target))
   const roots = contentNodes.filter((n) => !hasIncoming.has(n.id))
 
+  // Build paths as sequences of [nodeLabel, connector, nodeLabel, ...]
   function buildPath(nodeId: string, visited = new Set<string>()): string[][] {
     if (visited.has(nodeId)) return [[]]
     visited.add(nodeId)
     const node = nodeMap.get(nodeId)
     if (!node) return [[]]
     const label = nodeLabel(node)
-    const children = contentEdges.filter((e) => e.source === nodeId).map((e) => e.target)
-    if (children.length === 0) return [[label]]
-    return children.flatMap((child) =>
-      buildPath(child, new Set(visited)).map((path) => [label, ...path])
-    )
+    const outEdges = contentEdges.filter((e) => e.source === nodeId)
+    if (outEdges.length === 0) return [[label]]
+    return outEdges.flatMap((edge) => {
+      const connector = edgeConnector(edge)
+      return buildPath(edge.target, new Set(visited)).map((path) =>
+        path.length > 0 ? [label, connector, ...path] : [label]
+      )
+    })
   }
 
   if (roots.length === 0 || contentEdges.length === 0) {
+    // No connections — list nodes with their metadata
     return contentNodes.map((n) => `- ${nodeLabel(n)}`).join('\n')
   }
 
   const branches = roots.flatMap((root) => buildPath(root.id))
-  return branches.map((path, i) => `Branche ${i + 1} : ${path.join(' → ')}`).join('\n')
+  return branches.map((path, i) => `Branche ${i + 1} : ${path.join(' ')}`).join('\n')
 }
 
 function buildDetectivePrompt(nodes: Node[], edges: Edge[], instructions: string): string {
@@ -94,6 +117,38 @@ Format de réponse Markdown :
 Réponds uniquement en français.`
 }
 
+const GRAPH_SYSTEM_RULES = `Tu es un assistant d'analyse et de rédaction intégré à un outil de graphe de nodes.
+
+RÈGLES D'INTERPRÉTATION (à respecter impérativement) :
+
+1. PRIORITÉ AU CONTENU DES NODES
+   - Interprète d'abord le sens exprimé par le texte, le titre et la description de chaque node.
+   - Le contenu textuel des nodes est toujours plus important que leur catégorie.
+
+2. PRIORITÉ AUX RELATIONS ET CONNEXIONS
+   - Utilise les connexions entre nodes pour reconstruire la logique et l'intention.
+   - Une connexion de type ET signifie que les deux branches s'appliquent simultanément.
+   - Une connexion de type OU signifie que l'une ou l'autre branche s'applique.
+   - Une connexion de type SI introduit une condition : traite la branche comme un scénario conditionnel.
+   - Une connexion de type ALORS introduit une conséquence directe.
+   - Une connexion de type SINON introduit le cas alternatif si la condition SI n'est pas remplie.
+   - Les labels libres sur les connexions (entre guillemets) expriment la nature du lien : tiens-en compte.
+
+3. RÔLE DES CATÉGORIES
+   - Les catégories (entre crochets) sont des métadonnées de classement, pas le sujet principal.
+   - N'utilise une catégorie comme axe d'interprétation que si plusieurs nodes convergent vers elle ET que leur contenu textuel le confirme.
+   - En cas de conflit entre catégorie et contenu des nodes, le contenu des nodes prime toujours.
+
+4. BRANCHES CONDITIONNELLES
+   - Si le graphe contient des branches séparées reliées par un node commun, traite chaque branche comme un scénario distinct.
+   - Formule chaque scénario explicitement : "Dans le cas où... / Si... alors..."
+   - Identifie et mentionne les éléments communs à tous les scénarios après les avoir distingués.
+
+5. COHÉRENCE GLOBALE
+   - Ton texte doit suivre la logique du graphe, pas une logique de liste ou d'inventaire.
+   - Évite de simplement énumérer les nodes : construis un raisonnement à partir de leur structure.
+   - Ne décris jamais un node comme un objet informatique ou technique — traite-le comme un sujet ou un thème.`
+
 function buildPromptFromNodes(nodes: Node[], style: OllamaStyle = 'synthese', edges: Edge[] = [], instructions = ''): string {
   if (nodes.length === 0) return 'Aucun nœud sur le canvas.'
 
@@ -103,54 +158,52 @@ function buildPromptFromNodes(nodes: Node[], style: OllamaStyle = 'synthese', ed
   const structure = buildBranches(nodes, edges)
 
   const styleInstructions = {
-    synthese: `Utilise ce format Markdown STRICT :
-# Titre principal (1 seul)
-- **terme clé** : explication courte (max 5-7 points)
-Pas d'introduction. Pas de conclusion. Seulement des bullets avec termes en gras.`,
-    detaille: `Utilise ce format Markdown STRICT :
+    synthese: `FORMAT DE RÉPONSE — Synthèse (Markdown strict) :
+# Titre principal (déduit de la logique du graphe)
+- **terme clé** : explication courte issue du graphe (5 à 7 points max)
+Pas d'introduction générique. Pas de conclusion. Uniquement des bullets construits à partir des nodes et de leurs connexions.`,
+
+    detaille: `FORMAT DE RÉPONSE — Analyse détaillée (Markdown strict) :
 # Titre principal
-## Section pour chaque branche
-Paragraphes développés. **Termes importants** en gras.
-### Sous-sections si nécessaire
+## Une section H2 par branche ou scénario du graphe
+Paragraphes développés suivant la logique des connexions. **Termes importants** en gras.
+### Sous-sections si une branche a des ramifications
 - listes pour les points clés
-Crée des liens narratifs entre les branches.`,
-    reunion: `Utilise ce format Markdown STRICT pour un compte-rendu de réunion :
-# Ordre du jour / Sujet
-## Points abordés (une section H2 par branche)
+Construis des liens narratifs entre les branches plutôt que de les juxtaposer.`,
+
+    reunion: `FORMAT DE RÉPONSE — Compte-rendu de réunion (Markdown strict) :
+# Sujet principal (déduit du graphe)
+## Une section H2 par branche ou point abordé
 - **Décision** : ...
-- **Action** : responsable + délai
+- **Action** : responsable + délai (si mentionné dans les nodes)
 ## Prochaines étapes
-- liste des actions à mener`,
-    cours: `Utilise ce format Markdown STRICT pour un contenu pédagogique :
-# Titre du cours
+- liste des actions issues des branches terminales du graphe`,
+
+    cours: `FORMAT DE RÉPONSE — Contenu pédagogique (Markdown strict) :
+# Titre du cours (déduit du graphe)
 ## Introduction
-Contexte et objectifs d'apprentissage.
-## Concept (une section H2 par branche)
-Explication claire. **Termes clés** en gras.
-### Exemple concret
+Contexte et objectifs d'apprentissage issus des nodes racines.
+## Une section H2 par concept ou branche
+Explication claire suivant les connexions. **Termes clés** en gras.
+### Exemple concret si le graphe en contient un
 - points illustratifs
 ## Résumé
-- **point essentiel** à retenir par concept`,
+- **point essentiel** à retenir par branche`,
   }
 
   const instructionBlock = instructions.trim()
-    ? `\nINSTRUCTIONS SPÉCIFIQUES (priorité absolue) :\n${instructions.trim()}\n`
+    ? `\nINSTRUCTIONS SPÉCIFIQUES (priorité absolue sur le format, pas sur les règles) :\n${instructions.trim()}\n`
     : ''
 
-  return `Tu es un assistant professionnel.${instructionBlock}
-Voici les étiquettes (labels) d'une carte mentale et leurs connexions :
+  return `${GRAPH_SYSTEM_RULES}
+${instructionBlock}
+Voici la structure du graphe de nodes (branches et connexions) :
 
 ${structure}
 
-RÈGLES IMPORTANTES :
-- Ces labels sont des concepts, noms ou idées — PAS des termes techniques à définir
-- Ne décris JAMAIS un label comme s'il était un objet informatique ou un composant logiciel
-- Traite chaque label comme un sujet ou un thème à développer selon son contexte
-- Chaque branche représente un chemin de pensée distinct dans la carte
-
 ${styleInstructions[style]}
 
-IMPORTANT : Réponds UNIQUEMENT en Markdown valide. Réponds en français.`
+Réponds UNIQUEMENT en Markdown valide. Réponds en français.`
 }
 
 export interface OllamaResponse {
