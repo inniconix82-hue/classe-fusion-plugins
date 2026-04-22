@@ -155,6 +155,7 @@ function FlowCanvas() {
   const [showWelcome, setShowWelcome] = useState(() => {
     try { return !localStorage.getItem(SKIP_KEY) } catch { return true }
   })
+  const [isNewProject, setIsNewProject] = useState(false)
   const [activeTaskMode, setActiveTaskMode] = useState<TaskMode | null>(() => {
     try {
       const saved = localStorage.getItem('nodeorg-last-task-mode')
@@ -446,12 +447,17 @@ function FlowCanvas() {
     }
   }, [setNodes, setEdges])
 
-  const onClear = useCallback(() => {
+  const doClear = useCallback(() => {
     setNodes([])
     setEdges([])
     nodeIdCounter = 0
     localStorage.removeItem(AUTOSAVE_KEY)
   }, [setNodes, setEdges])
+
+  const onClear = useCallback(() => {
+    setIsNewProject(true)
+    setShowWelcome(true)
+  }, [])
 
   const onNodeDoubleClick = useCallback((_event: React.MouseEvent, _node: Node) => {
     // Editing is handled inside the CustomNode component
@@ -881,15 +887,22 @@ function FlowCanvas() {
     <div className="app-container">
       {showWelcome && (
         <WelcomeScreen
-          hasAutosave={!!loadAutoSave()}
+          hasAutosave={!isNewProject && !!loadAutoSave()}
           lastTaskMode={activeTaskMode}
-          onContinue={() => setShowWelcome(false)}
+          isNewProject={isNewProject}
+          onContinue={() => {
+            setShowWelcome(false)
+            setIsNewProject(false)
+          }}
           onManageCategories={() => {
             setShowWelcome(false)
+            setIsNewProject(false)
             setShowCustomCategories(true)
           }}
           onEnterApp={(taskMode?: TaskMode) => {
+            if (isNewProject) doClear()
             setShowWelcome(false)
+            setIsNewProject(false)
             const mode = taskMode ?? null
             setActiveTaskMode(mode)
             if (mode) localStorage.setItem('nodeorg-last-task-mode', mode.id)

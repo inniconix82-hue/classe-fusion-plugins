@@ -9,6 +9,7 @@ interface WelcomeScreenProps {
   onContinue: () => void
   hasAutosave: boolean
   lastTaskMode: TaskMode | null
+  isNewProject?: boolean
 }
 
 const SKIP_KEY = 'nodeorg-skip-welcome'
@@ -19,6 +20,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
   onContinue,
   hasAutosave,
   lastTaskMode,
+  isNewProject = false,
 }) => {
   const importRef = useRef<HTMLInputElement>(null)
   const [selectedTask, setSelectedTask] = useState<string | null>(null)
@@ -60,8 +62,11 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
       <div className="welcome-content">
         <div className="welcome-logo">⬡</div>
         <h1 className="welcome-title">Node Organisation</h1>
+        <p className="welcome-title-sub">
+          {isNewProject ? 'Nouveau projet — choisissez un mode :' : 'Bienvenue !'}
+        </p>
 
-        {hasAutosave && (
+        {hasAutosave && !isNewProject && (
           <div className="welcome-continue-block">
             <button className="welcome-continue-btn" onClick={handleContinue}>
               ▶ Continuer le projet en cours
@@ -73,7 +78,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
         )}
 
         <p className="welcome-subtitle">
-          {hasAutosave ? 'Ou démarrer une nouvelle tâche :' : 'Quelle tâche souhaitez-vous réaliser ?'}
+          {hasAutosave && !isNewProject ? 'Ou démarrer une nouvelle tâche :' : 'Choisissez un mode de travail :'}
         </p>
 
         <div className="welcome-task-grid">
@@ -97,8 +102,8 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
             disabled={!selectedTask}
           >
             {selectedTask
-              ? `Démarrer — ${TASK_MODES.find(m => m.id === selectedTask)?.name}`
-              : 'Choisir une tâche ci-dessus'}
+              ? `${isNewProject ? 'Créer' : 'Démarrer'} — ${TASK_MODES.find(m => m.id === selectedTask)?.name}`
+              : 'Choisir un mode ci-dessus'}
           </button>
 
           <div className="welcome-secondary-actions">
@@ -113,15 +118,17 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
 
         <input ref={importRef} type="file" accept=".json" style={{ display: 'none' }} onChange={handleImport} />
 
-        <label className="welcome-skip-label">
-          <input
-            type="checkbox"
-            checked={skipOnStartup}
-            onChange={(e) => setSkipOnStartup(e.target.checked)}
-            className="welcome-skip-checkbox"
-          />
-          Ne plus afficher au démarrage
-        </label>
+        {!isNewProject && (
+          <label className="welcome-skip-label">
+            <input
+              type="checkbox"
+              checked={skipOnStartup}
+              onChange={(e) => setSkipOnStartup(e.target.checked)}
+              className="welcome-skip-checkbox"
+            />
+            Ne plus afficher au démarrage
+          </label>
+        )}
       </div>
     </div>
   )

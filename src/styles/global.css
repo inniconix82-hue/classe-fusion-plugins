@@ -3960,3 +3960,9 @@ body {
   cursor: pointer;
   accent-color: var(--accent);
 }
+
+.welcome-title-sub {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin: -8px 0 16px;
+}
