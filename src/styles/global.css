@@ -332,6 +332,43 @@ body {
   font-weight: 600;
 }
 
+.nodes-panel-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 8px 16px;
+  background: var(--bg-secondary);
+  border: none;
+  border-top: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.nodes-panel-toggle:hover {
+  background: var(--bg-hover, rgba(255,255,255,0.05));
+  color: var(--text-primary);
+}
+
+.nodes-panel-filter-badge {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--accent);
+  background: rgba(99, 102, 241, 0.12);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  border-radius: 10px;
+  padding: 2px 7px;
+  text-transform: none;
+  letter-spacing: 0;
+  cursor: help;
+}
+
 /* Categories */
 
 .sidebar-categories {

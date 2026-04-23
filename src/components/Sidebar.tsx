@@ -73,6 +73,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({})
   const [focusedSuperCat, setFocusedSuperCat] = useState<string | null>(null)
   const [popoverCatId, setPopoverCatId] = useState<string | null>(null)
+  const [showNodesPanel, setShowNodesPanel] = useState(false)
 
   const [customCategories, setCustomCategories] = useState<PresetCategory[]>(() => loadCustomCategories())
 
@@ -210,6 +211,12 @@ const Sidebar: React.FC<SidebarProps> = ({
         </button>
       </div>
 
+      <div className="sidebar-layout-controls">
+        <button className="templates-sidebar-btn" onClick={onOpenTemplates} style={{ flex: 'none', width: '100%' }}>
+          📋 Templates
+        </button>
+      </div>
+
       <div className="sidebar-actions">
         <button className="action-btn" onClick={onExportPNG} title="Exporter en PNG">
           <span className="btn-icon">🖼️</span> Export PNG
@@ -276,20 +283,14 @@ const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       <div className="sidebar-layout-controls">
-        <button className="layout-btn" onClick={onShowHelp} style={{ flex: 'none', width: '100%' }}>
-          ❓ Aide
-        </button>
-      </div>
-
-      <div className="sidebar-layout-controls">
         <button className="custom-cats-sidebar-btn" onClick={() => { setCustomCategories(loadCustomCategories()); onManageCategories() }} style={{ flex: 'none', width: '100%' }}>
           🗂️ Mes catégories
         </button>
       </div>
 
       <div className="sidebar-layout-controls">
-        <button className="templates-sidebar-btn" onClick={onOpenTemplates} style={{ flex: 'none', width: '100%' }}>
-          🗂️ Templates
+        <button className="layout-btn" onClick={onShowHelp} style={{ flex: 'none', width: '100%' }}>
+          ❓ Aide
         </button>
       </div>
 
@@ -303,26 +304,42 @@ const Sidebar: React.FC<SidebarProps> = ({
 
       <div className="sidebar-divider" />
 
-      <div className="sidebar-search">
-        <input
-          className="search-input"
-          type="text"
-          placeholder="🔍 Rechercher un node..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
-      </div>
-
-      <div className="sidebar-section-title">
-        Glisser un node sur le canvas
-        {focusedSuperCat && (
-          <button className="focus-reset-btn" onClick={() => setFocusedSuperCat(null)} title="Afficher tout">
-            ✕ {visibleSuperCats.find(s => s.id === focusedSuperCat)?.name}
-          </button>
+      {/* Nodes panel toggle with filter indicator */}
+      <button
+        className="nodes-panel-toggle"
+        onClick={() => setShowNodesPanel((v) => !v)}
+      >
+        <span>{showNodesPanel ? '▾' : '▸'} Nodes</span>
+        {activeSuperCatIds && (
+          <span className="nodes-panel-filter-badge" title={`Filtré par mode : ${visibleSuperCats.map(s => s.name).join(', ')}`}>
+            🔍 {visibleSuperCats.length} catégorie{visibleSuperCats.length > 1 ? 's' : ''}
+          </span>
         )}
-      </div>
+      </button>
 
-      <div className="sidebar-categories">
+      {showNodesPanel && (
+        <>
+          <div className="sidebar-search">
+            <input
+              className="search-input"
+              type="text"
+              placeholder="🔍 Rechercher un node..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+
+          {focusedSuperCat && (
+            <div className="sidebar-section-title">
+              <button className="focus-reset-btn" onClick={() => setFocusedSuperCat(null)} title="Afficher tout">
+                ✕ {visibleSuperCats.find(s => s.id === focusedSuperCat)?.name}
+              </button>
+            </div>
+          )}
+        </>
+      )}
+
+      <div className="sidebar-categories" style={{ display: showNodesPanel ? undefined : 'none' }}>
         {/* Custom categories first (flat, always visible) */}
         {customCategories.map((category) => {
           const filteredNodes = searchQuery
