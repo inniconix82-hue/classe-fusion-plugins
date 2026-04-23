@@ -132,7 +132,14 @@ const Sidebar: React.FC<SidebarProps> = ({
 
     return (
       <>
-        <aside className="sidebar sidebar-collapsed" onClick={() => { setPopoverCatId(null); onToggleCollapse?.() }} title="Cliquer pour agrandir">
+        <aside
+          className="sidebar sidebar-collapsed"
+          onClick={() => {
+            if (popoverCatId) { setPopoverCatId(null) }
+            else { onToggleCollapse?.() }
+          }}
+          title={popoverCatId ? 'Fermer' : 'Cliquer pour agrandir'}
+        >
           <div className="sidebar-collapsed-icon" title="Agrandir la sidebar">⬡</div>
           <div className="sidebar-collapsed-actions">
             <button title="Sauvegarder" onClick={(e) => { e.stopPropagation(); onSave() }}>💾</button>
@@ -176,7 +183,8 @@ const Sidebar: React.FC<SidebarProps> = ({
                   key={i}
                   className="preset-node"
                   draggable
-                  onDragStart={(e) => { onDragStart(e, preset); setPopoverCatId(null) }}
+                  onDragStart={(e) => { onDragStart(e, preset) }}
+                  onDragEnd={() => setPopoverCatId(null)}
                   style={{ borderLeftColor: preset.color }}
                 >
                   <div className="preset-node-label">{preset.label}</div>
