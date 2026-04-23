@@ -62,13 +62,16 @@ const TextEditorPanel: React.FC<TextEditorPanelProps> = ({
   const editorRef = useRef<HTMLDivElement>(null)
   const [bgColor, setBgColor] = useState('#1a2744')
   const [showLayoutMenu, setShowLayoutMenu] = useState(false)
+  const hasInitialized = useRef(false)
 
+  // Only apply initialContent once on mount — never on subsequent updates
+  // (subsequent updates come from onContentChange feedback loop and would jump cursor to top)
   useEffect(() => {
-    if (editorRef.current && initialContent) {
-      const html = String(marked.parse(initialContent, { async: false, breaks: true, gfm: true }))
-      editorRef.current.innerHTML = html
-      editorRef.current.classList.add('ollama-formatted')
-    }
+    if (!editorRef.current || !initialContent || hasInitialized.current) return
+    hasInitialized.current = true
+    // initialContent is already parsed HTML (from App.tsx via marked) — set directly
+    editorRef.current.innerHTML = initialContent
+    editorRef.current.classList.add('ollama-formatted')
   }, [initialContent])
 
   const exec = useCallback((command: string, value?: string) => {

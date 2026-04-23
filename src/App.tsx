@@ -39,6 +39,7 @@ import { type Shortcut, type NodeShortcut, loadShortcuts, loadNodeShortcuts, mat
 import { useHistory } from './data/useHistory'
 import { exportToPNG, exportToPDF } from './data/exportUtils'
 import { generateFromNodes, askQuestion, hasInstalledModels, type OllamaStyle } from './data/ollamaService'
+import { marked } from 'marked'
 import type { GenerateOptions } from './components/OllamaPanel'
 import TemplatesModal from './components/TemplatesModal'
 import QuickSearchModal from './components/QuickSearchModal'
@@ -654,11 +655,7 @@ function FlowCanvas() {
 
   const onSendToEditor = useCallback((text: string) => {
     setRawMarkdown(text)
-    const html = text
-      .split('\n')
-      .filter((line) => line.trim())
-      .map((line) => `<p>${line}</p>`)
-      .join('')
+    const html = String(marked.parse(text, { async: false, breaks: true, gfm: true }))
     setEditorContent((prev) => prev + html)
     setShowEditor(true)
     setShowOllama(false)
