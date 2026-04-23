@@ -445,9 +445,35 @@ export interface PdfGraphResponse {
 
 const PDF_COLORS = ['#6366f1', '#10b981', '#f97316', '#3b82f6', '#8b5cf6', '#ef4444', '#06b6d4', '#f59e0b', '#ec4899', '#14b8a6']
 
+function extractKeyContent(text: string, maxChars = 3000): string {
+  const lines = text.split('\n').map((l) => l.trim()).filter((l) => l.length > 0)
+  const scored: string[] = []
+
+  for (const line of lines) {
+    // Skip very short lines, page numbers, headers/footers noise
+    if (line.length < 15) continue
+    if (/^\d+$/.test(line)) continue
+    if (/^(page|p\.)\s*\d+/i.test(line)) continue
+
+    // Prioritise headings (short lines, no ending punctuation, uppercase ratio)
+    const isHeading = line.length < 80 && !/[.,:;]$/.test(line)
+    // Prioritise first sentence of paragraphs (ends with period)
+    const isFirstSentence = /[.!?]$/.test(line) && line.length < 200
+
+    if (isHeading || isFirstSentence) scored.push(line)
+  }
+
+  // If smart extraction gives enough content, use it; otherwise fall back to raw truncation
+  const smart = scored.join('\n')
+  if (smart.length >= 400) {
+    return smart.length > maxChars ? smart.slice(0, maxChars) + '\n[...]' : smart
+  }
+  return text.length > maxChars ? text.slice(0, maxChars) + '\n[...]' : text
+}
+
 export async function generateGraphFromText(text: string): Promise<PdfGraphResponse> {
   const model = getOllamaModel()
-  const truncated = text.length > 4000 ? text.slice(0, 4000) + '\n[...texte tronqué]' : text
+  const truncated = extractKeyContent(text)
 
   const prompt = `Analyse ce document et génère un graphe de concepts.
 
