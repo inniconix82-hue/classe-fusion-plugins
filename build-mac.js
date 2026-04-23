@@ -79,6 +79,17 @@ async function run() {
   console.log('   Dézipper → glisser "Node Organisation.app" dans Applications.')
 }
 
+function copyDirSimple(src, dest) {
+  fs.mkdirSync(dest, { recursive: true })
+  for (const entry of fs.readdirSync(src, { withFileTypes: true })) {
+    const s = path.join(src, entry.name)
+    const d = path.join(dest, entry.name)
+    if (entry.name === 'node_modules') continue
+    if (entry.isDirectory()) copyDirSimple(s, d)
+    else fs.copyFileSync(s, d)
+  }
+}
+
 function buildSourceZip() {
   console.log('⚠️  Packaging macOS natif impossible sur Linux — ZIP source complet...')
 
@@ -104,11 +115,25 @@ function buildSourceZip() {
     'preload.js',
   ].filter((f) => fs.existsSync(path.join(__dirname, f)))
 
-  const args = include.map((f) => `"${f}"`).join(' ')
+  // Create a temp folder with the right name so the ZIP has a proper parent folder
+  const srcDir = path.join(releaseDir, 'Node-Organisation')
+  if (fs.existsSync(srcDir)) fs.rmSync(srcDir, { recursive: true })
+  fs.mkdirSync(srcDir)
+  include.forEach((f) => {
+    const src = path.join(__dirname, f)
+    const dest = path.join(srcDir, f)
+    if (fs.statSync(src).isDirectory()) {
+      copyDirSimple(src, dest)
+    } else {
+      fs.mkdirSync(path.dirname(dest), { recursive: true })
+      fs.copyFileSync(src, dest)
+    }
+  })
   execSync(
-    `zip -r "${zipPath}" ${args} -x "*.DS_Store" -x "node_modules/*"`,
-    { stdio: 'inherit', cwd: __dirname }
+    `zip -r "${zipPath}" "Node-Organisation" -x "*.DS_Store" -x "*/node_modules/*"`,
+    { stdio: 'inherit', cwd: releaseDir }
   )
+  fs.rmSync(srcDir, { recursive: true })
 
   console.log(`\n✅ ZIP source : release/${zipName}`)
   console.log('\n   Sur Mac, dans le dossier dézippé :')
