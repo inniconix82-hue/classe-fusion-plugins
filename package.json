@@ -9,6 +9,7 @@
     "electron:dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
     "electron:build": "npm run build && electron-builder",
     "electron:build:win": "node build-win-installer.js",
+    "electron:build:mac": "npm run build && electron-builder --mac --publish never",
     "package:win": "node build-win.js",
     "package:mac": "node build-mac.js",
     "build:web": "tsc && vite build --config vite.web.config.ts",
@@ -24,6 +25,17 @@
       "dist/**/*",
       "dist-electron/**/*"
     ],
+    "mac": {
+      "target": [
+        { "target": "dmg", "arch": ["x64", "arm64"] }
+      ],
+      "icon": "public/icon.png",
+      "identity": null
+    },
+    "dmg": {
+      "title": "Node Organisation",
+      "backgroundColor": "#1e293b"
+    },
     "win": {
       "target": [
         {
