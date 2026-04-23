@@ -200,23 +200,35 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <aside className="sidebar">
-      {/* File action icon buttons */}
+      {/* Top icon row: Home, Nouveau, Save, Aide */}
       <div className="sidebar-file-row">
-        <button className="sidebar-icon-btn sidebar-icon-btn-lg" onClick={onSave} title="Sauvegarder (Ctrl+S)">💾</button>
-        <button className="sidebar-icon-btn sidebar-icon-btn-lg" onClick={onLoad} title="Ouvrir (Ctrl+O)">📂</button>
+        {onShowWelcome && (
+          <button className="sidebar-icon-btn sidebar-icon-btn-lg" onClick={onShowWelcome} title="Accueil / Changer de mode">🏠</button>
+        )}
         <button className="sidebar-icon-btn sidebar-icon-btn-lg" onClick={onClear} title="Nouveau graphe (Ctrl+N)">🗑️</button>
-        <div className="sidebar-icon-sep" />
-        <button className="sidebar-icon-btn sidebar-icon-btn-lg" onClick={onOpenTemplates} title="Templates (Ctrl+T)">📋</button>
+        <button className="sidebar-icon-btn sidebar-icon-btn-lg" onClick={onSave} title="Sauvegarder (Ctrl+S)">💾</button>
+        <button className="sidebar-icon-btn sidebar-icon-btn-lg" onClick={onShowHelp} title="Aide (F1)">❓</button>
       </div>
 
-      {/* AI + Editor — always visible, full width */}
+      {/* Main action buttons */}
       <div className="sidebar-main-btns">
+        <button className="action-btn action-btn-full" onClick={() => { setCustomCategories(loadCustomCategories()); onManageCategories() }} title="Gérer mes catégories personnalisées (Ctrl+Shift+C)">
+          🗂️ Mes catégories
+        </button>
         <button className="ollama-sidebar-btn" onClick={onToggleOllama} title="Générer avec Ollama (Ctrl+I)">
           🤖 Générer avec Ollama
         </button>
         <button className="editor-sidebar-btn" onClick={onToggleEditor} title="Éditeur de document (Ctrl+E)">
           📝 Éditeur de document
         </button>
+        <div className="sidebar-zone-row">
+          <button className="sidebar-zone-btn" onClick={onAddUnderlay} title="Ajouter une zone de regroupement (Ctrl+G)">
+            🟦 Ajouter une zone
+          </button>
+          <button className={`sidebar-zone-btn${showMinimap ? ' active' : ''}`} onClick={onToggleMinimap} title={showMinimap ? 'Masquer la minimap' : 'Afficher la minimap'}>
+            🗺️ Minimap
+          </button>
+        </div>
       </div>
 
       {/* Utility icon row */}
@@ -226,16 +238,8 @@ const Sidebar: React.FC<SidebarProps> = ({
           {layoutDirection === 'TB' ? '↔' : '↕'}
         </button>
         <div className="sidebar-icon-sep" />
-        <button className="sidebar-icon-btn" onClick={() => { setCustomCategories(loadCustomCategories()); onManageCategories() }} title="Mes catégories (Ctrl+Shift+C)">🗂️</button>
+        <button className="sidebar-icon-btn" onClick={onOpenTemplates} title="Templates (Ctrl+T)">📋</button>
         <button className="sidebar-icon-btn" onClick={onOpenShortcuts} title="Raccourcis clavier (Ctrl+K)">⌨️</button>
-        <div className="sidebar-icon-sep" />
-        <button className="sidebar-icon-btn" onClick={onAddUnderlay} title="Ajouter une zone (Ctrl+G)">🟦</button>
-        <button className={`sidebar-icon-btn${showMinimap ? ' active' : ''}`} onClick={onToggleMinimap} title={showMinimap ? 'Masquer minimap' : 'Afficher minimap'}>🗺️</button>
-        <div className="sidebar-icon-sep" />
-        <button className="sidebar-icon-btn" onClick={onShowHelp} title="Aide (F1)">❓</button>
-        {onShowWelcome && (
-          <button className="sidebar-icon-btn" onClick={onShowWelcome} title="Accueil / Changer de mode">🏠</button>
-        )}
       </div>
 
       <div className="sidebar-divider" />
