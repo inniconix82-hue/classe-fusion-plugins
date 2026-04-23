@@ -7,12 +7,17 @@ import {
 } from '@xyflow/react'
 
 export const LINK_TYPES: Record<string, { label: string; color: string; dashed: boolean }> = {
-  lié:        { label: 'Est lié à',          color: '#94a3b8', dashed: false },
-  confirme:   { label: 'Confirme',            color: '#10b981', dashed: false },
-  contredit:  { label: 'Contredit',           color: '#ef4444', dashed: false },
-  suspecte:   { label: 'Suspecté par',        color: '#f97316', dashed: false },
-  present:    { label: 'Présent sur le lieu', color: '#3b82f6', dashed: false },
-  non_etabli: { label: 'Non établi',          color: '#64748b', dashed: true  },
+  et:         { label: 'ET',       color: '#6366f1', dashed: false },
+  ou:         { label: 'OU',       color: '#8b5cf6', dashed: false },
+  donc:       { label: 'DONC',     color: '#10b981', dashed: false },
+  mais:       { label: 'MAIS',     color: '#f97316', dashed: false },
+  si:         { label: 'SI',       color: '#3b82f6', dashed: false },
+  alors:      { label: 'ALORS',    color: '#06b6d4', dashed: false },
+  sinon:      { label: 'SINON',    color: '#ec4899', dashed: false },
+  cause:      { label: 'CAUSE',    color: '#f59e0b', dashed: false },
+  contredit:  { label: 'CONTREDIT', color: '#ef4444', dashed: false },
+  lie:        { label: 'LIÉ À',   color: '#94a3b8', dashed: false },
+  non_etabli: { label: '?',        color: '#64748b', dashed: true  },
 }
 
 const CustomEdge: React.FC<EdgeProps> = ({

@@ -3740,6 +3740,19 @@ body {
   padding-left: 10px !important;
   gap: 8px;
   font-size: 12px;
+  display: flex;
+  align-items: center;
+}
+
+.edge-type-active {
+  background: rgba(99, 102, 241, 0.12) !important;
+  font-weight: 600;
+}
+
+.edge-type-check {
+  margin-left: auto;
+  color: var(--accent);
+  font-size: 11px;
 }
 
 .edge-connectors-row {

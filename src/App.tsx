@@ -1032,21 +1032,20 @@ function FlowCanvas() {
           <div className="connect-menu-title">Créer et connecter</div>
 
           <div className="connect-menu-connectors">
-            {['', 'ET', 'OU', 'SI', 'ALORS', 'SINON'].map((connector) => (
+            {[{ key: '', label: '→' }, ...Object.entries(LINK_TYPES).map(([k, lt]) => ({ key: k, label: lt.label }))].map(({ key, label }) => (
               <button
-                key={connector || 'none'}
-                className={`connect-connector-btn ${connector === '' ? 'connect-connector-none' : ''}`}
-                title={connector || 'Lien simple'}
-                data-active="false"
+                key={key || 'none'}
+                className="connect-connector-btn"
+                title={label}
+                data-active={key === '' ? 'true' : 'false'}
                 onClick={(e) => {
-                  // toggle selection — store on the button's parent
                   const btns = (e.currentTarget.parentElement as HTMLElement).querySelectorAll('.connect-connector-btn')
                   btns.forEach((b) => b.setAttribute('data-active', 'false'))
                   e.currentTarget.setAttribute('data-active', 'true')
-                  ;(e.currentTarget.parentElement as HTMLElement).dataset.connector = connector
+                  ;(e.currentTarget.parentElement as HTMLElement).dataset.connector = key
                 }}
               >
-                {connector || '→'}
+                {label}
               </button>
             ))}
           </div>
@@ -1064,7 +1063,8 @@ function FlowCanvas() {
               className="connect-menu-item"
               style={{ borderLeft: `3px solid ${color}` }}
               onClick={() => {
-                const connector = (document.querySelector('.connect-menu-connectors') as HTMLElement)?.dataset.connector ?? ''
+                const connectorKey = (document.querySelector('.connect-menu-connectors') as HTMLElement)?.dataset.connector ?? ''
+                const lt = connectorKey ? LINK_TYPES[connectorKey] : null
                 const newId = getNextNodeId()
                 const newNode: Node = {
                   id: newId,
@@ -1077,9 +1077,9 @@ function FlowCanvas() {
                   source: connectMenu.fromNodeId,
                   target: newId,
                   type: 'custom',
-                  animated: true,
-                  data: { label: connector },
-                  style: { stroke: color, strokeWidth: 2 },
+                  animated: connectorKey !== 'non_etabli',
+                  data: { label: lt ? lt.label : '', linkType: connectorKey || null },
+                  style: { stroke: lt ? lt.color : color, strokeWidth: 2 },
                 }
                 history.push(nodes, edges)
                 setNodes((nds) => [...nds, newNode])
@@ -1103,52 +1103,40 @@ function FlowCanvas() {
           style={{ top: edgeContextMenu.y, left: edgeContextMenu.x }}
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="edge-menu-title">Connecteur logique</div>
-          <div className="edge-connectors-row">
-            {['ET', 'OU', 'SI', 'ALORS', 'SINON'].map((c) => (
+          <div className="edge-menu-title">Connecteur</div>
+          {Object.entries(LINK_TYPES).map(([key, lt]) => {
+            const isActive = (edgeContextMenu.edge.data as any)?.linkType === key
+            return (
               <button
-                key={c}
-                className="edge-connector-chip"
-                style={{ opacity: (edgeContextMenu.edge.data as any)?.label === c ? 1 : 0.6 }}
+                key={key}
+                className={`node-context-item edge-type-item${isActive ? ' edge-type-active' : ''}`}
+                style={{ borderLeft: `3px solid ${lt.color}` }}
                 onClick={() => {
                   setEdges((eds) => eds.map((e) =>
                     e.id === edgeContextMenu.edge.id
-                      ? { ...e, data: { ...e.data, label: (e.data as any)?.label === c ? '' : c } }
+                      ? { ...e, data: { ...e.data, linkType: isActive ? null : key, label: isActive ? '' : lt.label }, animated: key !== 'non_etabli' }
                       : e
                   ))
                   setEdgeContextMenu(null)
                 }}
-              >{c}</button>
-            ))}
-            {(edgeContextMenu.edge.data as any)?.label && (
-              <button className="edge-connector-chip edge-connector-clear"
-                onClick={() => {
-                  setEdges((eds) => eds.map((e) =>
-                    e.id === edgeContextMenu.edge.id ? { ...e, data: { ...e.data, label: '' } } : e
-                  ))
-                  setEdgeContextMenu(null)
-                }}>✕</button>
-            )}
-          </div>
+              >
+                <span style={{ color: lt.color }}>●</span> {lt.label}
+                {isActive && <span className="edge-type-check">✓</span>}
+              </button>
+            )
+          })}
           <div className="node-context-divider" />
-          <div className="edge-menu-title">Type de connexion</div>
-          {Object.entries(LINK_TYPES).map(([key, lt]) => (
-            <button
-              key={key}
-              className="node-context-item edge-type-item"
-              style={{ borderLeft: `3px solid ${lt.color}` }}
-              onClick={() => {
-                setEdges((eds) => eds.map((e) =>
-                  e.id === edgeContextMenu.edge.id
-                    ? { ...e, data: { ...e.data, linkType: key }, animated: key !== 'non_etabli' }
-                    : e
-                ))
-                setEdgeContextMenu(null)
-              }}
-            >
-              <span style={{ color: lt.color }}>●</span> {lt.label}
-            </button>
-          ))}
+          <button
+            className="node-context-item"
+            onClick={() => {
+              setEdges((eds) => eds.map((e) =>
+                e.id === edgeContextMenu.edge.id ? { ...e, data: { ...e.data, linkType: null, label: '' } } : e
+              ))
+              setEdgeContextMenu(null)
+            }}
+          >
+            ✕ Effacer le connecteur
+          </button>
           <div className="node-context-divider" />
           <button
             className="node-context-item node-context-danger"
