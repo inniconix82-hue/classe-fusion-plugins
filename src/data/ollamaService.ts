@@ -437,7 +437,82 @@ Réponds en français.`
   }
 }
 
-// Maps intent labels returned by the model to actual category IDs
+export interface PdfGraphResponse {
+  nodes: Array<{ id: string; label: string; description: string; color: string }>
+  edges: Array<{ source: string; target: string; label?: string }>
+  error?: string
+}
+
+const PDF_COLORS = ['#6366f1', '#10b981', '#f97316', '#3b82f6', '#8b5cf6', '#ef4444', '#06b6d4', '#f59e0b', '#ec4899', '#14b8a6']
+
+export async function generateGraphFromText(text: string): Promise<PdfGraphResponse> {
+  const model = getOllamaModel()
+  const truncated = text.length > 4000 ? text.slice(0, 4000) + '\n[...texte tronqué]' : text
+
+  const prompt = `Analyse ce document et génère un graphe de concepts.
+
+RÉPONDS UNIQUEMENT AVEC DU JSON BRUT. Aucun texte avant ni après. Aucun bloc markdown.
+
+Format attendu (respecte-le exactement) :
+{"nodes":[{"id":"1","label":"Concept","description":"description courte","color":"#6366f1"}],"edges":[{"source":"1","target":"2","label":"lien"}]}
+
+Contraintes :
+- 6 à 12 nodes, chacun représente un concept ou thème clé du document
+- label : 1 à 4 mots
+- description : 3 à 8 mots résumant le concept
+- color : choisis parmi ces valeurs exactes : ${PDF_COLORS.join(', ')}
+- edges : relie les concepts logiquement liés, source/target = id d'un node
+- Les ids sont des chaînes "1", "2", etc.
+
+Document à analyser :
+${truncated}
+
+JSON :`
+
+  try {
+    const response = await fetch(`${OLLAMA_URL}/api/generate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model, prompt, stream: false }),
+    })
+
+    if (!response.ok) {
+      if (response.status === 404) return { nodes: [], edges: [], error: `Modèle "${model}" non trouvé.` }
+      return { nodes: [], edges: [], error: `Erreur Ollama (${response.status})` }
+    }
+
+    const json = await response.json()
+    const raw = (json.response || '').trim()
+
+    // Extract JSON block — model may add surrounding text
+    const jsonMatch = raw.match(/\{[\s\S]*"nodes"[\s\S]*"edges"[\s\S]*\}/)
+    if (!jsonMatch) {
+      return { nodes: [], edges: [], error: 'Le modèle n\'a pas renvoyé de JSON valide. Essayez mistral ou llama3.' }
+    }
+
+    const parsed = JSON.parse(jsonMatch[0])
+    if (!Array.isArray(parsed.nodes) || !Array.isArray(parsed.edges)) {
+      return { nodes: [], edges: [], error: 'Structure JSON invalide dans la réponse.' }
+    }
+
+    // Fallback colors if model skipped them
+    parsed.nodes = parsed.nodes.map((n: any, i: number) => ({
+      ...n,
+      color: PDF_COLORS.includes(n.color) ? n.color : PDF_COLORS[i % PDF_COLORS.length],
+    }))
+
+    return { nodes: parsed.nodes, edges: parsed.edges }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
+    if (message.includes('Failed to fetch') || message.includes('ECONNREFUSED')) {
+      return { nodes: [], edges: [], error: 'Ollama non connecté' }
+    }
+    if (message.includes('JSON')) {
+      return { nodes: [], edges: [], error: 'Réponse non parseable. Réessayez ou utilisez un modèle plus capable.' }
+    }
+    return { nodes: [], edges: [], error: `Erreur : ${message}` }
+  }
+}
 const INTENT_TO_CATEGORIES: Record<string, string[]> = {
   personnes:    ['personnes'],
   projet:       ['gestion-projet'],

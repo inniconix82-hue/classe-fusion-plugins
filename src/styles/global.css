@@ -1600,6 +1600,141 @@ body {
   text-align: center;
 }
 
+/* ==============================
+   PDF → Graphe section
+   ============================== */
+
+.ollama-pdf-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 16px;
+}
+
+.ollama-pdf-intro {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.ollama-pdf-upload-btn {
+  padding: 10px 14px;
+  border: 1px dashed var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-primary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 13px;
+  text-align: center;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.ollama-pdf-upload-btn:hover {
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+
+.ollama-pdf-file-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.ollama-pdf-filename {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.ollama-pdf-pages {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.ollama-pdf-truncated {
+  font-size: 11px;
+  color: #f97316;
+}
+
+.ollama-pdf-preview {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 11px;
+  color: var(--text-muted);
+  font-style: italic;
+  line-height: 1.5;
+  max-height: 60px;
+  overflow: hidden;
+}
+
+.ollama-pdf-loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  padding: 8px 0;
+}
+
+.ollama-pdf-result {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ollama-pdf-result-header {
+  font-size: 12px;
+  font-weight: 600;
+  color: #10b981;
+}
+
+.ollama-pdf-node-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 160px;
+  overflow-y: auto;
+}
+
+.ollama-pdf-node-chip {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 5px 10px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-left: 3px solid;
+  border-radius: 5px;
+  font-size: 11px;
+}
+
+.ollama-pdf-node-chip strong {
+  color: var(--text-primary);
+  font-size: 12px;
+}
+
+.ollama-pdf-node-chip span {
+  color: var(--text-muted);
+}
+
+.ollama-pdf-import-btn {
+  padding: 10px 16px;
+  background: var(--accent);
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.ollama-pdf-import-btn:hover {
+  background: var(--accent-hover);
+}
+
 .ollama-label {
   font-size: 12px;
   color: var(--text-secondary);

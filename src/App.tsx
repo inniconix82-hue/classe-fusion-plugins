@@ -743,6 +743,14 @@ function FlowCanvas() {
     setTimeout(() => fitView({ padding: 0.2 }), 100)
   }, [nodes, edges, history, setNodes, setEdges, fitView])
 
+  const onImportFromPdf = useCallback((importedNodes: Node[], importedEdges: Edge[]) => {
+    const { nodes: layouted, edges: layoutedEdges } = getLayoutedElements(importedNodes, importedEdges, 'TB')
+    history.push(nodes, edges)
+    setNodes(layouted)
+    setEdges(layoutedEdges)
+    setTimeout(() => fitView({ padding: 0.2 }), 100)
+  }, [nodes, edges, history, setNodes, setEdges, fitView])
+
   const onDuplicate = useCallback(() => {
     const selected = nodes.filter((n) => n.selected)
     if (selected.length === 0) return
@@ -1250,6 +1258,7 @@ function FlowCanvas() {
           onAskQuestion={onAskQuestion}
           questionLoading={questionLoading}
           onDownloadStateChange={setIsNetworkActive}
+          onImportFromPdf={onImportFromPdf}
         />
       )}
 
