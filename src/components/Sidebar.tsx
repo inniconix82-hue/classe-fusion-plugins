@@ -200,13 +200,50 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <aside className="sidebar">
-      <div className="sidebar-slim-actions">
-        <button className="ollama-sidebar-btn sidebar-slim-btn" onClick={onToggleOllama} title="Générer avec Ollama (Ctrl+I)">
-          🤖 Ollama
+      {/* Main file actions */}
+      <div className="sidebar-actions">
+        <button className="action-btn action-btn-wide" onClick={onSave} title="Sauvegarder (Ctrl+S)">
+          💾 Sauvegarder
         </button>
-        <button className="editor-sidebar-btn sidebar-slim-btn" onClick={onToggleEditor} title="Éditeur de document (Ctrl+E)">
-          📝 Éditeur
+        <button className="action-btn" onClick={onLoad} title="Ouvrir (Ctrl+O)">
+          📂 Ouvrir
         </button>
+        <button className="action-btn" onClick={onClear} title="Nouveau (Ctrl+N)">
+          🗑️ Nouveau
+        </button>
+      </div>
+
+      {/* AI + Editor — always visible, full width */}
+      <div className="sidebar-main-btns">
+        <button className="ollama-sidebar-btn" onClick={onToggleOllama} title="Générer avec Ollama (Ctrl+I)">
+          🤖 Générer avec Ollama
+        </button>
+        <button className="editor-sidebar-btn" onClick={onToggleEditor} title="Éditeur de document (Ctrl+E)">
+          📝 Éditeur de document
+        </button>
+      </div>
+
+      {/* Utility icon row */}
+      <div className="sidebar-icon-row">
+        <button className="sidebar-icon-btn" onClick={onAutoLayout} title="Auto Layout (Ctrl+L)">🔀</button>
+        <button className="sidebar-icon-btn" onClick={onToggleDirection} title={layoutDirection === 'TB' ? 'Passer horizontal (Ctrl+D)' : 'Passer vertical (Ctrl+D)'}>
+          {layoutDirection === 'TB' ? '↔' : '↕'}
+        </button>
+        <div className="sidebar-icon-sep" />
+        <button className="sidebar-icon-btn" onClick={onOpenTemplates} title="Templates (Ctrl+T)">📋</button>
+        <button className="sidebar-icon-btn" onClick={() => { setCustomCategories(loadCustomCategories()); onManageCategories() }} title="Mes catégories (Ctrl+Shift+C)">🗂️</button>
+        <button className="sidebar-icon-btn" onClick={onOpenShortcuts} title="Raccourcis clavier (Ctrl+K)">⌨️</button>
+        <div className="sidebar-icon-sep" />
+        <button className="sidebar-icon-btn" onClick={onAddUnderlay} title="Ajouter une zone (Ctrl+G)">🟦</button>
+        <button className={`sidebar-icon-btn${showMinimap ? ' active' : ''}`} onClick={onToggleMinimap} title={showMinimap ? 'Masquer minimap' : 'Afficher minimap'}>🗺️</button>
+        <div className="sidebar-icon-sep" />
+        <button className="sidebar-icon-btn" onClick={onToggleTheme} title={theme === 'dark' ? 'Mode clair' : 'Mode sombre'}>
+          {theme === 'dark' ? '☀️' : '🌙'}
+        </button>
+        <button className="sidebar-icon-btn" onClick={onShowHelp} title="Aide (F1)">❓</button>
+        {onShowWelcome && (
+          <button className="sidebar-icon-btn" onClick={onShowWelcome} title="Accueil / Changer de mode">🏠</button>
+        )}
       </div>
 
       <div className="sidebar-divider" />
