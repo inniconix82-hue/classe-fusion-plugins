@@ -21,6 +21,41 @@ interface OllamaPanelProps {
   onDownloadStateChange?: (active: boolean) => void
 }
 
+const today = new Date().toLocaleDateString('fr-FR')
+
+const EDITOR_TEMPLATES: { icon: string; label: string; wrap: (content: string) => string }[] = [
+  {
+    icon: '📋',
+    label: 'Compte-rendu',
+    wrap: (c) => `# Compte-rendu\n\n**Date :** ${today}  \n**Participants :** \n\n## Contenu\n\n${c}\n\n## Décisions\n\n- \n\n## Actions à suivre\n\n- `,
+  },
+  {
+    icon: '📧',
+    label: 'Email',
+    wrap: (c) => `Madame, Monsieur,\n\n${c}\n\nCordialement,  \n**Votre nom**`,
+  },
+  {
+    icon: '📑',
+    label: 'Rapport',
+    wrap: (c) => `# Rapport\n\n## Introduction\n\n${c}\n\n## Conclusion\n\n\n\n## Recommandations\n\n- `,
+  },
+  {
+    icon: '💡',
+    label: 'Note',
+    wrap: (c) => `## Note — ${today}\n\n${c}`,
+  },
+  {
+    icon: '🗂️',
+    label: 'Fiche projet',
+    wrap: (c) => `# Fiche projet\n\n**Date :** ${today}  \n**Chef de projet :** \n\n## Contexte\n\n${c}\n\n## Objectifs\n\n- \n\n## Jalons\n\n- `,
+  },
+  {
+    icon: '📊',
+    label: 'SWOT',
+    wrap: (c) => `# Analyse SWOT\n\n${c}\n\n## Forces\n\n- \n\n## Faiblesses\n\n- \n\n## Opportunités\n\n- \n\n## Menaces\n\n- `,
+  },
+]
+
 const STYLE_OPTIONS: { value: OllamaStyle; icon: string; label: string; desc: string }[] = [
   { value: 'synthese', icon: '📝', label: 'Synthèse', desc: 'Bullet points concis' },
   { value: 'detaille', icon: '📄', label: 'Détaillé', desc: 'Paragraphes complets' },
@@ -444,12 +479,28 @@ const OllamaPanel: React.FC<OllamaPanelProps> = ({
             {result ? (
               <>
                 <div className="ollama-text">{result}</div>
-                <button
-                  className="ollama-send-editor-btn"
-                  onClick={() => onSendToEditor(result)}
-                >
-                  📝 Envoyer dans l'éditeur
-                </button>
+                <div className="ollama-send-templates">
+                  <div className="ollama-send-label">Envoyer dans l'éditeur comme :</div>
+                  <div className="ollama-send-grid">
+                    {EDITOR_TEMPLATES.map((tpl) => (
+                      <button
+                        key={tpl.label}
+                        className="ollama-send-tpl-btn"
+                        onClick={() => onSendToEditor(tpl.wrap(result))}
+                        title={`Envoyer formaté en ${tpl.label}`}
+                      >
+                        {tpl.icon} {tpl.label}
+                      </button>
+                    ))}
+                    <button
+                      className="ollama-send-tpl-btn ollama-send-raw"
+                      onClick={() => onSendToEditor(result)}
+                      title="Envoyer sans mise en page"
+                    >
+                      ➜ Brut
+                    </button>
+                  </div>
+                </div>
               </>
             ) : !error && !loading ? (
               <div className="ollama-placeholder">

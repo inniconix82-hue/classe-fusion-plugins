@@ -2208,21 +2208,49 @@ body {
   font-style: italic;
 }
 
-.ollama-send-editor-btn {
-  margin: 10px 16px;
-  width: calc(100% - 32px);
-  background: linear-gradient(135deg, #1d4ed8, #2563eb);
-  border: none;
-  border-radius: 8px;
-  color: white;
-  font-size: 12px;
-  font-weight: 600;
-  padding: 8px 16px;
-  cursor: pointer;
+.ollama-send-templates {
+  padding: 10px 16px 4px;
 }
 
-.ollama-send-editor-btn:hover {
-  background: linear-gradient(135deg, #2563eb, #3b82f6);
+.ollama-send-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.ollama-send-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+}
+
+.ollama-send-tpl-btn {
+  padding: 6px 8px;
+  border-radius: 7px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-primary);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+
+.ollama-send-tpl-btn:hover {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+.ollama-send-raw {
+  grid-column: span 2;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 11px;
 }
 
 /* ==============================
