@@ -200,17 +200,13 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <aside className="sidebar">
-      {/* Main file actions */}
-      <div className="sidebar-actions">
-        <button className="action-btn action-btn-wide" onClick={onSave} title="Sauvegarder (Ctrl+S)">
-          💾 Sauvegarder
-        </button>
-        <button className="action-btn" onClick={onLoad} title="Ouvrir (Ctrl+O)">
-          📂 Ouvrir
-        </button>
-        <button className="action-btn" onClick={onClear} title="Nouveau (Ctrl+N)">
-          🗑️ Nouveau
-        </button>
+      {/* File action icon buttons */}
+      <div className="sidebar-file-row">
+        <button className="sidebar-icon-btn sidebar-icon-btn-lg" onClick={onSave} title="Sauvegarder (Ctrl+S)">💾</button>
+        <button className="sidebar-icon-btn sidebar-icon-btn-lg" onClick={onLoad} title="Ouvrir (Ctrl+O)">📂</button>
+        <button className="sidebar-icon-btn sidebar-icon-btn-lg" onClick={onClear} title="Nouveau graphe (Ctrl+N)">🗑️</button>
+        <div className="sidebar-icon-sep" />
+        <button className="sidebar-icon-btn sidebar-icon-btn-lg" onClick={onOpenTemplates} title="Templates (Ctrl+T)">📋</button>
       </div>
 
       {/* AI + Editor — always visible, full width */}
@@ -230,16 +226,12 @@ const Sidebar: React.FC<SidebarProps> = ({
           {layoutDirection === 'TB' ? '↔' : '↕'}
         </button>
         <div className="sidebar-icon-sep" />
-        <button className="sidebar-icon-btn" onClick={onOpenTemplates} title="Templates (Ctrl+T)">📋</button>
         <button className="sidebar-icon-btn" onClick={() => { setCustomCategories(loadCustomCategories()); onManageCategories() }} title="Mes catégories (Ctrl+Shift+C)">🗂️</button>
         <button className="sidebar-icon-btn" onClick={onOpenShortcuts} title="Raccourcis clavier (Ctrl+K)">⌨️</button>
         <div className="sidebar-icon-sep" />
         <button className="sidebar-icon-btn" onClick={onAddUnderlay} title="Ajouter une zone (Ctrl+G)">🟦</button>
         <button className={`sidebar-icon-btn${showMinimap ? ' active' : ''}`} onClick={onToggleMinimap} title={showMinimap ? 'Masquer minimap' : 'Afficher minimap'}>🗺️</button>
         <div className="sidebar-icon-sep" />
-        <button className="sidebar-icon-btn" onClick={onToggleTheme} title={theme === 'dark' ? 'Mode clair' : 'Mode sombre'}>
-          {theme === 'dark' ? '☀️' : '🌙'}
-        </button>
         <button className="sidebar-icon-btn" onClick={onShowHelp} title="Aide (F1)">❓</button>
         {onShowWelcome && (
           <button className="sidebar-icon-btn" onClick={onShowWelcome} title="Accueil / Changer de mode">🏠</button>

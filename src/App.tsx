@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react'
 import {
   ReactFlow,
   Controls,
+  ControlButton,
   Background,
   MiniMap,
   addEdge,
@@ -1304,7 +1305,14 @@ function FlowCanvas() {
           className="react-flow-canvas"
           proOptions={{ hideAttribution: true }}
         >
-          <Controls position="bottom-right" className="flow-controls" />
+          <Controls position="bottom-right" className="flow-controls">
+            <ControlButton
+              onClick={() => setTheme((t) => t === 'dark' ? 'light' : 'dark')}
+              title={theme === 'dark' ? 'Passer en mode clair' : 'Passer en mode sombre'}
+            >
+              <span style={{ fontSize: 14 }}>{theme === 'dark' ? '☀️' : '🌙'}</span>
+            </ControlButton>
+          </Controls>
           {showMinimap && (
             <MiniMap
               position="bottom-left"

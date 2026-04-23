@@ -421,6 +421,20 @@ body {
   margin: 0 12px;
 }
 
+.sidebar-file-row {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 8px 10px 6px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.sidebar-icon-btn-lg {
+  width: 32px !important;
+  height: 32px !important;
+  font-size: 16px !important;
+}
+
 .sidebar-main-btns {
   display: flex;
   flex-direction: column;
@@ -1883,6 +1897,7 @@ body {
 
 .editor-btn-italic { font-style: italic; }
 .editor-btn-underline { text-decoration: underline; }
+.editor-btn-active { background: rgba(99,102,241,0.2) !important; border-color: var(--accent) !important; color: var(--accent) !important; }
 
 .editor-select {
   background: var(--bg-tertiary);
@@ -1920,11 +1935,11 @@ body {
   flex: 1;
   padding: 20px 24px;
   overflow-y: auto;
-  color: var(--text-primary);
+  color: #1a202c;
   font-size: 14px;
   line-height: 1.7;
   outline: none;
-  background: #1a2744;
+  background: #ffffff;
 }
 
 .text-editor-content:empty:before {
@@ -1934,12 +1949,12 @@ body {
   pointer-events: none;
 }
 
-/* Base styles */
+/* Base styles — editor uses light paper look regardless of app theme */
 .text-editor-content h1 {
   font-size: 26px;
   font-weight: 700;
   margin: 20px 0 10px;
-  color: var(--text-primary);
+  color: #0f172a;
   border-bottom: 2px solid var(--accent);
   padding-bottom: 6px;
 }
@@ -1947,23 +1962,23 @@ body {
   font-size: 20px;
   font-weight: 600;
   margin: 16px 0 8px;
-  color: var(--text-primary);
-  border-bottom: 1px solid var(--border-color);
+  color: #1e293b;
+  border-bottom: 1px solid #cbd5e1;
   padding-bottom: 4px;
 }
 .text-editor-content h3 {
   font-size: 16px;
   font-weight: 600;
   margin: 12px 0 6px;
-  color: var(--accent-hover);
+  color: #334155;
 }
 .text-editor-content p { margin: 6px 0; line-height: 1.7; }
 .text-editor-content ul, .text-editor-content ol { padding-left: 24px; margin: 8px 0; }
 .text-editor-content li { margin: 4px 0; line-height: 1.6; }
-.text-editor-content strong { font-weight: 700; color: var(--text-primary); }
-.text-editor-content em { font-style: italic; color: var(--text-secondary); }
-.text-editor-content code { background: var(--bg-tertiary); border-radius: 3px; padding: 1px 5px; font-size: 12px; font-family: monospace; }
-.text-editor-content blockquote { border-left: 3px solid var(--accent); padding-left: 12px; margin: 10px 0; color: var(--text-secondary); font-style: italic; }
+.text-editor-content strong { font-weight: 700; color: #0f172a; }
+.text-editor-content em { font-style: italic; color: #475569; }
+.text-editor-content code { background: #e2e8f0; border-radius: 3px; padding: 1px 5px; font-size: 12px; font-family: monospace; color: #1e293b; }
+.text-editor-content blockquote { border-left: 3px solid var(--accent); padding-left: 12px; margin: 10px 0; color: #475569; font-style: italic; }
 
 /* Auto-formatting when content comes from Ollama */
 .text-editor-content.ollama-formatted h1 {

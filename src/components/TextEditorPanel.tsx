@@ -60,8 +60,9 @@ const TextEditorPanel: React.FC<TextEditorPanelProps> = ({
   onContentChange,
 }) => {
   const editorRef = useRef<HTMLDivElement>(null)
-  const [bgColor, setBgColor] = useState('#1a2744')
+  const [bgColor, setBgColor] = useState('#ffffff')
   const [showLayoutMenu, setShowLayoutMenu] = useState(false)
+  const [spellCheckEnabled, setSpellCheckEnabled] = useState(true)
   const hasInitialized = useRef(false)
 
   // Only apply initialContent once on mount — never on subsequent updates
@@ -329,7 +330,7 @@ const TextEditorPanel: React.FC<TextEditorPanelProps> = ({
           className="editor-color-input"
           onChange={(e) => exec('foreColor', e.target.value)}
           title="Couleur du texte"
-          defaultValue="#f1f5f9"
+          defaultValue="#333333"
         />
 
         <input
@@ -360,6 +361,16 @@ const TextEditorPanel: React.FC<TextEditorPanelProps> = ({
 
         <button className="editor-btn" onClick={() => exec('removeFormat')} title="Supprimer le formatage">✕</button>
         <button className="editor-btn" onClick={() => exec('strikeThrough')} title="Barré" style={{ textDecoration: 'line-through' }}>S</button>
+
+        <div className="editor-toolbar-separator" />
+
+        <button
+          className={`editor-btn${spellCheckEnabled ? ' editor-btn-active' : ''}`}
+          onClick={() => setSpellCheckEnabled((v) => !v)}
+          title={spellCheckEnabled ? 'Désactiver le correcteur d\'orthographe' : 'Activer le correcteur d\'orthographe'}
+        >
+          🔤
+        </button>
 
         <div className="editor-toolbar-separator" />
 
@@ -405,6 +416,8 @@ const TextEditorPanel: React.FC<TextEditorPanelProps> = ({
         suppressContentEditableWarning
         onInput={handleInput}
         onKeyDown={handleKeyDown}
+        spellCheck={spellCheckEnabled}
+        lang="fr"
         style={{ backgroundColor: bgColor }}
         data-placeholder="Commencez à écrire, ou générez du contenu avec Ollama..."
       />
