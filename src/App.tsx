@@ -46,7 +46,6 @@ import QuickSearchModal from './components/QuickSearchModal'
 import SetupWizard from './components/SetupWizard'
 import CustomCategoriesModal from './components/CustomCategoriesModal'
 import WelcomeScreen, { SKIP_KEY } from './components/WelcomeScreen'
-import TopBar from './components/TopBar'
 import { loadCustomCategories, saveCustomCategories } from './data/customCategories'
 
 const nodeTypes = {
@@ -982,37 +981,6 @@ function FlowCanvas() {
           }}
         />
       )}
-      <TopBar
-        onSave={onSave}
-        onLoad={onLoad}
-        onClear={onClear}
-        onExportPNG={onExportPNG}
-        onExportPDF={onExportPDF}
-        onOpenTemplates={() => setShowTemplates(true)}
-        onOpenShortcuts={() => setShowShortcuts(true)}
-        onShowHelp={() => setShowHelp(true)}
-        onShowWelcome={() => { localStorage.removeItem(SKIP_KEY); setShowWelcome(true) }}
-        onAutoLayout={onAutoLayout}
-        onToggleDirection={onToggleDirection}
-        onFitView={() => fitView({ padding: 0.2 })}
-        onAddUnderlay={() => {
-          const id = getNextNodeId()
-          history.push(nodes, edges)
-          const pos = lastClickPosRef.current
-          setNodes((nds) => [...nds, {
-            id, type: 'underlay',
-            position: { x: pos.x - 150, y: pos.y - 100 },
-            style: { width: 300, height: 200, zIndex: -1 },
-            data: { label: 'Zone', color: '#6366f1' },
-          }])
-        }}
-        onManageCategories={() => setShowCustomCategories(true)}
-        layoutDirection={layoutDirection}
-        theme={theme}
-        onToggleTheme={() => setTheme((t) => t === 'dark' ? 'light' : 'dark')}
-        activeTaskMode={activeTaskMode}
-      />
-      <div className="app-body">
       <Sidebar
         onSave={onSave}
         onLoad={onLoad}
@@ -1049,7 +1017,6 @@ function FlowCanvas() {
         onToggleCollapse={() => setSidebarCollapsed((v) => !v)}
         isNetworkActive={isNetworkActive}
       />
-      </div>{/* end app-body */}
 
       {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
 
@@ -1310,13 +1277,6 @@ function FlowCanvas() {
 
       <LayoutContext.Provider value={layoutDirection}>
       <div className="canvas-container" ref={reactFlowWrapper}>
-        <button
-          className={`minimap-pill${showMinimap ? ' active' : ''}`}
-          onClick={() => setShowMinimap((v) => !v)}
-          title={showMinimap ? 'Masquer la minimap' : 'Afficher la minimap'}
-        >
-          🗺️
-        </button>
         <ReactFlow
           nodes={nodes}
           edges={edges}
