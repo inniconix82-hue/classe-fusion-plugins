@@ -98,9 +98,12 @@ const OllamaPanel: React.FC<OllamaPanelProps> = ({
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const pdfFileInputRef = useRef<HTMLInputElement>(null)
+  const [pdfStep, setPdfStep] = useState<'idle' | 'extracting' | 'ready' | 'analyzing' | 'done' | 'error'>('idle')
   const [pdfText, setPdfText] = useState('')
   const [pdfFileName, setPdfFileName] = useState('')
   const [pdfPageCount, setPdfPageCount] = useState(0)
+  const [pdfCharCount, setPdfCharCount] = useState(0)
+  const [pdfError, setPdfError] = useState('')
   const [pdfGraphResult, setPdfGraphResult] = useState<PdfGraphResponse | null>(null)
   const [pdfLoading, setPdfLoading] = useState(false)
 
@@ -211,39 +214,83 @@ const OllamaPanel: React.FC<OllamaPanelProps> = ({
     setKbCount(0)
   }
 
+  const extractTextFromPdf = async (file: File): Promise<string> => {
+    if (!file.name.endsWith('.pdf')) {
+      return file.text()
+    }
+    const pdfjsLib = await import('pdfjs-dist')
+    pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+      'pdfjs-dist/build/pdf.worker.min.mjs',
+      import.meta.url
+    ).href
+    const arrayBuffer = await file.arrayBuffer()
+    const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer) }).promise
+    setPdfPageCount(pdf.numPages)
+    let fullText = ''
+    const maxPages = Math.min(pdf.numPages, 20)
+    for (let i = 1; i <= maxPages; i++) {
+      const page = await pdf.getPage(i)
+      const content = await page.getTextContent()
+      const pageText = (content.items as any[])
+        .filter((item) => typeof item.str === 'string')
+        .map((item) => item.str)
+        .join(' ')
+      fullText += pageText + '\n\n'
+    }
+    return fullText.trim()
+  }
+
   const handlePdfGraphUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
+    setPdfStep('extracting')
     setPdfGraphResult(null)
     setPdfFileName(file.name)
+    setPdfError('')
+    setPdfPageCount(0)
 
     try {
-      const pdfjsLib = await import('pdfjs-dist')
-      pdfjsLib.GlobalWorkerOptions.workerSrc = ''
-      const arrayBuffer = await file.arrayBuffer()
-      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
-      setPdfPageCount(pdf.numPages)
-      let fullText = ''
-      for (let i = 1; i <= Math.min(pdf.numPages, 20); i++) {
-        const page = await pdf.getPage(i)
-        const content = await page.getTextContent()
-        fullText += content.items.map((item: any) => item.str).join(' ') + '\n\n'
+      const text = await extractTextFromPdf(file)
+      if (!text || text.length < 50) {
+        setPdfError('Aucun texte extractible dans ce fichier. PDF scanné (image) non supporté.')
+        setPdfStep('error')
+      } else {
+        setPdfText(text)
+        setPdfCharCount(text.length)
+        setPdfStep('ready')
       }
-      setPdfText(fullText.trim())
-    } catch {
-      setPdfText('')
-      setPdfFileName('')
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      setPdfError(`Erreur lors de la lecture : ${msg}`)
+      setPdfStep('error')
     }
     if (pdfFileInputRef.current) pdfFileInputRef.current.value = ''
   }
 
   const handleAnalyzePdf = async () => {
     if (!pdfText) return
+    setPdfStep('analyzing')
     setPdfLoading(true)
     setPdfGraphResult(null)
     const result = await generateGraphFromText(pdfText)
-    setPdfGraphResult(result)
     setPdfLoading(false)
+    if (result.error) {
+      setPdfError(result.error)
+      setPdfStep('error')
+    } else {
+      setPdfGraphResult(result)
+      setPdfStep('done')
+    }
+  }
+
+  const handleResetPdf = () => {
+    setPdfStep('idle')
+    setPdfText('')
+    setPdfFileName('')
+    setPdfPageCount(0)
+    setPdfCharCount(0)
+    setPdfGraphResult(null)
+    setPdfError('')
   }
 
   const handleImportPdfGraph = () => {
@@ -479,9 +526,24 @@ const OllamaPanel: React.FC<OllamaPanelProps> = ({
 
       {activeTab === 'pdf' && (
         <div className="ollama-pdf-section">
-          <p className="ollama-pdf-intro">
-            Ollama analyse votre PDF et construit automatiquement un graphe de nodes connectés.
-          </p>
+
+          {/* Step indicator */}
+          <div className="ollama-pdf-steps">
+            <div className={`ollama-pdf-step ${['idle','extracting','ready','analyzing','done','error'].indexOf(pdfStep) >= 0 ? 'active' : ''} ${pdfStep === 'error' ? 'step-error' : ''}`}>
+              <span className="step-num">{pdfStep === 'extracting' ? <span className="ollama-spinner-sm" /> : (pdfStep !== 'idle' ? '✓' : '1')}</span>
+              <span>Fichier</span>
+            </div>
+            <div className="ollama-pdf-step-line" />
+            <div className={`ollama-pdf-step ${['analyzing','done'].includes(pdfStep) ? 'active' : ''} ${pdfStep === 'error' ? 'step-error' : ''}`}>
+              <span className="step-num">{pdfStep === 'analyzing' ? <span className="ollama-spinner-sm" /> : (pdfStep === 'done' ? '✓' : '2')}</span>
+              <span>Analyser</span>
+            </div>
+            <div className="ollama-pdf-step-line" />
+            <div className={`ollama-pdf-step ${pdfStep === 'done' ? 'active' : ''}`}>
+              <span className="step-num">{pdfStep === 'done' ? '✓' : '3'}</span>
+              <span>Importer</span>
+            </div>
+          </div>
 
           <input
             ref={pdfFileInputRef}
@@ -491,67 +553,88 @@ const OllamaPanel: React.FC<OllamaPanelProps> = ({
             onChange={handlePdfGraphUpload}
           />
 
-          <button
-            className="ollama-pdf-upload-btn"
-            onClick={() => pdfFileInputRef.current?.click()}
-          >
-            📂 Choisir un PDF ou fichier texte
-          </button>
-
-          {pdfFileName && (
-            <div className="ollama-pdf-file-info">
-              <span className="ollama-pdf-filename">📄 {pdfFileName}</span>
-              {pdfPageCount > 0 && (
-                <span className="ollama-pdf-pages">
-                  {pdfPageCount} page{pdfPageCount > 1 ? 's' : ''}
-                  {pdfPageCount > 20 ? ' (20 analysées)' : ''}
-                </span>
-              )}
-              {pdfText.length > 4000 && (
-                <span className="ollama-pdf-truncated">⚠️ Texte tronqué à 4000 caractères</span>
-              )}
-            </div>
+          {/* Step 1 — Choose file */}
+          {pdfStep === 'idle' && (
+            <>
+              <p className="ollama-pdf-intro">
+                Ollama lit votre PDF, en extrait les concepts clés et construit un graphe de nodes connectés.
+              </p>
+              <button className="ollama-pdf-upload-btn" onClick={() => pdfFileInputRef.current?.click()}>
+                📂 Choisir un PDF ou fichier texte (.pdf .txt .md)
+              </button>
+            </>
           )}
 
-          {pdfText && (
-            <div className="ollama-pdf-preview">
-              {pdfText.slice(0, 200)}
-              {pdfText.length > 200 ? '…' : ''}
-            </div>
-          )}
-
-          {pdfText && !pdfLoading && (
-            <button
-              className="ollama-generate-btn"
-              onClick={handleAnalyzePdf}
-              disabled={availableModels.length === 0}
-            >
-              🧠 Analyser et générer le graphe
-            </button>
-          )}
-
-          {availableModels.length === 0 && pdfText && (
-            <div className="ollama-no-model-hint">↑ Installez un modèle pour analyser</div>
-          )}
-
-          {pdfLoading && (
-            <div className="ollama-pdf-loading">
+          {pdfStep === 'extracting' && (
+            <div className="ollama-pdf-status-card">
               <span className="ollama-spinner" />
-              Analyse en cours… (peut prendre 30–60 secondes)
+              <div>
+                <strong>Extraction du texte…</strong>
+                <p>{pdfFileName}</p>
+              </div>
             </div>
           )}
 
-          {pdfGraphResult?.error && (
-            <div className="ollama-error" style={{ marginTop: 10 }}>
-              <span className="ollama-error-icon">⚠️</span>
-              <span className="ollama-error-text">{pdfGraphResult.error}</span>
+          {(pdfStep === 'ready' || pdfStep === 'analyzing') && (
+            <div className="ollama-pdf-status-card ollama-pdf-status-ok">
+              <span style={{ fontSize: 22 }}>✅</span>
+              <div>
+                <strong>{pdfFileName}</strong>
+                <p>
+                  {pdfPageCount > 0 && `${Math.min(pdfPageCount, 20)} page${pdfPageCount > 1 ? 's' : ''} extraites${pdfPageCount > 20 ? ` sur ${pdfPageCount}` : ''} · `}
+                  {pdfCharCount.toLocaleString()} caractères
+                  {pdfCharCount > 4000 && <span className="ollama-pdf-truncated"> · tronqué à 4 000</span>}
+                </p>
+              </div>
+              <button className="ollama-pdf-reset-btn" onClick={handleResetPdf} title="Changer de fichier">✕</button>
             </div>
           )}
 
-          {pdfGraphResult && !pdfGraphResult.error && pdfGraphResult.nodes.length > 0 && (
-            <div className="ollama-pdf-result">
-              <div className="ollama-pdf-result-header">
-                ✅ {pdfGraphResult.nodes.length} nodes · {pdfGraphResult.edges.length} connexions générés
+          {pdfStep === 'ready' && (
+            <>
+              <div className="ollama-pdf-preview">
+                {pdfText.slice(0, 220)}{pdfText.length > 220 ? '…' : ''}
+              </div>
+              {availableModels.length === 0 ? (
+                <div className="ollama-no-model-hint">↑ Installez un modèle pour analyser</div>
+              ) : (
+                <button className="ollama-generate-btn" onClick={handleAnalyzePdf}>
+                  🧠 Analyser et générer le graphe
+                </button>
+              )}
+            </>
+          )}
+
+          {pdfStep === 'analyzing' && (
+            <div className="ollama-pdf-analyzing">
+              <span className="ollama-spinner" />
+              <div>
+                <strong>Analyse en cours…</strong>
+                <p>Ollama extrait les concepts et construit le graphe.<br />Cela peut prendre 30–90 secondes.</p>
+              </div>
+            </div>
+          )}
+
+          {pdfStep === 'error' && (
+            <div className="ollama-pdf-error-card">
+              <span style={{ fontSize: 22 }}>⚠️</span>
+              <div>
+                <strong>Erreur</strong>
+                <p>{pdfError}</p>
+              </div>
+              <button className="ollama-pdf-reset-btn" onClick={handleResetPdf}>Réessayer</button>
+            </div>
+          )}
+
+          {pdfStep === 'done' && pdfGraphResult && (
+            <>
+              <div className="ollama-pdf-status-card ollama-pdf-status-ok">
+                <span style={{ fontSize: 22 }}>🎉</span>
+                <div>
+                  <strong>{pdfGraphResult.nodes.length} concepts · {pdfGraphResult.edges.length} connexions</strong>
+                  <p>Graphe prêt à importer</p>
+                </div>
+                <button className="ollama-pdf-reset-btn" onClick={handleResetPdf} title="Recommencer">✕</button>
               </div>
               <div className="ollama-pdf-node-preview">
                 {pdfGraphResult.nodes.map((n) => (
@@ -564,7 +647,10 @@ const OllamaPanel: React.FC<OllamaPanelProps> = ({
               <button className="ollama-pdf-import-btn" onClick={handleImportPdfGraph}>
                 ⬇️ Importer sur le canvas
               </button>
-            </div>
+              <button className="ollama-pdf-reanalyze-btn" onClick={handleAnalyzePdf}>
+                🔄 Regénérer
+              </button>
+            </>
           )}
         </div>
       )}
