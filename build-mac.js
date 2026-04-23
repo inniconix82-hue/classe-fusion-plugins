@@ -6,42 +6,37 @@ const fs = require('fs')
 console.log('📦 Build du projet...')
 execSync('npm run build', { stdio: 'inherit' })
 
-// 2. Create a clean temp directory for packaging
-const tmpDir = path.join(__dirname, '.package-tmp')
-if (fs.existsSync(tmpDir)) fs.rmSync(tmpDir, { recursive: true })
-fs.mkdirSync(tmpDir)
+// 2. Create release dir
+const releaseDir = path.join(__dirname, 'release')
+if (!fs.existsSync(releaseDir)) fs.mkdirSync(releaseDir)
 
-// 3. Copy only needed files
-function copyDir(src, dest) {
-  fs.mkdirSync(dest, { recursive: true })
-  for (const entry of fs.readdirSync(src, { withFileTypes: true })) {
-    const srcPath = path.join(src, entry.name)
-    const destPath = path.join(dest, entry.name)
-    if (entry.isDirectory()) {
-      copyDir(srcPath, destPath)
-    } else {
-      fs.copyFileSync(srcPath, destPath)
-    }
-  }
-}
-
-const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'))
-// All frontend code is bundled by Vite — no npm deps needed at runtime
-delete pkg.devDependencies
-delete pkg.dependencies
-delete pkg.build
-delete pkg.scripts
-fs.writeFileSync(path.join(tmpDir, 'package.json'), JSON.stringify(pkg, null, 2))
-
-copyDir(path.join(__dirname, 'dist'), path.join(tmpDir, 'dist'))
-copyDir(path.join(__dirname, 'dist-electron'), path.join(tmpDir, 'dist-electron'))
-
-// 4. Package with electron packager
+// 3. Try native macOS packaging with electron-packager
 const packager = require('@electron/packager')
 async function run() {
-  // Build for both Intel and Apple Silicon
   const arch = process.env.MAC_ARCH || 'universal'
   console.log(`🍎 Packaging pour macOS (${arch})...`)
+
+  const tmpDir = path.join(__dirname, '.package-tmp')
+  if (fs.existsSync(tmpDir)) fs.rmSync(tmpDir, { recursive: true })
+  fs.mkdirSync(tmpDir)
+
+  function copyDir(src, dest) {
+    fs.mkdirSync(dest, { recursive: true })
+    for (const entry of fs.readdirSync(src, { withFileTypes: true })) {
+      const srcPath = path.join(src, entry.name)
+      const destPath = path.join(dest, entry.name)
+      if (entry.isDirectory()) copyDir(srcPath, destPath)
+      else fs.copyFileSync(srcPath, destPath)
+    }
+  }
+
+  // Strip dev deps for the packaged app (electron handles runtime)
+  const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'))
+  delete pkg.devDependencies
+  delete pkg.build
+  fs.writeFileSync(path.join(tmpDir, 'package.json'), JSON.stringify(pkg, null, 2))
+  copyDir(path.join(__dirname, 'dist'), path.join(tmpDir, 'dist'))
+  copyDir(path.join(__dirname, 'dist-electron'), path.join(tmpDir, 'dist-electron'))
 
   const icnsPath = path.join(__dirname, 'public', 'icon.icns')
   const packagerOptions = {
@@ -49,7 +44,7 @@ async function run() {
     name: 'Node Organisation',
     platform: 'darwin',
     arch,
-    out: path.join(__dirname, 'release'),
+    out: releaseDir,
     overwrite: true,
     appVersion: '1.0.0',
     appBundleId: 'com.nodeorganisation.app',
@@ -57,61 +52,71 @@ async function run() {
   if (fs.existsSync(icnsPath)) packagerOptions.icon = icnsPath
 
   const appPaths = await packager(packagerOptions)
+  fs.rmSync(tmpDir, { recursive: true })
 
   const appFolder = appPaths && appPaths[0]
 
   if (!appFolder) {
-    // Cross-compilation to macOS is not supported on Linux — fall back to a portable source ZIP
-    console.log('⚠️  Packaging macOS natif impossible sur Linux — création d\'un ZIP source portable...')
-    const zipName = 'Node-Organisation-Mac-portable.zip'
-    const zipPath = path.join(__dirname, 'release', zipName)
-    if (!fs.existsSync(path.join(__dirname, 'release'))) fs.mkdirSync(path.join(__dirname, 'release'))
-    if (fs.existsSync(zipPath)) fs.unlinkSync(zipPath)
-    execSync(
-      `zip -r "${zipPath}" dist dist-electron package.json main.js preload.js -x "*.DS_Store"`,
-      { stdio: 'inherit', cwd: __dirname }
-    )
-    console.log(`\n✅ ZIP portable créé : release/${zipName}`)
-    console.log('   Sur Mac : git pull && npm install && npm run electron:dev')
-    fs.rmSync(tmpDir, { recursive: true })
+    // Cross-compilation not supported on Linux → source ZIP
+    buildSourceZip()
     return
   }
 
   console.log('✅ App packagée dans:', appFolder)
-
-  // 5. Create ZIP
   const zipName = `Node-Organisation-Mac-${arch}.zip`
-  const zipPath = path.join(__dirname, 'release', zipName)
+  const zipPath = path.join(releaseDir, zipName)
   if (fs.existsSync(zipPath)) fs.unlinkSync(zipPath)
 
   console.log('🗜️  Création du ZIP...')
-  const releaseDir = path.join(__dirname, 'release')
-  const folderName = path.basename(appFolder)
   try {
-    execSync(
-      `ditto -c -k --sequesterRsrc --keepParent "${appFolder}" "${zipPath}"`,
-      { stdio: 'inherit' }
-    )
+    execSync(`ditto -c -k --sequesterRsrc --keepParent "${appFolder}" "${zipPath}"`, { stdio: 'inherit' })
   } catch {
-    console.log('⚠️  ditto a échoué, essai avec zip -y...')
-    execSync(
-      `cd "${releaseDir}" && zip -r -y "${zipPath}" "${folderName}"`,
-      { stdio: 'inherit' }
-    )
+    console.log('⚠️  ditto indisponible, essai avec zip...')
+    execSync(`cd "${releaseDir}" && zip -r -y "${zipPath}" "${path.basename(appFolder)}"`, { stdio: 'inherit' })
   }
 
-  if (!fs.existsSync(zipPath)) throw new Error('ZIP non créé — vérifiez les permissions du dossier release/')
+  console.log(`\n🎉 ZIP : release/${zipName}`)
+  console.log('   Dézipper → glisser "Node Organisation.app" dans Applications.')
+}
 
-  console.log(`\n🎉 ZIP créé : release/${zipName}`)
-  console.log('   L\'utilisateur dézippe et glisse "Node Organisation.app" dans Applications.')
-  console.log('   Ollama : https://ollama.com/download (installer séparément sur Mac)')
+function buildSourceZip() {
+  console.log('⚠️  Packaging macOS natif impossible sur Linux — ZIP source complet...')
 
-  // Cleanup
-  fs.rmSync(tmpDir, { recursive: true })
+  const zipName = 'Node-Organisation-Mac-source.zip'
+  const zipPath = path.join(releaseDir, zipName)
+  if (fs.existsSync(zipPath)) fs.unlinkSync(zipPath)
+
+  // Include everything needed to run on Mac after npm install
+  const include = [
+    'src',
+    'public',
+    'dist',
+    'dist-electron',
+    'electron',
+    'package.json',
+    'package-lock.json',
+    'tsconfig.json',
+    'vite.config.ts',
+    'vite.electron.config.ts',
+    'vite.preload.config.ts',
+    'index.html',
+    'main.js',
+    'preload.js',
+  ].filter((f) => fs.existsSync(path.join(__dirname, f)))
+
+  const args = include.map((f) => `"${f}"`).join(' ')
+  execSync(
+    `zip -r "${zipPath}" ${args} -x "*.DS_Store" -x "node_modules/*"`,
+    { stdio: 'inherit', cwd: __dirname }
+  )
+
+  console.log(`\n✅ ZIP source : release/${zipName}`)
+  console.log('\n   Sur Mac, dans le dossier dézippé :')
+  console.log('   1. npm install')
+  console.log('   2. npm run electron:dev')
 }
 
 run().catch((err) => {
   console.error('❌ Build échoué:', err)
-  if (fs.existsSync(tmpDir)) fs.rmSync(tmpDir, { recursive: true })
   process.exit(1)
 })
