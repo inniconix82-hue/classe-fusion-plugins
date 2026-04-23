@@ -9,4 +9,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   openKbFolder: () => ipcRenderer.invoke('open-kb-folder'),
   readKbFolder: () => ipcRenderer.invoke('read-kb-folder'),
   readFileBuffer: (path: string) => ipcRenderer.invoke('read-file-buffer', path),
+  onMenuAction: (cb: (action: string) => void) => {
+    ipcRenderer.on('menu-action', (_event, action) => cb(action))
+  },
 })

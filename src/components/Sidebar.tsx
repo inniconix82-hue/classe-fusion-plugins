@@ -200,115 +200,14 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <aside className="sidebar">
-      <div className="sidebar-header">
-        <h1 className="sidebar-title">
-          <span className="sidebar-logo">⬡</span>
-          Node Organisation
-        </h1>
-      </div>
-
-      <div className="sidebar-actions">
-        <button className="action-btn action-btn-wide" onClick={onSave} title="Sauvegarder">
-          <span className="btn-icon">💾</span> Sauvegarder
+      <div className="sidebar-slim-actions">
+        <button className="ollama-sidebar-btn sidebar-slim-btn" onClick={onToggleOllama} title="Générer avec Ollama (Ctrl+I)">
+          🤖 Ollama
         </button>
-        <button className="action-btn" onClick={onLoad} title="Ouvrir">
-          <span className="btn-icon">📂</span> Ouvrir
-        </button>
-        <button className="action-btn" onClick={onClear} title="Nouveau">
-          <span className="btn-icon">🗑️</span> Nouveau
+        <button className="editor-sidebar-btn sidebar-slim-btn" onClick={onToggleEditor} title="Éditeur de document (Ctrl+E)">
+          📝 Éditeur
         </button>
       </div>
-
-      <div className="sidebar-layout-controls">
-        <button className="templates-sidebar-btn" onClick={onOpenTemplates} style={{ flex: 'none', width: '100%' }}>
-          📋 Templates
-        </button>
-      </div>
-
-      <div className="sidebar-actions">
-        <button className="action-btn" onClick={onExportPNG} title="Exporter en PNG">
-          <span className="btn-icon">🖼️</span> Export PNG
-        </button>
-        <button className="action-btn" onClick={onExportPDF} title="Exporter en PDF">
-          <span className="btn-icon">📄</span> Export PDF
-        </button>
-      </div>
-
-      <div className="sidebar-layout-controls">
-        <button className="layout-btn" onClick={onAutoLayout} title="Auto-layout">
-          <span className="btn-icon">🔀</span> Auto Layout
-        </button>
-        <button className="layout-btn" onClick={onToggleDirection}>
-          {layoutDirection === 'TB' ? '↕ Vertical' : '↔ Horizontal'}
-        </button>
-      </div>
-
-      <div className="sidebar-layout-controls">
-        <button className="layout-btn" onClick={onOpenShortcuts} style={{ flex: 'none', width: '100%' }}>
-          ⌨️ Raccourcis clavier
-        </button>
-      </div>
-
-      <div className="sidebar-layout-controls">
-        <button className="ollama-sidebar-btn" onClick={onToggleOllama} style={{ flex: 'none', width: '100%' }}>
-          🤖 Générer avec Ollama
-        </button>
-      </div>
-
-      <div className="sidebar-layout-controls">
-        <button className="editor-sidebar-btn" onClick={onToggleEditor} style={{ flex: 'none', width: '100%' }}>
-          📝 Éditeur de document
-        </button>
-      </div>
-
-      <div className="sidebar-layout-controls">
-        <button className="layout-btn" onClick={onAddUnderlay} style={{ flex: 'none', width: '100%' }}>
-          🟦 Ajouter une zone
-        </button>
-      </div>
-
-      <div className="sidebar-layout-controls">
-        <button className="layout-btn" onClick={onToggleMinimap} style={{ flex: 'none', width: '100%' }}>
-          {showMinimap ? '🗺️ Masquer minimap' : '🗺️ Afficher minimap'}
-        </button>
-      </div>
-
-      <div className="sidebar-layout-controls">
-        <button
-          className={`theme-btn${theme === 'dark' ? ' active' : ''}`}
-          onClick={() => theme !== 'dark' && onToggleTheme?.()}
-          title="Thème sombre"
-        >
-          🌙 Sombre
-        </button>
-        <button
-          className={`theme-btn${theme === 'light' ? ' active' : ''}`}
-          onClick={() => theme !== 'light' && onToggleTheme?.()}
-          title="Thème clair"
-        >
-          ☀️ Clair
-        </button>
-      </div>
-
-      <div className="sidebar-layout-controls">
-        <button className="custom-cats-sidebar-btn" onClick={() => { setCustomCategories(loadCustomCategories()); onManageCategories() }} style={{ flex: 'none', width: '100%' }}>
-          🗂️ Mes catégories
-        </button>
-      </div>
-
-      <div className="sidebar-layout-controls">
-        <button className="layout-btn" onClick={onShowHelp} style={{ flex: 'none', width: '100%' }}>
-          ❓ Aide
-        </button>
-      </div>
-
-      {onShowWelcome && (
-        <div className="sidebar-layout-controls">
-          <button className="layout-btn" onClick={onShowWelcome} style={{ flex: 'none', width: '100%' }} title="Changer de mode ou de tâche">
-            🏠 {activeSuperCatIds ? 'Changer de mode' : 'Accueil'}
-          </button>
-        </div>
-      )}
 
       <div className="sidebar-divider" />
 

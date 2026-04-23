@@ -16,12 +16,12 @@ export const TASK_MODES: TaskMode[] = [
     superCatIds: ['perso', 'productivite', 'projet', 'business', 'creativite', 'tech', 'social', 'educ', 'detective'],
   },
   {
-    id: 'detective',
-    name: 'Murder Board',
-    icon: '🕵️',
-    description: 'Tableau d\'enquête : suspects, indices, lieux, hypothèses.',
-    superCatIds: ['detective', 'perso'],
-    ollamaStyle: 'detaille',
+    id: 'business',
+    name: 'Business / Projet',
+    icon: '💼',
+    description: 'Stratégie, finances, marketing, équipes et planning.',
+    superCatIds: ['business', 'perso', 'projet'],
+    ollamaStyle: 'synthese',
   },
   {
     id: 'reunion',
@@ -40,14 +40,6 @@ export const TASK_MODES: TaskMode[] = [
     ollamaStyle: 'detaille',
   },
   {
-    id: 'business',
-    name: 'Business / Projet',
-    icon: '💼',
-    description: 'Stratégie, finances, marketing, équipes et planning.',
-    superCatIds: ['business', 'perso', 'projet'],
-    ollamaStyle: 'synthese',
-  },
-  {
     id: 'education',
     name: 'Formation / Cours',
     icon: '🎓',
@@ -61,6 +53,14 @@ export const TASK_MODES: TaskMode[] = [
     icon: '🤝',
     description: 'Accompagnement, projets individualisés, réseau.',
     superCatIds: ['social', 'perso'],
+    ollamaStyle: 'detaille',
+  },
+  {
+    id: 'detective',
+    name: 'Murder Board',
+    icon: '🕵️',
+    description: 'Tableau d\'enquête : suspects, indices, lieux, hypothèses.',
+    superCatIds: ['detective', 'perso'],
     ollamaStyle: 'detaille',
   },
 ]

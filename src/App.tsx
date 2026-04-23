@@ -45,6 +45,7 @@ import QuickSearchModal from './components/QuickSearchModal'
 import SetupWizard from './components/SetupWizard'
 import CustomCategoriesModal from './components/CustomCategoriesModal'
 import WelcomeScreen, { SKIP_KEY } from './components/WelcomeScreen'
+import TopBar from './components/TopBar'
 import { loadCustomCategories, saveCustomCategories } from './data/customCategories'
 
 const nodeTypes = {
@@ -777,6 +778,44 @@ function FlowCanvas() {
     return () => clearTimeout(timer)
   }, [nodes, edges, layoutDirection])
 
+  // Native Mac menu actions
+  useEffect(() => {
+    window.electronAPI?.onMenuAction?.((action) => {
+      switch (action) {
+        case 'save': onSave(); break
+        case 'load': onLoad(); break
+        case 'new': onClear(); break
+        case 'exportpng': onExportPNG(); break
+        case 'exportpdf': onExportPDF(); break
+        case 'undo': onUndo(); break
+        case 'redo': onRedo(); break
+        case 'copy': onCopy(); break
+        case 'paste': onPaste(); break
+        case 'duplicate': onDuplicate(); break
+        case 'selectall': onSelectAll(); break
+        case 'layout': onAutoLayout(); break
+        case 'direction': onToggleDirection(); break
+        case 'fitview': fitView({ padding: 0.2 }); break
+        case 'minimap': setShowMinimap((v) => !v); break
+        case 'theme': setTheme((t) => t === 'dark' ? 'light' : 'dark'); break
+        case 'ollama': setShowOllama((v) => !v); break
+        case 'editor': setShowEditor((v) => !v); break
+        case 'templates': setShowTemplates((v) => !v); break
+        case 'categories': setShowCustomCategories((v) => !v); break
+        case 'shortcuts': setShowShortcuts((v) => !v); break
+        case 'help': setShowHelp((v) => !v); break
+        case 'welcome': localStorage.removeItem(SKIP_KEY); setShowWelcome(true); break
+        case 'addunderlay': {
+          const id = getNextNodeId()
+          history.push(nodes, edges)
+          const pos = lastClickPosRef.current
+          setNodes((nds) => [...nds, { id, type: 'underlay', position: { x: pos.x - 150, y: pos.y - 100 }, style: { width: 300, height: 200, zIndex: -1 }, data: { label: 'Zone', color: '#6366f1' } }])
+          break
+        }
+      }
+    })
+  }, [onSave, onLoad, onClear, onExportPNG, onExportPDF, onUndo, onRedo, onCopy, onPaste, onDuplicate, onSelectAll, onAutoLayout, onToggleDirection, fitView, nodes, edges, history, setNodes])
+
   // Keyboard shortcuts
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -946,6 +985,37 @@ function FlowCanvas() {
           }}
         />
       )}
+      <TopBar
+        onSave={onSave}
+        onLoad={onLoad}
+        onClear={onClear}
+        onExportPNG={onExportPNG}
+        onExportPDF={onExportPDF}
+        onOpenTemplates={() => setShowTemplates(true)}
+        onOpenShortcuts={() => setShowShortcuts(true)}
+        onShowHelp={() => setShowHelp(true)}
+        onShowWelcome={() => { localStorage.removeItem(SKIP_KEY); setShowWelcome(true) }}
+        onAutoLayout={onAutoLayout}
+        onToggleDirection={onToggleDirection}
+        onFitView={() => fitView({ padding: 0.2 })}
+        onAddUnderlay={() => {
+          const id = getNextNodeId()
+          history.push(nodes, edges)
+          const pos = lastClickPosRef.current
+          setNodes((nds) => [...nds, {
+            id, type: 'underlay',
+            position: { x: pos.x - 150, y: pos.y - 100 },
+            style: { width: 300, height: 200, zIndex: -1 },
+            data: { label: 'Zone', color: '#6366f1' },
+          }])
+        }}
+        onManageCategories={() => setShowCustomCategories(true)}
+        layoutDirection={layoutDirection}
+        theme={theme}
+        onToggleTheme={() => setTheme((t) => t === 'dark' ? 'light' : 'dark')}
+        activeTaskMode={activeTaskMode}
+      />
+      <div className="app-body">
       <Sidebar
         onSave={onSave}
         onLoad={onLoad}
@@ -965,8 +1035,7 @@ function FlowCanvas() {
           history.push(nodes, edges)
           const pos = lastClickPosRef.current
           setNodes((nds) => [...nds, {
-            id,
-            type: 'underlay',
+            id, type: 'underlay',
             position: { x: pos.x - 150, y: pos.y - 100 },
             style: { width: 300, height: 200, zIndex: -1 },
             data: { label: 'Zone', color: '#6366f1' },
@@ -974,10 +1043,7 @@ function FlowCanvas() {
         }}
         onShowHelp={() => setShowHelp(true)}
         activeSuperCatIds={activeTaskMode && activeTaskMode.id !== 'all' ? activeTaskMode.superCatIds : null}
-        onShowWelcome={() => {
-          localStorage.removeItem(SKIP_KEY)
-          setShowWelcome(true)
-        }}
+        onShowWelcome={() => { localStorage.removeItem(SKIP_KEY); setShowWelcome(true) }}
         onManageCategories={() => setShowCustomCategories(true)}
         onOpenTemplates={() => setShowTemplates(true)}
         theme={theme}
@@ -986,6 +1052,7 @@ function FlowCanvas() {
         onToggleCollapse={() => setSidebarCollapsed((v) => !v)}
         isNetworkActive={isNetworkActive}
       />
+      </div>{/* end app-body */}
 
       {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
 
@@ -1246,6 +1313,13 @@ function FlowCanvas() {
 
       <LayoutContext.Provider value={layoutDirection}>
       <div className="canvas-container" ref={reactFlowWrapper}>
+        <button
+          className={`minimap-pill${showMinimap ? ' active' : ''}`}
+          onClick={() => setShowMinimap((v) => !v)}
+          title={showMinimap ? 'Masquer la minimap' : 'Afficher la minimap'}
+        >
+          🗺️
+        </button>
         <ReactFlow
           nodes={nodes}
           edges={edges}
