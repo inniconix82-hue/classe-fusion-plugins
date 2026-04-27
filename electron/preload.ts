@@ -2,6 +2,7 @@ import { contextBridge, ipcRenderer } from 'electron'
 
 contextBridge.exposeInMainWorld('electronAPI', {
   saveProject: (data: string) => ipcRenderer.invoke('save-project', data),
+  saveProjectToPath: (filePath: string, data: string) => ipcRenderer.invoke('save-project-to-path', filePath, data),
   loadProject: () => ipcRenderer.invoke('load-project'),
   launchOllama: () => ipcRenderer.invoke('launch-ollama'),
   installOllamaLocal: () => ipcRenderer.invoke('install-ollama-local'),

@@ -2,6 +2,7 @@
 
 interface ElectronAPI {
   saveProject: (data: string) => Promise<{ success: boolean; path?: string }>
+  saveProjectToPath?: (filePath: string, data: string) => Promise<{ success: boolean; path?: string }>
   loadProject: () => Promise<{ success: boolean; data?: string; path?: string }>
   launchOllama?: () => Promise<{ success: boolean }>
   installOllamaLocal?: () => Promise<{ success: boolean; error?: string }>

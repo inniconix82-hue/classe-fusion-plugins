@@ -230,6 +230,15 @@ ipcMain.handle('save-project', async (_event, data: string) => {
   return { success: false }
 })
 
+ipcMain.handle('save-project-to-path', (_event, filePath: string, data: string) => {
+  try {
+    writeFileSync(filePath, data, 'utf-8')
+    return { success: true, path: filePath }
+  } catch (err: any) {
+    return { success: false, error: err.message }
+  }
+})
+
 ipcMain.handle('load-project', async () => {
   const result = await dialog.showOpenDialog(mainWindow!, {
     title: 'Ouvrir un projet',

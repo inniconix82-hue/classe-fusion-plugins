@@ -70,6 +70,7 @@ const SUGGESTED_MODELS: { name: string; label: string; desc: string; size: strin
   { name: 'tinyllama', label: 'TinyLlama', desc: 'Ultra léger', size: '0.6 Go' },
   { name: 'mistral', label: 'Mistral 7B', desc: 'Très polyvalent', size: '4.1 Go' },
   { name: 'llama3.2', label: 'Llama 3.2', desc: 'Dernière génération', size: '2.0 Go' },
+  { name: 'gemma3:4b', label: 'Gemma 3 4B', desc: 'Google, excellent JSON', size: '3.3 Go' },
 ]
 
 const OllamaPanel: React.FC<OllamaPanelProps> = ({

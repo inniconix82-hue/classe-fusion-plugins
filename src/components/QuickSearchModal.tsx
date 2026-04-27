@@ -34,7 +34,21 @@ export default function QuickSearchModal({ onClose, onAddNode }: QuickSearchModa
   }, [])
 
   const results = useMemo<FlatNode[]>(() => {
-    if (!query.trim()) return allNodes.slice(0, 20)
+    if (!query.trim()) {
+      const customCats = loadCustomCategories()
+      const allCats = [
+        ...presetCategories,
+        ...customCats.map((c) => ({ ...c, nodes: c.nodes as PresetNode[] })),
+      ]
+      const perCat = Math.max(2, Math.floor(20 / allCats.length))
+      return allCats.flatMap((cat) =>
+        cat.nodes.slice(0, perCat).map((n) => ({
+          ...n,
+          categoryName: cat.name,
+          categoryIcon: cat.icon,
+        }))
+      ).slice(0, 20)
+    }
     const q = query.toLowerCase()
     return allNodes.filter(
       (n) =>

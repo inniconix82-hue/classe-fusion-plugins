@@ -176,6 +176,7 @@ function FlowCanvas() {
   const [saveToCategoryPicker, setSaveToCategoryPicker] = useState<Node | null>(null)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [isNetworkActive, setIsNetworkActive] = useState(false)
+  const [currentProjectPath, setCurrentProjectPath] = useState<string | null>(null)
   const history = useHistory()
 
   useEffect(() => {
@@ -429,7 +430,14 @@ function FlowCanvas() {
     const projectData = JSON.stringify({ nodes, edges, layoutDirection }, null, 2)
 
     if (window.electronAPI) {
-      await window.electronAPI.saveProject(projectData)
+      if (currentProjectPath && window.electronAPI.saveProjectToPath) {
+        await window.electronAPI.saveProjectToPath(currentProjectPath, projectData)
+      } else {
+        const result = await window.electronAPI.saveProject(projectData)
+        if (result?.success && result.path) {
+          setCurrentProjectPath(result.path)
+        }
+      }
     } else {
       // Fallback: download as file in browser
       const blob = new Blob([projectData], { type: 'application/json' })
@@ -439,6 +447,16 @@ function FlowCanvas() {
       a.download = 'projet.nodeorg'
       a.click()
       URL.revokeObjectURL(url)
+    }
+  }, [nodes, edges, layoutDirection, currentProjectPath])
+
+  const onSaveAs = useCallback(async () => {
+    const projectData = JSON.stringify({ nodes, edges, layoutDirection }, null, 2)
+    if (window.electronAPI) {
+      const result = await window.electronAPI.saveProject(projectData)
+      if (result?.success && result.path) {
+        setCurrentProjectPath(result.path)
+      }
     }
   }, [nodes, edges, layoutDirection])
 
@@ -450,6 +468,7 @@ function FlowCanvas() {
         setNodes(data.nodes || [])
         setEdges(data.edges || [])
         if (data.layoutDirection) setLayoutDirection(data.layoutDirection)
+        if (result.path) setCurrentProjectPath(result.path)
       }
     } else {
       // Fallback: file input in browser
@@ -477,6 +496,7 @@ function FlowCanvas() {
     setEdges([])
     nodeIdCounter = 0
     localStorage.removeItem(AUTOSAVE_KEY)
+    setCurrentProjectPath(null)
   }, [setNodes, setEdges])
 
   const onClear = useCallback(() => {
@@ -829,6 +849,7 @@ function FlowCanvas() {
 
       for (const shortcut of shortcuts) {
         if (matchesShortcut(e, shortcut.keys)) {
+          if (e.repeat && ['copy', 'paste', 'duplicate', 'save', 'load', 'new', 'exportpng', 'exportpdf'].includes(shortcut.id)) return
           e.preventDefault()
           e.stopImmediatePropagation()
           switch (shortcut.id) {

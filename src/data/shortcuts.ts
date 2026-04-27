@@ -78,9 +78,10 @@ export function parseKeys(keysStr: string): { ctrl: boolean; shift: boolean; alt
 
 export function matchesShortcut(e: KeyboardEvent, keysStr: string): boolean {
   const parsed = parseKeys(keysStr)
-  const pressedKey = e.key.toLowerCase()
+  const pressedKey = e.key === ' ' ? 'space' : e.key.toLowerCase()
+  const ctrlPressed = e.ctrlKey || e.metaKey
   return (
-    e.ctrlKey === parsed.ctrl &&
+    ctrlPressed === parsed.ctrl &&
     e.shiftKey === parsed.shift &&
     e.altKey === parsed.alt &&
     pressedKey === parsed.key
@@ -103,12 +104,13 @@ export function saveNodeShortcuts(shortcuts: NodeShortcut[]) {
 
 export function formatKeyCombo(e: KeyboardEvent): string {
   const parts: string[] = []
-  if (e.ctrlKey) parts.push('Ctrl')
+  const isMac = navigator.platform.toUpperCase().includes('MAC')
+  if (e.ctrlKey || e.metaKey) parts.push(isMac ? 'Cmd' : 'Ctrl')
   if (e.shiftKey) parts.push('Shift')
   if (e.altKey) parts.push('Alt')
   const key = e.key
   if (!['Control', 'Shift', 'Alt', 'Meta'].includes(key)) {
-    parts.push(key.length === 1 ? key.toUpperCase() : key)
+    parts.push(key === ' ' ? 'Space' : key.length === 1 ? key.toUpperCase() : key)
   }
   return parts.join('+')
 }
