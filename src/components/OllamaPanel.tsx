@@ -101,9 +101,11 @@ const OllamaPanel: React.FC<OllamaPanelProps> = ({
   const pdfFileInputRef = useRef<HTMLInputElement>(null)
   const [pdfStep, setPdfStep] = useState<'idle' | 'extracting' | 'ready' | 'analyzing' | 'done' | 'error'>('idle')
   const [pdfText, setPdfText] = useState('')
+  const [pdfPageTexts, setPdfPageTexts] = useState<string[]>([])
   const [pdfFileName, setPdfFileName] = useState('')
   const [pdfPageCount, setPdfPageCount] = useState(0)
   const [pdfCharCount, setPdfCharCount] = useState(0)
+  const [pdfChunkProgress, setPdfChunkProgress] = useState('')
   const [pdfError, setPdfError] = useState('')
   const [pdfGraphResult, setPdfGraphResult] = useState<PdfGraphResponse | null>(null)
   const [pdfLoading, setPdfLoading] = useState(false)
@@ -214,9 +216,10 @@ const OllamaPanel: React.FC<OllamaPanelProps> = ({
     setKbCount(0)
   }
 
-  const extractTextFromPdf = async (file: File): Promise<string> => {
+  const extractTextFromPdf = async (file: File): Promise<string[]> => {
     if (!file.name.endsWith('.pdf') && file.type !== 'application/pdf') {
-      return file.text()
+      const text = await file.text()
+      return [text]
     }
     const pdfjsLib = await import('pdfjs-dist')
     pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
@@ -226,9 +229,8 @@ const OllamaPanel: React.FC<OllamaPanelProps> = ({
     const arrayBuffer = await file.arrayBuffer()
     const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer) }).promise
     setPdfPageCount(pdf.numPages)
-    const maxPages = Math.min(pdf.numPages, 20)
     const pageTexts = await Promise.all(
-      Array.from({ length: maxPages }, (_, i) =>
+      Array.from({ length: pdf.numPages }, (_, i) =>
         pdf.getPage(i + 1).then((page) =>
           page.getTextContent().then((content) =>
             (content.items as any[])
@@ -239,7 +241,7 @@ const OllamaPanel: React.FC<OllamaPanelProps> = ({
         )
       )
     )
-    return pageTexts.join('\n\n').trim()
+    return pageTexts
   }
 
   const handlePdfGraphUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -250,13 +252,16 @@ const OllamaPanel: React.FC<OllamaPanelProps> = ({
     setPdfFileName(file.name)
     setPdfError('')
     setPdfPageCount(0)
+    setPdfChunkProgress('')
 
     try {
-      const text = await extractTextFromPdf(file)
+      const pages = await extractTextFromPdf(file)
+      const text = pages.join('\n\n').trim()
       if (!text || text.length < 50) {
         setPdfError('Aucun texte extractible dans ce fichier. PDF scanné (image) non supporté.')
         setPdfStep('error')
       } else {
+        setPdfPageTexts(pages)
         setPdfText(text)
         setPdfCharCount(text.length)
         setPdfStep('ready')
@@ -269,28 +274,95 @@ const OllamaPanel: React.FC<OllamaPanelProps> = ({
     if (pdfFileInputRef.current) pdfFileInputRef.current.value = ''
   }
 
+  const CHUNK_SIZE = 20
+
   const handleAnalyzePdf = async () => {
     if (!pdfText) return
     setPdfStep('analyzing')
     setPdfLoading(true)
     setPdfGraphResult(null)
-    const result = await generateGraphFromText(pdfText)
-    setPdfLoading(false)
-    if (result.error) {
-      setPdfError(result.error)
-      setPdfStep('error')
-    } else {
-      setPdfGraphResult(result)
-      setPdfStep('done')
+    setPdfChunkProgress('')
+
+    // Split pages into chunks of CHUNK_SIZE
+    const pages = pdfPageTexts.length > 0 ? pdfPageTexts : [pdfText]
+    const chunks: string[] = []
+    for (let i = 0; i < pages.length; i += CHUNK_SIZE) {
+      const chunk = pages.slice(i, i + CHUNK_SIZE).join('\n\n').trim()
+      if (chunk) chunks.push(chunk)
     }
+
+    const allNodes: PdfGraphResponse['nodes'] = []
+    const allEdges: PdfGraphResponse['edges'] = []
+
+    for (let i = 0; i < chunks.length; i++) {
+      if (chunks.length > 1) setPdfChunkProgress(`Bloc ${i + 1} / ${chunks.length}`)
+      const result = await generateGraphFromText(chunks[i])
+      if (result.error) {
+        if (chunks.length === 1) {
+          setPdfError(result.error)
+          setPdfStep('error')
+          setPdfLoading(false)
+          return
+        }
+        // Partial failure — skip bad chunk, continue
+        console.warn(`Chunk ${i + 1} failed:`, result.error)
+        continue
+      }
+      allNodes.push(...result.nodes)
+      allEdges.push(...result.edges)
+    }
+
+    if (allNodes.length === 0) {
+      setPdfError('Aucun concept extrait. Essayez un modèle plus puissant (Mistral, Llama 3.2).')
+      setPdfStep('error')
+      setPdfLoading(false)
+      return
+    }
+
+    // Deduplicate nodes by label (case-insensitive)
+    const nodeMap = new Map<string, PdfGraphResponse['nodes'][0]>()
+    const idRemap: Record<string, string> = {}
+    for (const node of allNodes) {
+      const key = node.label.toLowerCase().trim()
+      const existing = nodeMap.get(key)
+      if (existing) {
+        idRemap[node.id] = existing.id
+      } else {
+        nodeMap.set(key, node)
+        idRemap[node.id] = node.id
+      }
+    }
+
+    const mergedNodes = Array.from(nodeMap.values())
+    const seenEdges = new Set<string>()
+    const mergedEdges = allEdges
+      .map((e) => ({
+        ...e,
+        source: idRemap[e.source] || e.source,
+        target: idRemap[e.target] || e.target,
+      }))
+      .filter((e) => {
+        if (e.source === e.target) return false
+        const key = `${e.source}→${e.target}`
+        if (seenEdges.has(key)) return false
+        seenEdges.add(key)
+        return true
+      })
+
+    setPdfLoading(false)
+    setPdfChunkProgress('')
+    setPdfGraphResult({ nodes: mergedNodes, edges: mergedEdges })
+    setPdfStep('done')
   }
 
   const handleResetPdf = () => {
     setPdfStep('idle')
     setPdfText('')
+    setPdfPageTexts([])
     setPdfFileName('')
     setPdfPageCount(0)
     setPdfCharCount(0)
+    setPdfChunkProgress('')
     setPdfGraphResult(null)
     setPdfError('')
   }
@@ -583,9 +655,10 @@ const OllamaPanel: React.FC<OllamaPanelProps> = ({
               <div>
                 <strong>{pdfFileName}</strong>
                 <p>
-                  {pdfPageCount > 0 && `${Math.min(pdfPageCount, 20)} page${pdfPageCount > 1 ? 's' : ''} extraites${pdfPageCount > 20 ? ` sur ${pdfPageCount}` : ''} · `}
+                  {pdfPageCount > 0 && `${pdfPageCount} page${pdfPageCount > 1 ? 's' : ''}`}
+                  {pdfPageCount > CHUNK_SIZE && ` · ${Math.ceil(pdfPageCount / CHUNK_SIZE)} blocs de ${CHUNK_SIZE}`}
+                  {pdfPageCount > 0 && ' · '}
                   {pdfCharCount.toLocaleString()} caractères
-                  {pdfCharCount > 4000 && <span className="ollama-pdf-truncated"> · tronqué à 4 000</span>}
                 </p>
               </div>
               <button className="ollama-pdf-reset-btn" onClick={handleResetPdf} title="Changer de fichier">✕</button>
@@ -611,8 +684,13 @@ const OllamaPanel: React.FC<OllamaPanelProps> = ({
             <div className="ollama-pdf-analyzing">
               <span className="ollama-spinner" />
               <div>
-                <strong>Analyse en cours…</strong>
-                <p>Ollama extrait les concepts et construit le graphe.<br />Cela peut prendre 30–90 secondes.</p>
+                <strong>{pdfChunkProgress || 'Analyse en cours…'}</strong>
+                <p>
+                  {pdfPageCount > CHUNK_SIZE
+                    ? `PDF découpé en ${Math.ceil(pdfPageCount / CHUNK_SIZE)} blocs — traitement séquentiel.`
+                    : 'Ollama extrait les concepts et construit le graphe.'}
+                  <br />Cela peut prendre {pdfPageCount > CHUNK_SIZE ? `${Math.ceil(pdfPageCount / CHUNK_SIZE) * 60}–${Math.ceil(pdfPageCount / CHUNK_SIZE) * 120}` : '30–90'} secondes.
+                </p>
               </div>
             </div>
           )}
