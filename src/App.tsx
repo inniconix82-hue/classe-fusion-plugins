@@ -142,8 +142,9 @@ function FlowCanvas() {
   const [ollamaError, setOllamaError] = useState<string | null>(null)
   const [ollamaLoading, setOllamaLoading] = useState(false)
   const [showEditor, setShowEditor] = useState(false)
-  const [editorContent, setEditorContent] = useState('')
-  const [rawMarkdown, setRawMarkdown] = useState('')
+  const editorContentRef = useRef('')
+  const [editorKey, setEditorKey] = useState(0)
+  const [editorRawMarkdown, setEditorRawMarkdown] = useState('')
   const [showTemplates, setShowTemplates] = useState(false)
   const [showQuickSearch, setShowQuickSearch] = useState(false)
   const [questionLoading, setQuestionLoading] = useState(false)
@@ -396,17 +397,54 @@ function FlowCanvas() {
   )
 
   const onAutoLayout = useCallback(() => {
-    const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(
-      nodes,
-      edges,
-      layoutDirection
-    )
-    setNodes([...layoutedNodes])
-    setEdges([...layoutedEdges])
+    const PAD = 32
+    const underlays = nodes.filter((n) => n.type === 'underlay')
+    const regularNodes = nodes.filter((n) => n.type !== 'underlay')
 
-    window.requestAnimationFrame(() => {
-      fitView({ padding: 0.2 })
+    // Remember which regular nodes overlap each underlay before layout
+    const underlayContents: Record<string, string[]> = {}
+    for (const u of underlays) {
+      const uw = u.measured?.width ?? (u.style?.width as number) ?? 300
+      const uh = u.measured?.height ?? (u.style?.height as number) ?? 200
+      underlayContents[u.id] = regularNodes
+        .filter((n) => {
+          const nw = n.measured?.width ?? 180
+          const nh = n.measured?.height ?? 60
+          const cx = n.position.x + nw / 2
+          const cy = n.position.y + nh / 2
+          return cx >= u.position.x && cx <= u.position.x + uw &&
+                 cy >= u.position.y && cy <= u.position.y + uh
+        })
+        .map((n) => n.id)
+    }
+
+    const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(regularNodes, edges, layoutDirection)
+
+    // Reposition each underlay to wrap its previously-contained nodes
+    const layoutedUnderlays = underlays.map((u) => {
+      const ids = underlayContents[u.id]
+      if (!ids || ids.length === 0) return u
+      const contained = layoutedNodes.filter((n) => ids.includes(n.id))
+      if (contained.length === 0) return u
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
+      for (const n of contained) {
+        const nw = n.measured?.width ?? 180
+        const nh = n.measured?.height ?? 60
+        minX = Math.min(minX, n.position.x)
+        minY = Math.min(minY, n.position.y)
+        maxX = Math.max(maxX, n.position.x + nw)
+        maxY = Math.max(maxY, n.position.y + nh)
+      }
+      return {
+        ...u,
+        position: { x: minX - PAD, y: minY - PAD },
+        style: { ...u.style, width: maxX - minX + PAD * 2, height: maxY - minY + PAD * 2 },
+      }
     })
+
+    setNodes([...layoutedNodes, ...layoutedUnderlays])
+    setEdges([...layoutedEdges])
+    window.requestAnimationFrame(() => fitView({ padding: 0.2 }))
   }, [nodes, edges, layoutDirection, setNodes, setEdges, fitView])
 
   const onToggleDirection = useCallback(() => {
@@ -578,6 +616,30 @@ function FlowCanvas() {
     )
   }, [nodes, setEdges])
 
+  const onExtractSelected = useCallback(() => {
+    const selectedIds = new Set(nodes.filter((n) => n.selected).map((n) => n.id))
+    if (selectedIds.size === 0) return
+    history.push(nodes, edges)
+    const toRemove = new Set<string>()
+    const bridgeEdges: Edge[] = []
+    const seen = new Set<string>()
+    for (const id of selectedIds) {
+      const incoming = edges.filter((e) => e.target === id && !selectedIds.has(e.source))
+      const outgoing = edges.filter((e) => e.source === id && !selectedIds.has(e.target))
+      edges.filter((e) => e.source === id || e.target === id).forEach((e) => toRemove.add(e.id))
+      for (const inc of incoming) {
+        for (const out of outgoing) {
+          const key = `${inc.source}→${out.target}`
+          if (!seen.has(key)) {
+            seen.add(key)
+            bridgeEdges.push({ id: `bridge_${Date.now()}_${key}`, source: inc.source, target: out.target, type: 'custom', data: { label: '' } })
+          }
+        }
+      }
+    }
+    setEdges([...edges.filter((e) => !toRemove.has(e.id)), ...bridgeEdges])
+  }, [nodes, edges, history, setEdges])
+
   const onUndo = useCallback(() => {
     history.undo(nodes, edges, setNodes, setEdges)
   }, [history, nodes, edges, setNodes, setEdges])
@@ -674,9 +736,10 @@ function FlowCanvas() {
   }, [nodes, edges])
 
   const onSendToEditor = useCallback((text: string) => {
-    setRawMarkdown(text)
     const html = String(marked.parse(text, { async: false, breaks: true, gfm: true }))
-    setEditorContent((prev) => prev + html)
+    editorContentRef.current = html
+    setEditorRawMarkdown(text)
+    setEditorKey((k) => k + 1)
     setShowEditor(true)
     setShowOllama(false)
   }, [])
@@ -865,6 +928,7 @@ function FlowCanvas() {
             case 'paste': onPaste(); break
             case 'duplicate': onDuplicate(); break
             case 'disconnect': onDisconnectSelected(); break
+            case 'extract': onExtractSelected(); break
             // Vue & Layout
             case 'layout': onAutoLayout(); break
             case 'direction': onToggleDirection(); break
@@ -929,7 +993,7 @@ function FlowCanvas() {
     // Use capture phase to intercept before React Flow swallows the event
     window.addEventListener('keydown', handler, true)
     return () => window.removeEventListener('keydown', handler, true)
-  }, [shortcuts, nodeShortcuts, onSave, onLoad, onClear, onAutoLayout, onToggleDirection, fitView, onUndo, onRedo, onSelectAll, onCopy, onPaste, onDuplicate, onExportPNG, onExportPDF, onDisconnectSelected, nodes, edges, history, setNodes, setShowMinimap, setShowOllama, setShowEditor, setShowQuickSearch, setShowTemplates, setShowCustomCategories, setShowShortcuts, setShowHelp])
+  }, [shortcuts, nodeShortcuts, onSave, onLoad, onClear, onAutoLayout, onToggleDirection, fitView, onUndo, onRedo, onSelectAll, onCopy, onPaste, onDuplicate, onExportPNG, onExportPDF, onDisconnectSelected, onExtractSelected, nodes, edges, history, setNodes, setShowMinimap, setShowOllama, setShowEditor, setShowQuickSearch, setShowTemplates, setShowCustomCategories, setShowShortcuts, setShowHelp])
 
   const onNodeDragStart = useCallback((_event: React.MouseEvent, node: Node) => {
     if (node.type !== 'underlay') return
@@ -1285,10 +1349,11 @@ function FlowCanvas() {
 
       {showEditor && (
         <TextEditorPanel
+          key={editorKey}
           onClose={() => setShowEditor(false)}
-          initialContent={editorContent}
-          rawMarkdown={rawMarkdown}
-          onContentChange={setEditorContent}
+          initialContent={editorContentRef.current}
+          rawMarkdown={editorRawMarkdown}
+          onContentChange={(html) => { editorContentRef.current = html }}
         />
       )}
 

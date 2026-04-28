@@ -200,7 +200,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <aside className="sidebar">
-      {/* Top icon row: Home, Nouveau, Charger, Aide */}
+      {/* Top icon row: Home, Nouveau, Charger, Aide + collapse */}
       <div className="sidebar-file-row">
         {onShowWelcome && (
           <button className="sidebar-icon-btn sidebar-icon-btn-lg" onClick={onShowWelcome} title="Accueil / Changer de mode">🏠</button>
@@ -208,6 +208,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         <button className="sidebar-icon-btn sidebar-icon-btn-lg" onClick={onClear} title="Nouveau graphe (Ctrl+N)">🗑️</button>
         <button className="sidebar-icon-btn sidebar-icon-btn-lg" onClick={onLoad} title="Charger un projet (Ctrl+O)">📂</button>
         <button className="sidebar-icon-btn sidebar-icon-btn-lg" onClick={onShowHelp} title="Aide (F1)">❓</button>
+        <button className="sidebar-icon-btn sidebar-icon-btn-lg sidebar-collapse-top-btn" onClick={onToggleCollapse} title="Réduire la sidebar">◀</button>
       </div>
 
       {/* Main action buttons */}

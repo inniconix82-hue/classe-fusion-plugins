@@ -26,6 +26,7 @@ export const defaultShortcuts: Shortcut[] = [
   { id: 'paste',       label: 'Coller',             keys: 'Ctrl+V',         description: 'Coller les nodes copiés' },
   { id: 'duplicate',   label: 'Dupliquer',          keys: 'Ctrl+Shift+D',   description: 'Dupliquer la sélection' },
   { id: 'disconnect',  label: 'Déconnecter',        keys: 'Ctrl+Shift+X',   description: 'Supprimer les connexions des nodes sélectionnés' },
+  { id: 'extract',     label: 'Extraire (pont)',    keys: 'Ctrl+Alt+X',     description: 'Extraire le node du graphe en pontant ses voisins (A→B→C devient A→C)' },
   // Vue & Layout
   { id: 'layout',      label: 'Auto Layout',        keys: 'Ctrl+L',         description: 'Réorganiser les nodes' },
   { id: 'direction',   label: 'Changer direction',  keys: 'Ctrl+D',         description: 'Basculer vertical / horizontal' },
