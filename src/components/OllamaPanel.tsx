@@ -179,34 +179,33 @@ const OllamaPanel: React.FC<OllamaPanelProps> = ({
     if (file.type === 'application/pdf') {
       try {
         const pdfjsLib = await import('pdfjs-dist')
-        pdfjsLib.GlobalWorkerOptions.workerSrc = ''
-
+        pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+          'pdfjs-dist/build/pdf.worker.min.mjs',
+          import.meta.url
+        ).href
         const arrayBuffer = await file.arrayBuffer()
-        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
-        let fullText = ''
-
-        for (let i = 1; i <= pdf.numPages; i++) {
-          const page = await pdf.getPage(i)
-          const textContent = await page.getTextContent()
-          const pageText = textContent.items
-            .map((item: any) => item.str)
-            .join(' ')
-          fullText += pageText + '\n\n'
-        }
-
-        addToKnowledgeBase(fullText)
+        const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer) }).promise
+        const maxPages = Math.min(pdf.numPages, 30)
+        const pageTexts = await Promise.all(
+          Array.from({ length: maxPages }, (_, i) =>
+            pdf.getPage(i + 1).then((page) =>
+              page.getTextContent().then((content) =>
+                (content.items as any[]).filter((it) => typeof it.str === 'string').map((it) => it.str).join(' ')
+              )
+            )
+          )
+        )
+        addToKnowledgeBase(pageTexts.join('\n\n'))
         setKbCount(getKnowledgeBase().length)
       } catch (err) {
         console.error('Erreur lecture PDF:', err)
       }
     } else {
-      // Text file
       const text = await file.text()
       addToKnowledgeBase(text)
       setKbCount(getKnowledgeBase().length)
     }
 
-    // Reset input
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
@@ -216,7 +215,7 @@ const OllamaPanel: React.FC<OllamaPanelProps> = ({
   }
 
   const extractTextFromPdf = async (file: File): Promise<string> => {
-    if (!file.name.endsWith('.pdf')) {
+    if (!file.name.endsWith('.pdf') && file.type !== 'application/pdf') {
       return file.text()
     }
     const pdfjsLib = await import('pdfjs-dist')
@@ -227,18 +226,20 @@ const OllamaPanel: React.FC<OllamaPanelProps> = ({
     const arrayBuffer = await file.arrayBuffer()
     const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer) }).promise
     setPdfPageCount(pdf.numPages)
-    let fullText = ''
     const maxPages = Math.min(pdf.numPages, 20)
-    for (let i = 1; i <= maxPages; i++) {
-      const page = await pdf.getPage(i)
-      const content = await page.getTextContent()
-      const pageText = (content.items as any[])
-        .filter((item) => typeof item.str === 'string')
-        .map((item) => item.str)
-        .join(' ')
-      fullText += pageText + '\n\n'
-    }
-    return fullText.trim()
+    const pageTexts = await Promise.all(
+      Array.from({ length: maxPages }, (_, i) =>
+        pdf.getPage(i + 1).then((page) =>
+          page.getTextContent().then((content) =>
+            (content.items as any[])
+              .filter((item) => typeof item.str === 'string')
+              .map((item) => item.str)
+              .join(' ')
+          )
+        )
+      )
+    )
+    return pageTexts.join('\n\n').trim()
   }
 
   const handlePdfGraphUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {

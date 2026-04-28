@@ -51,6 +51,104 @@ const QUICK_LAYOUTS = [
     label: '📊 Analyse SWOT',
     html: `<h1>Analyse SWOT</h1><h2>Forces (Strengths)</h2><ul><li></li></ul><h2>Faiblesses (Weaknesses)</h2><ul><li></li></ul><h2>Opportunités (Opportunities)</h2><ul><li></li></ul><h2>Menaces (Threats)</h2><ul><li></li></ul>`,
   },
+  {
+    label: '🎬 Scénario',
+    html: `<div style="font-family:'Courier New',Courier,monospace;font-size:12pt;line-height:1.8;max-width:700px;margin:0 auto;">
+
+<p style="text-align:center;margin-bottom:0.5em;"><br/><br/></p>
+<p style="text-align:center;font-size:1.5em;font-weight:bold;text-transform:uppercase;letter-spacing:2px;">TITRE DU SCÉNARIO</p>
+<p style="text-align:center;margin-top:0.3em;"><em>Écrit par [Prénom Nom]</em></p>
+<p style="text-align:center;margin-top:2em;font-size:0.85em;color:#888;">Draft — ${new Date().toLocaleDateString('fr-FR')}</p>
+
+<p style="margin-top:3em;"><br/></p>
+<p style="font-weight:bold;">FONDU AU NOIR :</p>
+
+<p style="margin-top:1.5em;"><br/></p>
+
+<p style="font-weight:bold;text-transform:uppercase;border-bottom:1px solid #ccc;padding-bottom:2px;">INT. NOM DU LIEU — JOUR</p>
+
+<p style="margin-top:0.8em;">Description de l'action. Ce que l'on voit. Écrit au présent, troisième personne. Sobre et précis — pas de mise en scène technique.</p>
+
+<p style="text-align:center;font-weight:bold;text-transform:uppercase;margin:1.2em 0 0;">PERSONNAGE A</p>
+<p style="margin:0 22% 0.2em;font-style:italic;text-align:center;font-size:0.9em;">(avec hésitation)</p>
+<p style="margin:0 18% 1.2em;">Le dialogue s'écrit ici. Concis, naturel, révélateur du caractère du personnage.</p>
+
+<p style="text-align:center;font-weight:bold;text-transform:uppercase;margin:1em 0 0;">PERSONNAGE B</p>
+<p style="margin:0 18% 1.2em;">La réplique de réponse. Chaque mot compte.</p>
+
+<p style="text-align:right;font-weight:bold;margin:1.5em 0;">COUPE SUR :</p>
+
+<p style="font-weight:bold;text-transform:uppercase;border-bottom:1px solid #ccc;padding-bottom:2px;">EXT. AUTRE LIEU — NUIT</p>
+
+<p style="margin-top:0.8em;">Nouvelle scène, nouveau décor. L'action reprend.</p>
+
+<p style="text-align:center;font-weight:bold;text-transform:uppercase;margin:1.2em 0 0;">PERSONNAGE A</p>
+<p style="margin:0 18% 1.2em;">Suite du dialogue...</p>
+
+<p style="text-align:right;font-weight:bold;margin:1.5em 0;">FONDU AU NOIR.</p>
+
+<p style="text-align:center;font-weight:bold;margin-top:3em;letter-spacing:3px;">FIN</p>
+
+<p><br/></p>
+</div>`,
+  },
+  {
+    label: '🎭 Pièce de théâtre',
+    html: `<div style="font-family:Georgia,'Times New Roman',serif;font-size:12pt;line-height:1.8;max-width:680px;margin:0 auto;">
+
+<p style="text-align:center;margin-top:2em;font-size:1.6em;font-weight:bold;text-transform:uppercase;">TITRE DE LA PIÈCE</p>
+<p style="text-align:center;margin-top:0.3em;font-style:italic;">Pièce en [X] actes</p>
+<p style="text-align:center;margin-top:0.5em;font-size:0.9em;">Écrit par [Auteur] — ${new Date().toLocaleDateString('fr-FR')}</p>
+
+<hr style="margin:2em 0;border:none;border-top:1px solid #ccc;"/>
+
+<p style="font-weight:bold;font-size:1.1em;text-transform:uppercase;margin-bottom:0.3em;">Personnages</p>
+<ul style="margin:0 0 1.5em 1.5em;">
+  <li><strong>PERSONNAGE A</strong> — description courte</li>
+  <li><strong>PERSONNAGE B</strong> — description courte</li>
+</ul>
+
+<p style="font-weight:bold;font-size:1.1em;text-transform:uppercase;margin-bottom:0.3em;">Lieu &amp; Époque</p>
+<p style="margin-bottom:2em;font-style:italic;">Décrivez le cadre spatio-temporel de la pièce.</p>
+
+<hr style="margin:2em 0;border:none;border-top:2px solid #333;"/>
+
+<p style="text-align:center;font-weight:bold;font-size:1.2em;margin:1em 0;">ACTE I</p>
+<p style="text-align:center;font-style:italic;margin-bottom:1.5em;">Scène 1</p>
+
+<p style="font-style:italic;color:#555;margin-bottom:1em;">[Décor. Description de la scène au lever du rideau.]</p>
+
+<p style="margin-bottom:0;"><strong>PERSONNAGE A</strong></p>
+<p style="margin:0 0 1em 2em;">Le texte de la réplique s'écrit ici.</p>
+
+<p style="margin-bottom:0;"><strong>PERSONNAGE B</strong></p>
+<p style="margin:0 0 0 2em;font-style:italic;font-size:0.9em;">(à part)</p>
+<p style="margin:0 0 1em 2em;">Sa réplique en réponse.</p>
+
+<p style="font-style:italic;color:#555;margin-top:1em;">[Indication de jeu ou changement de scène.]</p>
+
+</div>`,
+  },
+  {
+    label: '📖 Synopsis',
+    html: `<h1>Synopsis — [Titre]</h1>
+<p><strong>Format :</strong> Long métrage / Série / Court métrage</p>
+<p><strong>Genre :</strong> </p>
+<p><strong>Auteur :</strong> </p>
+<p><strong>Date :</strong> ${new Date().toLocaleDateString('fr-FR')}</p>
+<hr/>
+<h2>Pitch (2 lignes)</h2>
+<p><em>L'histoire en une ou deux phrases percutantes.</em></p>
+<h2>Résumé (1 page)</h2>
+<h3>Acte I — Mise en place</h3>
+<p>Présentation du protagoniste, de son monde ordinaire et du déclencheur qui va tout changer.</p>
+<h3>Acte II — Confrontation</h3>
+<p>Les obstacles, les enjeux qui s'intensifient, le point de non-retour.</p>
+<h3>Acte III — Résolution</h3>
+<p>Le climax, la résolution du conflit, la transformation du personnage.</p>
+<h2>Personnages principaux</h2>
+<ul><li><strong>[Nom]</strong> — </li><li><strong>[Nom]</strong> — </li></ul>`,
+  },
 ]
 
 const TextEditorPanel: React.FC<TextEditorPanelProps> = ({
