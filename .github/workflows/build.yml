@@ -26,6 +26,9 @@ jobs:
           CSC_IDENTITY_AUTO_DISCOVERY: false
         run: npx electron-builder --win --publish never
 
+      - name: List release files
+        run: dir release
+
       - name: Upload Windows installer
         uses: actions/upload-artifact@v4
         with:
@@ -47,19 +50,26 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build macOS app (x64 + arm64)
+      - name: Build macOS DMG (x64)
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
           ELECTRON_BUILDER_ALLOW_UNRESOLVED_DEPENDENCIES: true
-        run: |
-          npx electron-builder --mac zip --x64 --publish never
-          npx electron-builder --mac zip --arm64 --publish never
+        run: npx electron-builder --mac dmg --x64 --publish never
 
-      - name: Upload macOS ZIPs
+      - name: Build macOS DMG (arm64)
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+          ELECTRON_BUILDER_ALLOW_UNRESOLVED_DEPENDENCIES: true
+        run: npx electron-builder --mac dmg --arm64 --publish never
+
+      - name: List release files
+        run: ls -lh release/
+
+      - name: Upload macOS DMGs
         uses: actions/upload-artifact@v4
         with:
-          name: Mac-App
-          path: release/*.zip
+          name: Mac-DMG
+          path: release/*.dmg
           retention-days: 30
 
   release:
@@ -68,8 +78,20 @@ jobs:
     permissions:
       contents: write
     steps:
-      - name: Download all artifacts
+      - name: Download Windows artifact
         uses: actions/download-artifact@v4
+        with:
+          name: Windows-Installer
+          path: ./artifacts/windows
+
+      - name: Download Mac artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: Mac-DMG
+          path: ./artifacts/mac
+
+      - name: List downloaded files
+        run: find ./artifacts -type f
 
       - name: Create or update latest release
         uses: softprops/action-gh-release@v2
@@ -78,13 +100,13 @@ jobs:
           name: "Dernière version — ${{ github.ref_name }}"
           prerelease: true
           files: |
-            Windows-Installer/*.exe
-            Mac-App/*.zip
+            ./artifacts/windows/*.exe
+            ./artifacts/mac/*.dmg
           body: |
             Build automatique — commit `${{ github.sha }}`
 
-            **Mac** : télécharger le `.zip` correspondant à votre Mac, dézipper, glisser `Node Organisation.app` dans Applications.
-            - `*-mac.zip` → Intel (x64)
-            - `*-arm64-mac.zip` → Apple Silicon (M1/M2/M3)
+            **Mac** : télécharger le `.dmg`, double-cliquer, glisser `Node Organisation` dans Applications.
+            - `*-x64.dmg` → Intel
+            - `*-arm64.dmg` → Apple Silicon (M1/M2/M3)
 
             **Windows** : lancer le `.exe` et suivre l'assistant.
