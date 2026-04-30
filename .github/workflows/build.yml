@@ -47,21 +47,22 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build macOS app
+      - name: Build macOS app (x64 + arm64)
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
           ELECTRON_BUILDER_ALLOW_UNRESOLVED_DEPENDENCIES: true
-        run: npx electron-builder --mac dmg --publish never
+        run: |
+          npx electron-builder --mac zip --x64 --publish never
+          npx electron-builder --mac zip --arm64 --publish never
 
-      - name: Upload macOS DMG
+      - name: Upload macOS ZIPs
         uses: actions/upload-artifact@v4
         with:
-          name: Mac-DMG
-          path: release/*.dmg
+          name: Mac-App
+          path: release/*.zip
           retention-days: 30
 
   release:
-    if: startsWith(github.ref, 'refs/tags/v')
     needs: [build-windows, build-mac]
     runs-on: ubuntu-latest
     permissions:
@@ -70,10 +71,20 @@ jobs:
       - name: Download all artifacts
         uses: actions/download-artifact@v4
 
-      - name: Create GitHub Release
+      - name: Create or update latest release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: latest-build
+          name: "Dernière version — ${{ github.ref_name }}"
+          prerelease: true
           files: |
             Windows-Installer/*.exe
-            Mac-DMG/*.dmg
-          generate_release_notes: true
+            Mac-App/*.zip
+          body: |
+            Build automatique — commit `${{ github.sha }}`
+
+            **Mac** : télécharger le `.zip` correspondant à votre Mac, dézipper, glisser `Node Organisation.app` dans Applications.
+            - `*-mac.zip` → Intel (x64)
+            - `*-arm64-mac.zip` → Apple Silicon (M1/M2/M3)
+
+            **Windows** : lancer le `.exe` et suivre l'assistant.
