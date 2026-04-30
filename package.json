@@ -2,6 +2,7 @@
   "name": "node-organization-app",
   "version": "1.0.0",
   "description": "Application d'organisation visuelle par nodes connectables",
+  "author": "Node Organisation",
   "main": "dist-electron/main.js",
   "scripts": {
     "dev": "vite",
