@@ -14,7 +14,7 @@ on:
 jobs:
   build-mac:
     runs-on: macos-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
 
     steps:
       - name: Checkout
@@ -29,18 +29,18 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build macOS app
+      - name: Build macOS app (icns + package + zip)
         env:
           MAC_ARCH: ${{ github.event.inputs.arch || 'universal' }}
         run: node build-mac.js
 
-      - name: List release folder
-        run: ls -lh release/
+      - name: List release artifacts
+        run: ls -lh release/*.zip
 
-      - name: Upload ZIP artifact
+      - name: Upload ZIP
         uses: actions/upload-artifact@v4
         with:
           name: Raccourcis-Clavier-Mac-${{ github.event.inputs.arch || 'universal' }}
-          path: release/*.zip
+          path: release/Raccourcis-Clavier-Mac-*.zip
           retention-days: 14
           if-no-files-found: error
