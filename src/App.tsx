@@ -1136,42 +1136,9 @@ function FlowCanvas() {
 }
 
 export default function App() {
-  const [mode, setMode] = React.useState<'graph' | 'shortcuts'>(() => {
-    return (localStorage.getItem('app-mode') as 'graph' | 'shortcuts') || 'graph'
-  })
-
-  const switchMode = (m: 'graph' | 'shortcuts') => {
-    localStorage.setItem('app-mode', m)
-    setMode(m)
-  }
-
   return (
-    <div style={{ width: '100vw', height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-      <div className="app-mode-bar">
-        <button
-          className={`app-mode-btn ${mode === 'graph' ? 'app-mode-btn--active' : ''}`}
-          onClick={() => switchMode('graph')}
-          title="Éditeur de graphes"
-        >
-          🗺️ Graphe
-        </button>
-        <button
-          className={`app-mode-btn ${mode === 'shortcuts' ? 'app-mode-btn--active' : ''}`}
-          onClick={() => switchMode('shortcuts')}
-          title="Gestionnaire de raccourcis"
-        >
-          ⌨️ Raccourcis
-        </button>
-      </div>
-      <div style={{ flex: 1, overflow: 'hidden' }}>
-        {mode === 'graph' ? (
-          <ReactFlowProvider>
-            <FlowCanvas />
-          </ReactFlowProvider>
-        ) : (
-          <ShortcutsApp />
-        )}
-      </div>
+    <div style={{ width: '100vw', height: '100vh', overflow: 'hidden' }}>
+      <ShortcutsApp />
     </div>
   )
 }
