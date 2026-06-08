@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import type { ShortcutDB } from '../../types/shortcuts';
-import { loadDB, saveDB, addShortcut, parseKeyComboString } from '../../data/shortcutStore';
+import { loadDB, saveDB, addShortcut, addCategory, parseKeyComboString } from '../../data/shortcutStore';
 import { KeyComboList } from './KeyCapDisplay';
 import { SearchPanel } from './SearchPanel';
 
@@ -97,9 +97,21 @@ export function FloatingOverlay() {
   };
 
   const saveNewShortcut = () => {
-    if (!newAction.trim() || !newKeys.trim() || !selectedSoftware || !selectedCategory) return;
+    if (!newAction.trim() || !newKeys.trim() || !selectedSoftware) return;
+
+    let workingDb = db;
+    let catId = selectedCategory?.id ?? null;
+
+    // Auto-create a "Général" category if the software has none
+    if (!catId) {
+      workingDb = addCategory(workingDb, selectedSoftware.id, { name: 'Général' });
+      const updatedSw = workingDb.softwares.find(s => s.id === selectedSoftware.id);
+      catId = updatedSw?.categories.slice(-1)[0]?.id ?? null;
+      if (!catId) return;
+    }
+
     const combo = parseKeyComboString(newKeys);
-    const updatedDb = addShortcut(db, selectedSoftware.id, selectedCategory.id, null, {
+    const updatedDb = addShortcut(workingDb, selectedSoftware.id, catId, null, {
       action: newAction.trim(),
       keys: [combo],
     });

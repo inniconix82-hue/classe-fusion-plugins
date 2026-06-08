@@ -398,6 +398,95 @@ export function parsePhotoshopKys(xmlText: string): ImportResult {
   };
 }
 
+// ─── DaVinci Resolve Text Hotkey Format  (action := key | key) ───────────────
+
+export function parseDaVinciHotkeyTxt(text: string, softwareName = 'DaVinci Resolve'): ImportResult {
+  const warnings: string[] = [];
+  const catMap = new Map<string, Shortcut[]>();
+
+  for (const rawLine of text.split('\n')) {
+    const line = rawLine.trim();
+    if (!line || !line.includes(':=')) continue;
+
+    const eqIdx = line.indexOf(':=');
+    const actionRaw = line.slice(0, eqIdx).trim();
+    const keysRaw = line.slice(eqIdx + 2).trim();
+    if (!keysRaw) continue;
+
+    const action = formatDaVinciHotkeyAction(actionRaw);
+    const category = getDaVinciHotkeyCategory(actionRaw);
+
+    if (!catMap.has(category)) catMap.set(category, []);
+
+    const combos = keysRaw
+      .split('|')
+      .map(k => k.trim())
+      .filter(Boolean)
+      .map(k => parseKeyComboString(k))
+      .filter(c => c.key);
+
+    if (combos.length === 0) continue;
+
+    catMap.get(category)!.push({
+      id: '',
+      action,
+      keys: combos,
+      createdAt: '',
+      updatedAt: '',
+    });
+  }
+
+  if (catMap.size === 0) {
+    warnings.push('Aucun raccourci trouvé. Vérifiez que le fichier contient des lignes "action := touche".');
+  }
+
+  const categories: Category[] = Array.from(catMap.entries()).map(([name, shortcuts], i) => ({
+    id: name,
+    name,
+    order: i,
+    shortcuts,
+    subcategories: [],
+  }));
+
+  return {
+    software: { name: softwareName, slug: slugify(softwareName), icon: '⌨️', categories },
+    warnings,
+  };
+}
+
+function formatDaVinciHotkeyAction(raw: string): string {
+  let name = raw;
+  name = name.replace(/^FusionWidget\.fuHotkey_/, '');
+  name = name.replace(/^FairlightTimeline\./, '');
+  name = name.replace(/^MediaPool\.Context_/, '');
+  name = name.replace(/^Viewer\.Context_/, '');
+  name = name.replace(/\s*\{[^}]*\}/g, '');
+  name = name.replace(/_/g, ' ');
+  name = name.replace(/([a-z])([A-Z])/g, '$1 $2');
+  name = name.replace(/\s+/g, ' ').trim();
+  return name.charAt(0).toUpperCase() + name.slice(1);
+}
+
+function getDaVinciHotkeyCategory(raw: string): string {
+  if (raw.startsWith('FusionWidget.')) return 'Fusion';
+  if (raw.startsWith('FairlightTimeline.') || raw.startsWith('fairlight')) return 'Fairlight';
+  if (raw.startsWith('MediaPool.')) return 'Media Pool';
+  if (raw.startsWith('Viewer.')) return 'Viewer';
+  if (raw.startsWith('edit')) return 'Édition';
+  if (raw.startsWith('view')) return 'Vue';
+  if (raw.startsWith('control')) return 'Contrôle';
+  if (raw.startsWith('mark')) return 'Marqueurs';
+  if (raw.startsWith('clip')) return 'Clips';
+  if (raw.startsWith('trim')) return 'Trim';
+  if (raw.startsWith('session')) return 'Session';
+  if (raw.startsWith('workspace')) return 'Espaces de travail';
+  if (raw.startsWith('nodes')) return 'Nodes';
+  if (raw.startsWith('file')) return 'Fichier';
+  if (raw.startsWith('timeline')) return 'Timeline';
+  if (raw.startsWith('resolve')) return 'Réglages';
+  return 'Général';
+}
+
 // ─── Auto-detect format ───────────────────────────────────────────────────────
 
 export function autoImport(content: string, filename: string, softwareName?: string): ImportResult {
@@ -417,6 +506,11 @@ export function autoImport(content: string, filename: string, softwareName?: str
   }
   if (content.includes('<?xml') || content.includes('<plist')) {
     return parsePhotoshopKys(content);
+  }
+  // DaVinci text hotkey format: lines contain ":="
+  const firstLine = content.trim().split('\n')[0] ?? '';
+  if (firstLine.includes(':=')) {
+    return parseDaVinciHotkeyTxt(content, softwareName || filename.replace(/\.\w+$/, ''));
   }
 
   // Try CSV as last resort
