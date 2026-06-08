@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import type { ShortcutDB } from '../../types/shortcuts';
-import { loadDB, saveDB, addShortcut, parseKeyComboString } from '../../data/shortcutStore';
+import type { ShortcutDB, Shortcut } from '../../types/shortcuts';
+import { loadDB, saveDB, addShortcut, updateShortcut, deleteShortcut, parseKeyComboString, formatKeyCombo } from '../../data/shortcutStore';
 import { KeyComboList } from './KeyCapDisplay';
 import { SearchPanel } from './SearchPanel';
 
@@ -23,6 +23,12 @@ export function FloatingOverlay() {
   const [newAction, setNewAction] = useState('');
   const [newKeys, setNewKeys] = useState('');
   const recordingRef = useRef(false);
+
+  type ShortcutCtxMenu = { x: number; y: number; shortcut: Shortcut; catId: string; subId: string | null } | null;
+  const [shortcutMenu, setShortcutMenu] = useState<ShortcutCtxMenu>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editAction, setEditAction] = useState('');
+  const [editKeys, setEditKeys] = useState('');
 
   useEffect(() => {
     const api = eAPI();
@@ -61,6 +67,13 @@ export function FloatingOverlay() {
     return () => window.removeEventListener('click', handler);
   }, [menuOpen]);
 
+  useEffect(() => {
+    if (!shortcutMenu) return;
+    const handler = () => setShortcutMenu(null);
+    window.addEventListener('click', handler);
+    return () => window.removeEventListener('click', handler);
+  }, [shortcutMenu]);
+
   const selectedSoftware = db.softwares.find(s => s.id === selectedSoftwareId) ?? db.softwares[0] ?? null;
   const selectedCategory = selectedSoftware?.categories.find(c => c.id === selectedCategoryId) ?? selectedSoftware?.categories[0] ?? null;
 
@@ -74,6 +87,20 @@ export function FloatingOverlay() {
   const inputBg = theme === 'dark' ? '#252525' : '#ffffff';
   const btnWhite = theme === 'dark' ? '#ffffff' : '#d97757';
   const btnWhiteText = theme === 'dark' ? '#1c1c1c' : '#ffffff';
+
+  const handleKeyCapture = (e: React.KeyboardEvent, setter: (v: string) => void) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.key === 'Escape') { setter(''); return; }
+    const ignored = new Set(['Meta', 'Control', 'Shift', 'Alt', 'CapsLock', 'Tab']);
+    if (ignored.has(e.key)) return;
+    const mods: string[] = [];
+    if (e.metaKey || e.ctrlKey) mods.push('CommandOrControl');
+    if (e.shiftKey) mods.push('Shift');
+    if (e.altKey) mods.push('Alt');
+    const key = e.key.length === 1 ? e.key.toUpperCase() : e.key;
+    setter([...mods, key].join('+'));
+  };
 
   const handleHotkeyKeyDown = (e: React.KeyboardEvent) => {
     if (!recordingRef.current) return;
@@ -109,6 +136,59 @@ export function FloatingOverlay() {
     setNewKeys('');
     setAddingShortcut(false);
   };
+
+  const saveEdit = (catId: string, subId: string | null) => {
+    if (!editAction.trim() || !editKeys.trim() || !selectedSoftware || !editingId) return;
+    const combo = parseKeyComboString(editKeys);
+    const updatedDb = updateShortcut(db, selectedSoftware.id, catId, subId, editingId, {
+      action: editAction.trim(),
+      keys: [combo],
+    });
+    saveDB(updatedDb);
+    setDb(updatedDb);
+    setEditingId(null);
+  };
+
+  const deleteShortcutEntry = (catId: string, subId: string | null, shortcutId: string) => {
+    if (!selectedSoftware) return;
+    const updatedDb = deleteShortcut(db, selectedSoftware.id, catId, subId, shortcutId);
+    saveDB(updatedDb);
+    setDb(updatedDb);
+    setShortcutMenu(null);
+  };
+
+  const renderShortcutRow = (s: Shortcut, catId: string, subId: string | null) => (
+    <div
+      key={s.id}
+      onContextMenu={e => { e.preventDefault(); e.stopPropagation(); setShortcutMenu({ x: e.clientX, y: e.clientY, shortcut: s, catId, subId }); }}
+      style={{ padding: '5px 4px', borderBottom: `1px solid ${border}`, fontSize: 12 }}
+      onMouseEnter={e => (e.currentTarget.style.background = rowHover)}
+      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+    >
+      {editingId === s.id ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }} onClick={e => e.stopPropagation()}>
+          <input autoFocus value={editAction} onChange={e => setEditAction(e.target.value)} style={inputStyle} placeholder="Nom de l'action…" />
+          <div
+            tabIndex={0}
+            onKeyDown={e => handleKeyCapture(e, setEditKeys)}
+            style={{ ...inputStyle, cursor: 'text', fontFamily: 'monospace', color: editKeys ? text : muted, userSelect: 'none' }}
+            title="Cliquer puis appuyer sur les touches"
+          >
+            {editKeys || '⌨ Appuyer sur les touches…'}
+          </div>
+          <div style={{ display: 'flex', gap: 4 }}>
+            <button onClick={() => saveEdit(catId, subId)} style={{ flex: 1, padding: '4px', borderRadius: 5, border: 'none', background: btnWhite, color: btnWhiteText, fontSize: 11, cursor: 'pointer', fontWeight: 600 }}>Sauver</button>
+            <button onClick={() => setEditingId(null)} style={{ flex: 1, padding: '4px', borderRadius: 5, border: `1px solid ${border}`, background: 'transparent', color: muted, fontSize: 11, cursor: 'pointer' }}>Annuler</button>
+          </div>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ color: text }}>{s.action}</span>
+          <KeyComboList combos={s.keys} size="sm" />
+        </div>
+      )}
+    </div>
+  );
 
   const inputStyle: React.CSSProperties = {
     background: inputBg,
@@ -291,35 +371,13 @@ export function FloatingOverlay() {
             <div style={{ flex: 1, overflowY: 'auto', padding: '6px 8px' }}>
               {selectedCategory && (
                 <>
-                  {selectedCategory.shortcuts.map(s => (
-                    <div key={s.id} style={{
-                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                      padding: '5px 4px', borderBottom: `1px solid ${border}`, fontSize: 12,
-                    }}
-                      onMouseEnter={e => (e.currentTarget.style.background = rowHover)}
-                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                    >
-                      <span style={{ color: text }}>{s.action}</span>
-                      <KeyComboList combos={s.keys} size="sm" />
-                    </div>
-                  ))}
+                  {selectedCategory.shortcuts.map(s => renderShortcutRow(s, selectedCategory.id, null))}
                   {selectedCategory.subcategories.map(sub => (
                     <React.Fragment key={sub.id}>
                       <div style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', color: muted, padding: '8px 4px 3px', letterSpacing: '0.06em' }}>
                         {sub.name}
                       </div>
-                      {sub.shortcuts.map(s => (
-                        <div key={s.id} style={{
-                          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                          padding: '5px 4px', borderBottom: `1px solid ${border}`, fontSize: 12,
-                        }}
-                          onMouseEnter={e => (e.currentTarget.style.background = rowHover)}
-                          onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                        >
-                          <span style={{ color: text }}>{s.action}</span>
-                          <KeyComboList combos={s.keys} size="sm" />
-                        </div>
-                      ))}
+                      {sub.shortcuts.map(s => renderShortcutRow(s, selectedCategory.id, sub.id))}
                     </React.Fragment>
                   ))}
                 </>
@@ -357,13 +415,14 @@ export function FloatingOverlay() {
                   onChange={e => setNewAction(e.target.value)}
                   style={inputStyle}
                 />
-                <input
-                  placeholder="Raccourci (ex: Cmd+Shift+K)"
-                  value={newKeys}
-                  onChange={e => setNewKeys(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter') saveNewShortcut(); }}
-                  style={inputStyle}
-                />
+                <div
+                  tabIndex={0}
+                  onKeyDown={e => { if (e.key === 'Enter') { saveNewShortcut(); return; } handleKeyCapture(e, setNewKeys); }}
+                  style={{ ...inputStyle, cursor: 'text', fontFamily: 'monospace', color: newKeys ? text : muted, userSelect: 'none' }}
+                  title="Cliquer puis appuyer sur les touches"
+                >
+                  {newKeys || '⌨ Cliquer ici puis appuyer sur les touches…'}
+                </div>
                 <div style={{ display: 'flex', gap: 6 }}>
                   <button
                     onClick={saveNewShortcut}
@@ -451,6 +510,39 @@ export function FloatingOverlay() {
           <span style={{ fontSize: 28 }}>⌨️</span>
           <p>Aucun raccourci enregistré.</p>
           <p>Ouvre l'app principale pour commencer.</p>
+        </div>
+      )}
+
+      {/* Right-click context menu */}
+      {shortcutMenu && (
+        <div
+          onClick={e => e.stopPropagation()}
+          style={{
+            position: 'fixed', left: shortcutMenu.x, top: shortcutMenu.y, zIndex: 400,
+            background: toolbarBg, border: `1px solid ${border}`,
+            borderRadius: 7, padding: 4, minWidth: 160,
+            boxShadow: '0 6px 20px rgba(0,0,0,0.5)',
+          }}
+        >
+          <button
+            onClick={() => {
+              const s = shortcutMenu.shortcut;
+              setEditingId(s.id);
+              setEditAction(s.action);
+              setEditKeys(s.keys[0] ? formatKeyCombo(s.keys[0]) : '');
+              setShortcutMenu(null);
+            }}
+            style={{ display: 'block', width: '100%', padding: '7px 12px', background: 'transparent', border: 'none', borderRadius: 5, color: text, fontSize: 12, textAlign: 'left', cursor: 'pointer' }}
+            onMouseEnter={e => (e.currentTarget.style.background = rowHover)}
+            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+          >✏️ Modifier</button>
+          <div style={{ height: 1, background: border, margin: '2px 8px' }} />
+          <button
+            onClick={() => deleteShortcutEntry(shortcutMenu.catId, shortcutMenu.subId, shortcutMenu.shortcut.id)}
+            style={{ display: 'block', width: '100%', padding: '7px 12px', background: 'transparent', border: 'none', borderRadius: 5, color: '#ef4444', fontSize: 12, textAlign: 'left', cursor: 'pointer' }}
+            onMouseEnter={e => (e.currentTarget.style.background = rowHover)}
+            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+          >🗑 Supprimer</button>
         </div>
       )}
     </div>
