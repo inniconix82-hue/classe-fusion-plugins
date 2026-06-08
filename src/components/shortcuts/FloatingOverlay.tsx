@@ -23,6 +23,7 @@ export function FloatingOverlay() {
   const [newAction, setNewAction] = useState('');
   const [newKeys, setNewKeys] = useState('');
   const recordingRef = useRef(false);
+  const recorderActiveRef = useRef(false); // true when any key-capture input is focused
 
   type ShortcutCtxMenu = { x: number; y: number; shortcut: Shortcut; catId: string; subId: string | null } | null;
   const [shortcutMenu, setShortcutMenu] = useState<ShortcutCtxMenu>(null);
@@ -55,7 +56,9 @@ export function FloatingOverlay() {
   }, []);
 
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') window.close(); };
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !recorderActiveRef.current) window.close();
+    };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, []);
@@ -187,14 +190,15 @@ export function FloatingOverlay() {
       {editingId === s.id ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }} onClick={e => e.stopPropagation()}>
           <input autoFocus value={editAction} onChange={e => setEditAction(e.target.value)} style={inputStyle} placeholder="Nom de l'action…" />
-          <div
-            tabIndex={0}
+          <input
+            readOnly
+            value={editKeys}
+            placeholder="⌨ Cliquer ici puis appuyer sur les touches…"
+            onFocus={() => { recorderActiveRef.current = true; }}
+            onBlur={() => { recorderActiveRef.current = false; }}
             onKeyDown={e => handleKeyCapture(e, setEditKeys)}
-            style={{ ...inputStyle, cursor: 'text', fontFamily: 'monospace', color: editKeys ? text : muted, userSelect: 'none' }}
-            title="Cliquer puis appuyer sur les touches"
-          >
-            {editKeys || '⌨ Appuyer sur les touches…'}
-          </div>
+            style={{ ...inputStyle, fontFamily: 'monospace', cursor: 'text' }}
+          />
           <div style={{ display: 'flex', gap: 4 }}>
             <button onClick={() => saveEdit(catId, subId)} style={{ flex: 1, padding: '4px', borderRadius: 5, border: 'none', background: btnWhite, color: btnWhiteText, fontSize: 11, cursor: 'pointer', fontWeight: 600 }}>Sauver</button>
             <button onClick={() => setEditingId(null)} style={{ flex: 1, padding: '4px', borderRadius: 5, border: `1px solid ${border}`, background: 'transparent', color: muted, fontSize: 11, cursor: 'pointer' }}>Annuler</button>
@@ -434,14 +438,16 @@ export function FloatingOverlay() {
                   onChange={e => setNewAction(e.target.value)}
                   style={inputStyle}
                 />
-                <div
-                  tabIndex={0}
+                <input
+                  readOnly
+                  value={newKeys}
+                  placeholder="⌨ Cliquer ici puis appuyer sur les touches…"
+                  onFocus={() => { recorderActiveRef.current = true; }}
+                  onBlur={() => { recorderActiveRef.current = false; }}
                   onKeyDown={e => { if (e.key === 'Enter') { saveNewShortcut(); return; } handleKeyCapture(e, setNewKeys); }}
-                  style={{ ...inputStyle, cursor: 'text', fontFamily: 'monospace', color: newKeys ? text : muted, userSelect: 'none' }}
-                  title="Cliquer puis appuyer sur les touches"
-                >
-                  {newKeys || '⌨ Cliquer ici puis appuyer sur les touches…'}
-                </div>
+                  style={{ ...inputStyle, fontFamily: 'monospace', cursor: 'text',
+                    outline: recorderActiveRef.current ? `2px solid #d97757` : undefined }}
+                />
                 <div style={{ display: 'flex', gap: 6 }}>
                   <button
                     onClick={saveNewShortcut}
@@ -474,20 +480,19 @@ export function FloatingOverlay() {
               Raccourci global
             </p>
             <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-              <div
-                tabIndex={0}
+              <input
+                readOnly
+                value={hotkeyInput || hotkey}
+                onFocus={() => { recordingRef.current = true; recorderActiveRef.current = true; }}
+                onBlur={() => { recordingRef.current = false; recorderActiveRef.current = false; }}
                 onKeyDown={handleHotkeyKeyDown}
-                onClick={() => { recordingRef.current = true; }}
-                onBlur={() => { recordingRef.current = false; }}
                 style={{
                   flex: 1, padding: '6px 10px', borderRadius: 6, fontSize: 13,
                   background: inputBg, border: `1px solid ${border}`,
                   color: text, cursor: 'pointer', outline: 'none',
-                  fontFamily: 'monospace',
+                  fontFamily: 'monospace', boxSizing: 'border-box',
                 }}
-              >
-                {hotkeyInput || hotkey}
-              </div>
+              />
               <button onClick={saveHotkey} style={{
                 padding: '6px 12px', borderRadius: 6, border: 'none',
                 background: btnWhite, color: btnWhiteText, fontSize: 12, cursor: 'pointer', fontWeight: 600,
