@@ -330,14 +330,24 @@ export function FloatingOverlay() {
           {/* Add shortcut form */}
           <div style={{ borderTop: `1px solid ${border}`, padding: '8px 10px', flexShrink: 0, background: toolbarBg }}>
             {!addingShortcut ? (
-              <button
-                onClick={() => setAddingShortcut(true)}
-                style={{
-                  width: '100%', padding: '5px 10px', borderRadius: 6,
-                  border: `1px dashed ${border}`, background: 'transparent',
-                  color: muted, fontSize: 12, cursor: 'pointer',
-                }}
-              >+ Ajouter un raccourci</button>
+              <div style={{ display: 'flex', gap: 6 }}>
+                <button
+                  onClick={() => setAddingShortcut(true)}
+                  style={{
+                    flex: 1, padding: '6px 10px', borderRadius: 6,
+                    border: 'none', background: btnWhite,
+                    color: btnWhiteText, fontSize: 12, cursor: 'pointer', fontWeight: 600,
+                  }}
+                >＋ Créer un raccourci</button>
+                <button
+                  onClick={() => eAPI()?.openMainWindow?.()}
+                  style={{
+                    flex: 1, padding: '6px 10px', borderRadius: 6,
+                    border: `1px solid ${border}`, background: 'transparent',
+                    color: text, fontSize: 12, cursor: 'pointer',
+                  }}
+                >🖥 App principale</button>
+              </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 <input
