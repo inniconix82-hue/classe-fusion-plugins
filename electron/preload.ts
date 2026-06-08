@@ -15,4 +15,5 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getTheme: () => ipcRenderer.invoke('get-theme'),
   getHotkey: () => ipcRenderer.invoke('get-hotkey'),
   setHotkey: (hotkey: string) => ipcRenderer.invoke('set-hotkey', hotkey),
+  openMainWindow: () => ipcRenderer.invoke('open-main-window'),
 })

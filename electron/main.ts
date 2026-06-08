@@ -9,7 +9,7 @@ let tray: Tray | null = null
 let currentHotkey = 'CommandOrControl+Shift+K'
 
 function getOverlayBg(): string {
-  return nativeTheme.shouldUseDarkColors ? '#1a1e2e' : '#f0f2f5'
+  return nativeTheme.shouldUseDarkColors ? '#1c1c1c' : '#f0f2f5'
 }
 
 function createTray() {
@@ -63,7 +63,7 @@ function createMainWindow() {
       contextIsolation: true,
       nodeIntegration: false,
     },
-    backgroundColor: '#0f172a',
+    backgroundColor: '#1c1c1c',
     titleBarStyle: 'default',
     show: false,
   })
@@ -223,6 +223,15 @@ app.on('will-quit', () => {
 app.on('window-all-closed', () => { /* stay alive */ })
 
 // ── IPC: theme & hotkey ────────────────────────────────────────────
+ipcMain.handle('open-main-window', () => {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.show()
+    mainWindow.focus()
+  } else {
+    createMainWindow()
+  }
+})
+
 ipcMain.handle('get-theme', () => (nativeTheme.shouldUseDarkColors ? 'dark' : 'light'))
 
 ipcMain.handle('get-hotkey', () => currentHotkey)
