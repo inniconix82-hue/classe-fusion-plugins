@@ -1,9 +1,10 @@
-import { app, BrowserWindow, ipcMain, dialog, Menu, shell } from 'electron'
+import { app, BrowserWindow, ipcMain, dialog, Menu, shell, globalShortcut, screen } from 'electron'
 import { join } from 'path'
 import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from 'fs'
-import { spawn, execFile } from 'child_process'
+import { spawn, execFile, exec } from 'child_process'
 
 let mainWindow: BrowserWindow | null = null
+let overlayWindow: BrowserWindow | null = null
 
 function createWindow() {
   // Remove default menu to let all keyboard shortcuts pass through to the renderer
@@ -37,7 +38,117 @@ function createWindow() {
   }
 }
 
-app.whenReady().then(createWindow)
+function createOverlayWindow() {
+  if (overlayWindow && !overlayWindow.isDestroyed()) {
+    if (overlayWindow.isVisible()) {
+      overlayWindow.hide()
+    } else {
+      refreshActiveApp()
+      overlayWindow.show()
+      overlayWindow.focus()
+    }
+    return
+  }
+
+  const { width, height } = screen.getPrimaryDisplay().workAreaSize
+
+  overlayWindow = new BrowserWindow({
+    width: 720,
+    height: 500,
+    x: Math.round((width - 720) / 2),
+    y: Math.round(height * 0.15),
+    frame: false,
+    transparent: true,
+    alwaysOnTop: true,
+    resizable: true,
+    movable: true,
+    skipTaskbar: true,
+    hasShadow: true,
+    show: false,
+    webPreferences: {
+      preload: join(__dirname, 'preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+    },
+  })
+
+  const overlayUrl = process.env.VITE_DEV_SERVER_URL
+    ? `${process.env.VITE_DEV_SERVER_URL}#overlay`
+    : `file://${join(__dirname, '../dist/index.html')}#overlay`
+
+  overlayWindow.loadURL(overlayUrl)
+
+  overlayWindow.once('ready-to-show', () => {
+    refreshActiveApp()
+    overlayWindow?.show()
+    overlayWindow?.focus()
+  })
+
+  // Hide on blur (click outside)
+  overlayWindow.on('blur', () => {
+    overlayWindow?.hide()
+  })
+
+  overlayWindow.on('closed', () => {
+    overlayWindow = null
+  })
+}
+
+/** Detect the active app and send its slug to the overlay. */
+function refreshActiveApp() {
+  if (!overlayWindow || overlayWindow.isDestroyed()) return
+
+  if (process.platform === 'darwin') {
+    exec(
+      `osascript -e 'tell application "System Events" to get name of first application process whose frontmost is true'`,
+      (err, stdout) => {
+        if (err) return
+        const appName = stdout.trim().toLowerCase()
+        const slug = appNameToSlug(appName)
+        if (slug) overlayWindow?.webContents.send('active-app', slug)
+      }
+    )
+  } else if (process.platform === 'win32') {
+    exec(
+      `powershell -command "Get-Process | Where-Object {$_.MainWindowHandle -eq (Add-Type -MemberDefinition '[DllImport(\\"user32.dll\\")] public static extern IntPtr GetForegroundWindow();' -Name WinUser -PassThru)::GetForegroundWindow()} | Select-Object -ExpandProperty Name"`,
+      (err, stdout) => {
+        if (err) return
+        const appName = stdout.trim().toLowerCase()
+        const slug = appNameToSlug(appName)
+        if (slug) overlayWindow?.webContents.send('active-app', slug)
+      }
+    )
+  }
+}
+
+function appNameToSlug(name: string): string | null {
+  if (/davinci|resolve/.test(name)) return 'davinci-resolve'
+  if (/photoshop/.test(name)) return 'photoshop'
+  if (/illustrator/.test(name)) return 'illustrator'
+  if (/premiere/.test(name)) return 'premiere-pro'
+  if (/after.?effect/.test(name)) return 'after-effects'
+  if (/final.?cut/.test(name)) return 'final-cut-pro'
+  if (/code|vscode/.test(name)) return 'vscode'
+  if (/excel/.test(name)) return 'excel'
+  if (/word/.test(name)) return 'word'
+  if (/figma/.test(name)) return 'figma'
+  if (/blender/.test(name)) return 'blender'
+  if (/ableton/.test(name)) return 'ableton'
+  return null
+}
+
+app.whenReady().then(() => {
+  createWindow()
+
+  // Global hotkey to toggle overlay: Ctrl+Shift+K (customisable)
+  globalShortcut.register('CommandOrControl+Shift+K', () => {
+    createOverlayWindow()
+  })
+})
+
+app.on('will-quit', () => {
+  globalShortcut.unregisterAll()
+})
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
