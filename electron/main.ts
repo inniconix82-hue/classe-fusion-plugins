@@ -1,18 +1,54 @@
-import { app, BrowserWindow, ipcMain, dialog, Menu, shell, globalShortcut, screen } from 'electron'
+import { app, BrowserWindow, ipcMain, dialog, Menu, Tray, nativeImage, shell, globalShortcut, screen } from 'electron'
 import { join } from 'path'
 import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from 'fs'
 import { spawn, execFile, exec } from 'child_process'
 
 let mainWindow: BrowserWindow | null = null
 let overlayWindow: BrowserWindow | null = null
+let tray: Tray | null = null
 
-function createWindow() {
-  // Remove default menu to let all keyboard shortcuts pass through to the renderer
+function createTray() {
+  // Use a simple 16x16 keyboard emoji as tray icon (fallback to empty image)
+  const iconPath = join(__dirname, '../public/icon.png')
+  const icon = existsSync(iconPath)
+    ? nativeImage.createFromPath(iconPath).resize({ width: 16, height: 16 })
+    : nativeImage.createEmpty()
+
+  tray = new Tray(icon)
+  tray.setToolTip('Raccourcis Clavier — ⌘⇧K pour l\'overlay')
+
+  const contextMenu = Menu.buildFromTemplate([
+    {
+      label: '⌨️  Ouvrir l\'overlay',
+      accelerator: 'CommandOrControl+Shift+K',
+      click: () => createOverlayWindow(),
+    },
+    { type: 'separator' },
+    {
+      label: '🗂️  Gérer les raccourcis',
+      click: () => {
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.show()
+          mainWindow.focus()
+        } else {
+          createMainWindow()
+        }
+      },
+    },
+    { type: 'separator' },
+    { label: 'Quitter', role: 'quit' },
+  ])
+
+  tray.setContextMenu(contextMenu)
+  tray.on('click', () => createOverlayWindow())
+}
+
+function createMainWindow() {
   Menu.setApplicationMenu(null)
 
   mainWindow = new BrowserWindow({
-    width: 1400,
-    height: 900,
+    width: 1300,
+    height: 860,
     minWidth: 900,
     minHeight: 600,
     title: 'Raccourcis Clavier',
@@ -22,20 +58,28 @@ function createWindow() {
       contextIsolation: true,
       nodeIntegration: false,
     },
-    backgroundColor: '#1a1a2e',
+    backgroundColor: '#0f172a',
     titleBarStyle: 'default',
     show: false,
   })
 
-  mainWindow.once('ready-to-show', () => {
-    mainWindow?.show()
+  // Hide to tray instead of closing
+  mainWindow.on('close', (e) => {
+    e.preventDefault()
+    mainWindow?.hide()
   })
+
+  mainWindow.once('ready-to-show', () => mainWindow?.show())
 
   if (process.env.VITE_DEV_SERVER_URL) {
     mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL)
   } else {
     mainWindow.loadFile(join(__dirname, '../dist/index.html'))
   }
+}
+
+function createWindow() {
+  createMainWindow()
 }
 
 function createOverlayWindow() {
@@ -139,8 +183,9 @@ function appNameToSlug(name: string): string | null {
 
 app.whenReady().then(() => {
   createWindow()
+  createTray()
 
-  // Global hotkey to toggle overlay: Ctrl+Shift+K (customisable)
+  // Global hotkey Cmd+Shift+K — toggle overlay from any app
   globalShortcut.register('CommandOrControl+Shift+K', () => {
     createOverlayWindow()
   })
@@ -150,11 +195,8 @@ app.on('will-quit', () => {
   globalShortcut.unregisterAll()
 })
 
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit()
-  }
-})
+// Keep app alive in tray — only quit via tray menu
+app.on('window-all-closed', () => { /* stay alive */ })
 
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) {
