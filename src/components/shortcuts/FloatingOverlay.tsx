@@ -88,30 +88,49 @@ export function FloatingOverlay() {
   const btnWhite = theme === 'dark' ? '#ffffff' : '#d97757';
   const btnWhiteText = theme === 'dark' ? '#1c1c1c' : '#ffffff';
 
+  // Map e.code (physical key) to a readable key name.
+  // Required on Mac where Alt+key produces Unicode chars via e.key (e.g. Alt+X = ≈).
+  const physicalKey = (code: string): string | null => {
+    if (code.startsWith('Key')) return code.slice(3);       // KeyX → X
+    if (code.startsWith('Digit')) return code.slice(5);     // Digit1 → 1
+    if (/^F\d+$/.test(code)) return code;                   // F1…F12
+    const map: Record<string, string> = {
+      Space: 'Space', Enter: 'Enter', NumpadEnter: 'Enter',
+      Backspace: 'Backspace', Delete: 'Delete',
+      ArrowUp: 'Up', ArrowDown: 'Down', ArrowLeft: 'Left', ArrowRight: 'Right',
+      Equal: '=', Minus: '-', BracketLeft: '[', BracketRight: ']',
+      Semicolon: ';', Quote: "'", Backslash: '\\',
+      Comma: ',', Period: '.', Slash: '/', Backquote: '`',
+      NumpadAdd: 'Plus', NumpadSubtract: 'Minus',
+      NumpadMultiply: '*', NumpadDivide: '/',
+    };
+    return map[code] ?? null;
+  };
+
   const handleKeyCapture = (e: React.KeyboardEvent, setter: (v: string) => void) => {
     e.preventDefault();
     e.stopPropagation();
-    if (e.key === 'Escape') { setter(''); return; }
-    const ignored = new Set(['Meta', 'Control', 'Shift', 'Alt', 'CapsLock', 'Tab']);
-    if (ignored.has(e.key)) return;
+    if (e.code === 'Escape') { setter(''); return; }
+    const ignoredKeys = new Set(['Meta', 'Control', 'Shift', 'Alt', 'CapsLock', 'Tab', 'Dead']);
+    if (ignoredKeys.has(e.key)) return;
     const mods: string[] = [];
     if (e.metaKey || e.ctrlKey) mods.push('CommandOrControl');
     if (e.shiftKey) mods.push('Shift');
     if (e.altKey) mods.push('Alt');
-    const key = e.key.length === 1 ? e.key.toUpperCase() : e.key;
+    const key = physicalKey(e.code) ?? (e.key.length === 1 ? e.key.toUpperCase() : e.key);
     setter([...mods, key].join('+'));
   };
 
   const handleHotkeyKeyDown = (e: React.KeyboardEvent) => {
     if (!recordingRef.current) return;
     e.preventDefault();
+    const ignoredKeys = new Set(['Meta', 'Control', 'Shift', 'Alt', 'CapsLock', 'Dead']);
+    if (ignoredKeys.has(e.key)) return;
     const mods: string[] = [];
     if (e.metaKey || e.ctrlKey) mods.push('CommandOrControl');
     if (e.shiftKey) mods.push('Shift');
     if (e.altKey) mods.push('Alt');
-    const ignored = new Set(['Meta', 'Control', 'Shift', 'Alt']);
-    if (ignored.has(e.key)) return;
-    const key = e.key.length === 1 ? e.key.toUpperCase() : e.key;
+    const key = physicalKey(e.code) ?? (e.key.length === 1 ? e.key.toUpperCase() : e.key);
     setHotkeyInput([...mods, key].join('+'));
     recordingRef.current = false;
   };
