@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, dialog, Menu, Tray, nativeImage, shell, globalShortcut, screen } from 'electron'
+import { app, BrowserWindow, ipcMain, dialog, Menu, Tray, nativeImage, nativeTheme, shell, globalShortcut, screen } from 'electron'
 import { join } from 'path'
 import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from 'fs'
 import { spawn, execFile, exec } from 'child_process'
@@ -6,6 +6,11 @@ import { spawn, execFile, exec } from 'child_process'
 let mainWindow: BrowserWindow | null = null
 let overlayWindow: BrowserWindow | null = null
 let tray: Tray | null = null
+let currentHotkey = 'CommandOrControl+Shift+K'
+
+function getOverlayBg(): string {
+  return nativeTheme.shouldUseDarkColors ? '#1a1e2e' : '#f0f2f5'
+}
 
 function createTray() {
   // Use a simple 16x16 keyboard emoji as tray icon (fallback to empty image)
@@ -96,19 +101,22 @@ function createOverlayWindow() {
 
   const { width, height } = screen.getPrimaryDisplay().workAreaSize
 
+  const W = 340, H = 540
   overlayWindow = new BrowserWindow({
-    width: 720,
-    height: 500,
-    x: Math.round((width - 720) / 2),
-    y: Math.round(height * 0.15),
+    width: W,
+    height: H,
+    x: Math.round((width - W) / 2),
+    y: Math.round(height * 0.12),
     frame: false,
-    transparent: true,
+    transparent: false,
+    backgroundColor: getOverlayBg(),
     alwaysOnTop: true,
     resizable: true,
     movable: true,
     skipTaskbar: true,
     hasShadow: true,
     show: false,
+    vibrancy: nativeTheme.shouldUseDarkColors ? 'dark' : 'light',
     webPreferences: {
       preload: join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -181,14 +189,30 @@ function appNameToSlug(name: string): string | null {
   return null
 }
 
+function registerHotkey(hotkey: string) {
+  globalShortcut.unregisterAll()
+  const ok = globalShortcut.register(hotkey, () => createOverlayWindow())
+  if (ok) {
+    currentHotkey = hotkey
+    // Persist
+    try {
+      const cfg = join(app.getPath('userData'), 'hotkey.txt')
+      writeFileSync(cfg, hotkey, 'utf-8')
+    } catch {}
+  }
+  return ok
+}
+
 app.whenReady().then(() => {
+  // Restore saved hotkey
+  try {
+    const cfg = join(app.getPath('userData'), 'hotkey.txt')
+    if (existsSync(cfg)) currentHotkey = readFileSync(cfg, 'utf-8').trim()
+  } catch {}
+
   createWindow()
   createTray()
-
-  // Global hotkey Cmd+Shift+K — toggle overlay from any app
-  globalShortcut.register('CommandOrControl+Shift+K', () => {
-    createOverlayWindow()
-  })
+  registerHotkey(currentHotkey)
 })
 
 app.on('will-quit', () => {
@@ -197,6 +221,16 @@ app.on('will-quit', () => {
 
 // Keep app alive in tray — only quit via tray menu
 app.on('window-all-closed', () => { /* stay alive */ })
+
+// ── IPC: theme & hotkey ────────────────────────────────────────────
+ipcMain.handle('get-theme', () => (nativeTheme.shouldUseDarkColors ? 'dark' : 'light'))
+
+ipcMain.handle('get-hotkey', () => currentHotkey)
+
+ipcMain.handle('set-hotkey', (_event, hotkey: string) => {
+  const ok = registerHotkey(hotkey)
+  return { ok }
+})
 
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) {

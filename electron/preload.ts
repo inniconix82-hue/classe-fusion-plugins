@@ -9,8 +9,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   openKbFolder: () => ipcRenderer.invoke('open-kb-folder'),
   readKbFolder: () => ipcRenderer.invoke('read-kb-folder'),
   readFileBuffer: (path: string) => ipcRenderer.invoke('read-file-buffer', path),
-  // Overlay: receives detected active app slug from main process
   onActiveApp: (callback: (slug: string) => void) => {
     ipcRenderer.on('active-app', (_event, slug: string) => callback(slug))
   },
+  getTheme: () => ipcRenderer.invoke('get-theme'),
+  getHotkey: () => ipcRenderer.invoke('get-hotkey'),
+  setHotkey: (hotkey: string) => ipcRenderer.invoke('set-hotkey', hotkey),
 })
