@@ -139,17 +139,20 @@ function generatePDF(software: Software, categories: Category[], opts: PDFOption
   const maxY = PAGE_H - MARGIN;
 
   function drawPageHeader() {
-    // Background strip
-    doc.setFillColor(18, 18, 28);
+    // Dark header bar — #1c1c1c
+    doc.setFillColor(28, 28, 28);
     doc.rect(0, 0, PAGE_W, HEADER_H, 'F');
-    // App icon + name
+    // Orange accent strip at bottom of header
+    doc.setFillColor(217, 119, 87);
+    doc.rect(0, HEADER_H - 1.5, PAGE_W, 1.5, 'F');
+    // App name
     doc.setFontSize(12);
     doc.setTextColor(255, 255, 255);
     doc.setFont('helvetica', 'bold');
     doc.text(`${software.icon ?? ''} ${software.name} — Raccourcis Clavier`.trim(), MARGIN, 13);
     // Date
     doc.setFontSize(7);
-    doc.setTextColor(180, 180, 200);
+    doc.setTextColor(180, 180, 180);
     doc.setFont('helvetica', 'normal');
     const dateStr = new Date().toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric' });
     doc.text(dateStr, PAGE_W - MARGIN - doc.getTextWidth(dateStr), 13);
@@ -181,11 +184,12 @@ function generatePDF(software: Software, categories: Category[], opts: PDFOption
   function drawCategoryTitle(cat: Category) {
     ensureSpace(CAT_H + 2);
     const cx = colX(colIdx);
-    doc.setFillColor(30, 30, 50);
+    // Orange accent background — #d97757
+    doc.setFillColor(217, 119, 87);
     doc.roundedRect(cx, y, colW, CAT_H, 2, 2, 'F');
     doc.setFontSize(8);
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(140, 160, 255);
+    doc.setTextColor(255, 255, 255);
     const label = `${cat.icon ?? ''}  ${cat.name}`.trim();
     doc.text(label, cx + 3, y + CAT_H - 2.5);
     y += CAT_H + 2;
@@ -194,10 +198,13 @@ function generatePDF(software: Software, categories: Category[], opts: PDFOption
   function drawSubCategoryTitle(name: string) {
     ensureSpace(SUB_H + 1);
     const cx = colX(colIdx);
-    doc.setFontSize(7);
+    // Separator line
+    doc.setDrawColor(200, 200, 200);
+    doc.line(cx, y + 1, cx + colW, y + 1);
+    doc.setFontSize(6.5);
     doc.setFont('helvetica', 'bolditalic');
-    doc.setTextColor(120, 130, 160);
-    doc.text(name.toUpperCase(), cx + 1, y + SUB_H - 2);
+    doc.setTextColor(85, 85, 85);
+    doc.text(name.toUpperCase(), cx + 1, y + SUB_H - 1);
     y += SUB_H;
   }
 
@@ -207,15 +214,16 @@ function generatePDF(software: Software, categories: Category[], opts: PDFOption
     ensureSpace(height);
 
     const cx = colX(colIdx);
+    // Alternating row — very light warm gray on even rows
     if (even) {
-      doc.setFillColor(24, 24, 36);
+      doc.setFillColor(248, 246, 244);
       doc.rect(cx, y, colW, ROW_H, 'F');
     }
 
-    // Action name
+    // Action name — near black, readable on white
     doc.setFontSize(7.5);
     doc.setFont('helvetica', 'normal');
-    doc.setTextColor(230, 230, 240);
+    doc.setTextColor(28, 28, 28);
     const actionText = truncateText(doc, s.action, colW * 0.55);
     doc.text(actionText, cx + 2, y + ROW_H - 2.2);
 
@@ -226,7 +234,7 @@ function generatePDF(software: Software, categories: Category[], opts: PDFOption
     if (opts.includeNotes && s.note) {
       doc.setFontSize(6);
       doc.setFont('helvetica', 'italic');
-      doc.setTextColor(140, 150, 180);
+      doc.setTextColor(100, 100, 100);
       const noteText = truncateText(doc, s.note, colW - 4);
       doc.text(noteText, cx + 2, y + ROW_H + NOTE_H - 1.5);
       y += NOTE_H;
@@ -249,21 +257,20 @@ function generatePDF(software: Software, categories: Category[], opts: PDFOption
       const capW = Math.min(tw + capPad * 2, maxW - (curX - x));
       if (curX - x + capW > maxW) return;
 
-      // Keycap background
-      doc.setFillColor(45, 45, 65);
+      // Keycap — dark gray background, white text
+      doc.setFillColor(45, 45, 45);
       doc.roundedRect(curX, y, capW, capH, 1, 1, 'F');
-      doc.setDrawColor(80, 80, 110);
+      doc.setDrawColor(85, 85, 85);
       doc.roundedRect(curX, y, capW, capH, 1, 1, 'S');
 
-      // Key text
-      doc.setTextColor(220, 220, 255);
+      doc.setTextColor(255, 255, 255);
       doc.text(partText, curX + capPad, y + capH - 1.2);
       curX += capW + 1.5;
 
       if (i < parts.length - 1 && curX - x + 3 < maxW) {
         doc.setFontSize(6);
         doc.setFont('helvetica', 'normal');
-        doc.setTextColor(120, 120, 160);
+        doc.setTextColor(100, 100, 100);
         doc.text('+', curX, y + capH - 1.2);
         curX += 3;
       }
