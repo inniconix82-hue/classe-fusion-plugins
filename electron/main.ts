@@ -242,7 +242,10 @@ ipcMain.handle('set-hotkey', (_event, hotkey: string) => {
 })
 
 app.on('activate', () => {
-  if (BrowserWindow.getAllWindows().length === 0) {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.show()
+    mainWindow.focus()
+  } else if (BrowserWindow.getAllWindows().length === 0) {
     createWindow()
   }
 })

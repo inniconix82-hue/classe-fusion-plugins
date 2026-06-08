@@ -1,28 +1,37 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
-  <rect width="512" height="512" rx="100" fill="#4f46e5"/>
-  <rect x="80"  y="148" width="68" height="60" rx="10" fill="#1e1a8a" opacity="0.6"/>
-  <rect x="80"  y="144" width="68" height="58" rx="10" fill="white"/>
-  <rect x="160" y="148" width="68" height="60" rx="10" fill="#1e1a8a" opacity="0.6"/>
-  <rect x="160" y="144" width="68" height="58" rx="10" fill="white"/>
-  <rect x="240" y="148" width="68" height="60" rx="10" fill="#1e1a8a" opacity="0.6"/>
-  <rect x="240" y="144" width="68" height="58" rx="10" fill="white"/>
-  <rect x="320" y="148" width="68" height="60" rx="10" fill="#1e1a8a" opacity="0.6"/>
-  <rect x="320" y="144" width="68" height="58" rx="10" fill="white"/>
-  <rect x="400" y="148" width="68" height="60" rx="10" fill="#1e1a8a" opacity="0.6"/>
-  <rect x="400" y="144" width="68" height="58" rx="10" fill="white"/>
-  <rect x="100" y="236" width="72" height="60" rx="10" fill="#1e1a8a" opacity="0.6"/>
-  <rect x="100" y="232" width="72" height="58" rx="10" fill="white"/>
-  <rect x="190" y="236" width="72" height="60" rx="10" fill="#1e1a8a" opacity="0.6"/>
-  <rect x="190" y="232" width="72" height="58" rx="10" fill="white"/>
-  <rect x="280" y="236" width="72" height="60" rx="10" fill="#1e1a8a" opacity="0.6"/>
-  <rect x="280" y="232" width="72" height="58" rx="10" fill="white"/>
-  <rect x="360" y="236" width="72" height="60" rx="10" fill="#1e1a8a" opacity="0.6"/>
-  <rect x="360" y="232" width="72" height="58" rx="10" fill="white"/>
-  <rect x="80"  y="324" width="68" height="60" rx="10" fill="#1e1a8a" opacity="0.6"/>
-  <rect x="80"  y="320" width="68" height="58" rx="10" fill="white"/>
-  <rect x="164" y="324" width="184" height="60" rx="10" fill="#1e1a8a" opacity="0.6"/>
-  <rect x="164" y="320" width="184" height="58" rx="10" fill="white"/>
-  <rect x="364" y="324" width="68" height="60" rx="10" fill="#1e1a8a" opacity="0.6"/>
-  <rect x="364" y="320" width="68" height="58" rx="10" fill="white"/>
-  <circle cx="274" cy="169" r="7" fill="#4f46e5"/>
+  <!-- Background: Claude dark gray #1c1c1c -->
+  <rect width="512" height="512" rx="100" fill="#1c1c1c"/>
+
+  <!-- Row 1 — 5 keys -->
+  <rect x="80"  y="148" width="68" height="60" rx="10" fill="#d97757" opacity="0.7"/>
+  <rect x="80"  y="144" width="68" height="58" rx="10" fill="#f0f0f0"/>
+  <rect x="160" y="148" width="68" height="60" rx="10" fill="#d97757" opacity="0.7"/>
+  <rect x="160" y="144" width="68" height="58" rx="10" fill="#f0f0f0"/>
+  <rect x="240" y="148" width="68" height="60" rx="10" fill="#d97757" opacity="0.7"/>
+  <rect x="240" y="144" width="68" height="58" rx="10" fill="#f0f0f0"/>
+  <rect x="320" y="148" width="68" height="60" rx="10" fill="#d97757" opacity="0.7"/>
+  <rect x="320" y="144" width="68" height="58" rx="10" fill="#f0f0f0"/>
+  <rect x="400" y="148" width="68" height="60" rx="10" fill="#d97757" opacity="0.7"/>
+  <rect x="400" y="144" width="68" height="58" rx="10" fill="#f0f0f0"/>
+
+  <!-- Row 2 — 4 keys (offset) -->
+  <rect x="100" y="236" width="72" height="60" rx="10" fill="#d97757" opacity="0.7"/>
+  <rect x="100" y="232" width="72" height="58" rx="10" fill="#f0f0f0"/>
+  <rect x="190" y="236" width="72" height="60" rx="10" fill="#d97757" opacity="0.7"/>
+  <rect x="190" y="232" width="72" height="58" rx="10" fill="#f0f0f0"/>
+  <rect x="280" y="236" width="72" height="60" rx="10" fill="#d97757" opacity="0.7"/>
+  <rect x="280" y="232" width="72" height="58" rx="10" fill="#f0f0f0"/>
+  <rect x="360" y="236" width="72" height="60" rx="10" fill="#d97757" opacity="0.7"/>
+  <rect x="360" y="232" width="72" height="58" rx="10" fill="#f0f0f0"/>
+
+  <!-- Row 3 — 2 keys + spacebar -->
+  <rect x="80"  y="324" width="68" height="60" rx="10" fill="#d97757" opacity="0.7"/>
+  <rect x="80"  y="320" width="68" height="58" rx="10" fill="#f0f0f0"/>
+  <rect x="164" y="324" width="184" height="60" rx="10" fill="#d97757" opacity="0.7"/>
+  <rect x="164" y="320" width="184" height="58" rx="10" fill="#f0f0f0"/>
+  <rect x="364" y="324" width="68" height="60" rx="10" fill="#d97757" opacity="0.7"/>
+  <rect x="364" y="320" width="68" height="58" rx="10" fill="#f0f0f0"/>
+
+  <!-- Orange dot accent on first key -->
+  <circle cx="114" cy="171" r="8" fill="#d97757"/>
 </svg>
