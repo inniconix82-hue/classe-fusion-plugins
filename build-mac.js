@@ -46,13 +46,13 @@ async function run() {
   const icnsPath = path.join(__dirname, 'public', 'icon.icns')
   const packagerOptions = {
     dir: tmpDir,
-    name: 'Node Organisation',
+    name: 'Raccourcis Clavier',
     platform: 'darwin',
     arch,
     out: path.join(__dirname, 'release'),
     overwrite: true,
     appVersion: '1.0.0',
-    appBundleId: 'com.nodeorganisation.app',
+    appBundleId: 'com.raccourcisclavier.app',
   }
   if (fs.existsSync(icnsPath)) packagerOptions.icon = icnsPath
 
@@ -62,7 +62,7 @@ async function run() {
   console.log('✅ App packagée dans:', appFolder)
 
   // 5. Create ZIP
-  const zipName = `Node-Organisation-Mac-${arch}.zip`
+  const zipName = `Raccourcis-Clavier-Mac-${arch}.zip`
   const zipPath = path.join(__dirname, 'release', zipName)
   if (fs.existsSync(zipPath)) fs.unlinkSync(zipPath)
 
@@ -85,7 +85,7 @@ async function run() {
   if (!fs.existsSync(zipPath)) throw new Error('ZIP non créé — vérifiez les permissions du dossier release/')
 
   console.log(`\n🎉 ZIP créé : release/${zipName}`)
-  console.log('   L\'utilisateur dézippe et glisse "Node Organisation.app" dans Applications.')
+  console.log('   L\'utilisateur dézippe et glisse "Raccourcis Clavier.app" dans Applications.')
   console.log('   Ollama : https://ollama.com/download (installer séparément sur Mac)')
 
   // Cleanup

@@ -1,7 +1,7 @@
 {
-  "name": "node-organization-app",
+  "name": "raccourcis-clavier",
   "version": "1.0.0",
-  "description": "Application d'organisation visuelle par nodes connectables",
+  "description": "Gestionnaire de raccourcis clavier multi-logiciels",
   "main": "dist-electron/main.js",
   "scripts": {
     "dev": "vite",
@@ -16,7 +16,7 @@
   },
   "build": {
     "appId": "com.nodesorg.app",
-    "productName": "Node Organisation",
+    "productName": "Raccourcis Clavier",
     "directories": {
       "output": "release"
     },

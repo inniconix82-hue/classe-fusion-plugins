@@ -40,7 +40,7 @@ jobs:
       - name: Upload ZIP artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Node-Organisation-Mac-${{ github.event.inputs.arch || 'universal' }}
+          name: Raccourcis-Clavier-Mac-${{ github.event.inputs.arch || 'universal' }}
           path: release/*.zip
           retention-days: 14
           if-no-files-found: error

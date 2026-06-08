@@ -15,7 +15,7 @@ function createWindow() {
     height: 900,
     minWidth: 900,
     minHeight: 600,
-    title: 'Node Organisation',
+    title: 'Raccourcis Clavier',
     icon: join(__dirname, '../public/icon.png'),
     webPreferences: {
       preload: join(__dirname, 'preload.js'),
