@@ -100,15 +100,15 @@ export function FloatingOverlay() {
     if (!newAction.trim() || !newKeys.trim() || !selectedSoftware) return;
 
     let workingDb = db;
-    let catId = selectedCategory?.id ?? null;
+    let catId: string | null = selectedCategory?.id ?? null;
 
-    // Auto-create a "Général" category if the software has none
     if (!catId) {
       workingDb = addCategory(workingDb, selectedSoftware.id, { name: 'Général' });
       const updatedSw = workingDb.softwares.find(s => s.id === selectedSoftware.id);
       catId = updatedSw?.categories.slice(-1)[0]?.id ?? null;
-      if (!catId) return;
     }
+
+    if (!catId) return;
 
     const combo = parseKeyComboString(newKeys);
     const updatedDb = addShortcut(workingDb, selectedSoftware.id, catId, null, {
