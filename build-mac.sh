@@ -1,4 +1,8 @@
 #!/bin/bash
+# Se place dans le dossier du script
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$SCRIPT_DIR"
+
 echo "============================================"
 echo "  Raccourcis Clavier - Build Mac .app"
 echo "============================================"
@@ -13,7 +17,7 @@ fi
 
 echo ""
 echo "[2/2] Build et packaging..."
-node build-mac.js
+node "$SCRIPT_DIR/build-mac.js"
 if [ $? -ne 0 ]; then
     echo "ERREUR: Le build a échoué."
     exit 1
@@ -24,4 +28,4 @@ echo "============================================"
 echo "  BUILD TERMINÉ !"
 echo "  L'application se trouve dans : release/"
 echo "============================================"
-open release/
+open "$SCRIPT_DIR/release/"
