@@ -1,0 +1,46 @@
+name: Build macOS App
+
+on:
+  push:
+    branches:
+      - claude/shortcuts-desktop-app-uap9H
+  workflow_dispatch:
+    inputs:
+      arch:
+        description: 'Architecture (x64 | arm64 | universal)'
+        required: false
+        default: 'universal'
+
+jobs:
+  build-mac:
+    runs-on: macos-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build macOS app
+        env:
+          MAC_ARCH: ${{ github.event.inputs.arch || 'universal' }}
+        run: node build-mac.js
+
+      - name: List release folder
+        run: ls -lh release/
+
+      - name: Upload ZIP artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Node-Organisation-Mac-${{ github.event.inputs.arch || 'universal' }}
+          path: release/*.zip
+          retention-days: 14
+          if-no-files-found: error
