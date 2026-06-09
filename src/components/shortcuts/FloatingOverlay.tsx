@@ -30,6 +30,15 @@ export function FloatingOverlay() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editAction, setEditAction] = useState('');
   const [editKeys, setEditKeys] = useState('');
+  const [highlightedShortcutId, setHighlightedShortcutId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!highlightedShortcutId) return;
+    const el = document.getElementById(`overlay-shortcut-${highlightedShortcutId}`);
+    el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    const t = setTimeout(() => setHighlightedShortcutId(null), 2000);
+    return () => clearTimeout(t);
+  }, [highlightedShortcutId]);
 
   useEffect(() => {
     const api = eAPI();
@@ -191,10 +200,14 @@ export function FloatingOverlay() {
   const renderShortcutRow = (s: Shortcut, catId: string, subId: string | null) => (
     <div
       key={s.id}
+      id={`overlay-shortcut-${s.id}`}
       onContextMenu={e => { e.preventDefault(); e.stopPropagation(); setShortcutMenu({ x: e.clientX, y: e.clientY, shortcut: s, catId, subId }); }}
-      style={{ padding: '5px 4px', borderBottom: `1px solid ${border}`, fontSize: 12 }}
+      style={{
+        padding: '5px 4px', borderBottom: `1px solid ${border}`, fontSize: 12,
+        ...(s.id === highlightedShortcutId ? { outline: '2px solid #d97757', outlineOffset: '-2px', backgroundColor: 'rgba(217,119,87,0.15)' } : {}),
+      }}
       onMouseEnter={e => (e.currentTarget.style.background = rowHover)}
-      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+      onMouseLeave={e => (e.currentTarget.style.background = s.id === highlightedShortcutId ? 'rgba(217,119,87,0.15)' : 'transparent')}
     >
       {editingId === s.id ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }} onClick={e => e.stopPropagation()}>
@@ -366,9 +379,10 @@ export function FloatingOverlay() {
           <SearchPanel
             db={db}
             inline
-            onNavigate={(swId, catId) => {
+            onNavigate={(swId, catId, shortcutId) => {
               setSelectedSoftwareId(swId);
               setSelectedCategoryId(catId);
+              setHighlightedShortcutId(shortcutId);
               setTab('shortcuts');
             }}
           />

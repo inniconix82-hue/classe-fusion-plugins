@@ -7,6 +7,7 @@ interface ShortcutListProps {
   category: Category;
   allCategories: Category[];
   softwareId: string;
+  highlightedId?: string;
   onAdd: (data: {
     shortcut: Omit<Shortcut, 'id' | 'createdAt' | 'updatedAt'>;
     categoryId: string;
@@ -24,6 +25,7 @@ interface ShortcutListProps {
 export function ShortcutList({
   category,
   allCategories,
+  highlightedId,
   onAdd,
   onEdit,
   onDelete,
@@ -105,6 +107,7 @@ export function ShortcutList({
           shortcuts={category.shortcuts}
           categoryId={category.id}
           subcategoryId={null}
+          highlightedId={highlightedId}
           onEdit={(s) => setEditTarget({ shortcut: s, categoryId: category.id, subcategoryId: null })}
           onDelete={(id) => onDelete(category.id, null, id)}
         />
@@ -119,6 +122,7 @@ export function ShortcutList({
             sub={sub}
             categoryId={category.id}
             allCategories={allCategories}
+            highlightedId={highlightedId}
             onAdd={onAdd}
             onEdit={(s) => setEditTarget({ shortcut: s, categoryId: category.id, subcategoryId: sub.id })}
             onDelete={(id) => onDelete(category.id, sub.id, id)}
@@ -141,6 +145,7 @@ function SubCategorySection({
   sub,
   categoryId,
   allCategories,
+  highlightedId,
   onAdd,
   onEdit,
   onDelete,
@@ -148,6 +153,7 @@ function SubCategorySection({
   sub: SubCategory;
   categoryId: string;
   allCategories: Category[];
+  highlightedId?: string;
   onAdd: ShortcutListProps['onAdd'];
   onEdit: (s: Shortcut) => void;
   onDelete: (id: string) => void;
@@ -183,6 +189,7 @@ function SubCategorySection({
           shortcuts={sub.shortcuts}
           categoryId={categoryId}
           subcategoryId={sub.id}
+          highlightedId={highlightedId}
           onEdit={onEdit}
           onDelete={onDelete}
         />
@@ -195,16 +202,22 @@ interface ShortcutTableProps {
   shortcuts: Shortcut[];
   categoryId: string;
   subcategoryId: string | null;
+  highlightedId?: string;
   onEdit: (shortcut: Shortcut) => void;
   onDelete: (id: string) => void;
 }
 
-function ShortcutTable({ shortcuts, onEdit, onDelete }: ShortcutTableProps) {
+function ShortcutTable({ shortcuts, highlightedId, onEdit, onDelete }: ShortcutTableProps) {
   return (
     <table className="shortcut-table">
       <tbody>
         {shortcuts.map(s => (
-          <tr key={s.id} className="shortcut-row">
+          <tr
+            key={s.id}
+            id={`shortcut-${s.id}`}
+            className="shortcut-row"
+            style={s.id === highlightedId ? { outline: '2px solid #d97757', outlineOffset: '-2px', backgroundColor: 'rgba(217,119,87,0.12)' } : undefined}
+          >
             <td className="shortcut-action">
               <span className="shortcut-action-name">{s.action}</span>
               {s.description && (

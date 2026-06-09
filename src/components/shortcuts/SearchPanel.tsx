@@ -18,7 +18,7 @@ function physicalKeyName(code: string): string | null {
 
 interface SearchPanelProps {
   db: ShortcutDB;
-  onNavigate?: (softwareId: string, categoryId: string) => void;
+  onNavigate?: (softwareId: string, categoryId: string, shortcutId: string) => void;
   inline?: boolean;
   onClose?: () => void;
 }
@@ -41,7 +41,7 @@ export function SearchPanel({ db, onNavigate, inline = false, onClose }: SearchP
     if (e.key === 'ArrowUp') { e.preventDefault(); setSelected(i => Math.max(i - 1, 0)); return; }
     if (e.key === 'Enter' && results[selected]) {
       const r = results[selected];
-      onNavigate?.(r.software.id, r.category.id);
+      onNavigate?.(r.software.id, r.category.id, r.shortcut.id);
       onClose?.();
       return;
     }
@@ -92,7 +92,7 @@ export function SearchPanel({ db, onNavigate, inline = false, onClose }: SearchP
               <div
                 key={`${r.shortcut.id}-${i}`}
                 className={`search-result-item ${i === selected ? 'search-result-item--selected' : ''}`}
-                onClick={() => { onNavigate?.(r.software.id, r.category.id); onClose?.(); }}
+                onClick={() => { onNavigate?.(r.software.id, r.category.id, r.shortcut.id); onClose?.(); }}
               >
                 <div className="search-result-meta">
                   <span className="search-result-app">

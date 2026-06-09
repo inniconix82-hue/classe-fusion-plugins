@@ -37,11 +37,21 @@ export function ShortcutsApp() {
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [modal, setModal] = useState<Modal>('none');
   const [activeAppSlug, setActiveAppSlug] = useState<string | null>(null);
+  const [highlightedShortcutId, setHighlightedShortcutId] = useState<string | null>(null);
 
   // Persist on every change
   useEffect(() => {
     saveDB(db);
   }, [db]);
+
+  // Scroll to and briefly highlight a shortcut after navigation
+  useEffect(() => {
+    if (!highlightedShortcutId) return;
+    const el = document.getElementById(`shortcut-${highlightedShortcutId}`);
+    el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    const t = setTimeout(() => setHighlightedShortcutId(null), 2000);
+    return () => clearTimeout(t);
+  }, [highlightedShortcutId]);
 
   // Listen for active app from Electron
   useEffect(() => {
@@ -323,6 +333,7 @@ export function ShortcutsApp() {
               category={selectedCategory}
               allCategories={selectedSoftware.categories}
               softwareId={selectedSoftware.id}
+              highlightedId={highlightedShortcutId ?? undefined}
               onAdd={handleAddShortcut}
               onEdit={handleEditShortcut}
               onDelete={handleDeleteShortcut}
@@ -359,9 +370,10 @@ export function ShortcutsApp() {
           <div className="modal-panel modal-panel--search" onClick={e => e.stopPropagation()}>
             <SearchPanel
               db={db}
-              onNavigate={(swId, catId) => {
+              onNavigate={(swId, catId, shortcutId) => {
                 setSelectedSoftwareId(swId);
                 setSelectedCategoryId(catId);
+                setHighlightedShortcutId(shortcutId);
                 setModal('none');
               }}
               onClose={() => setModal('none')}
