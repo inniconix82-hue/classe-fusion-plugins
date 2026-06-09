@@ -328,8 +328,20 @@ export function deleteShortcut(
 
 // ─── Search ──────────────────────────────────────────────────────────────────
 
+function normalizeSearchQuery(raw: string): string {
+  return raw
+    .toLowerCase()
+    .trim()
+    .replace(/\bmaj\b/g, 'shift')
+    .replace(/\bcommande\b/g, 'cmd')
+    .replace(/\boption\b/g, 'alt')
+    .replace(/\bopt\b/g, 'alt')
+    .replace(/[\s-]+/g, '+')
+    .replace(/\++/g, '+');
+}
+
 export function searchShortcuts(db: ShortcutDB, query: string): SearchResult[] {
-  const q = query.toLowerCase().trim();
+  const q = normalizeSearchQuery(query);
   if (!q) return [];
   const results: SearchResult[] = [];
 
@@ -352,13 +364,28 @@ export function searchShortcuts(db: ShortcutDB, query: string): SearchResult[] {
   return results;
 }
 
+function matchesCombo(combo: KeyCombo, q: string): boolean {
+  if (q.includes('+')) {
+    // Multi-part query like "shift+m": match against full combo string
+    const combo_str = [...combo.modifiers, combo.key].join('+').toLowerCase();
+    return combo_str.includes(q);
+  }
+  // Single token: match the key name exactly, or a modifier name exactly.
+  // We do NOT use includes() here to avoid "m" matching "Cmd" modifier.
+  const keyLow = combo.key.toLowerCase();
+  if (keyLow === q) return true;
+  // Prefix match for F-keys (typing "f5" matches key "F5")
+  if (keyLow.startsWith(q) && keyLow.length > 1 && q.length > 1) return true;
+  if (combo.modifiers.some(m => m.toLowerCase() === q)) return true;
+  return false;
+}
+
 function matchesShortcut(shortcut: Shortcut, q: string): boolean {
   if (shortcut.action.toLowerCase().includes(q)) return true;
   if (shortcut.description?.toLowerCase().includes(q)) return true;
   if (shortcut.note?.toLowerCase().includes(q)) return true;
   for (const combo of shortcut.keys) {
-    const combo_str = [...combo.modifiers, combo.key].join('+').toLowerCase();
-    if (combo_str.includes(q)) return true;
+    if (matchesCombo(combo, q)) return true;
   }
   return false;
 }
@@ -427,7 +454,8 @@ export function formatKeyCombo(combo: KeyCombo): string {
 
 export function parseKeyComboString(str: string): KeyCombo {
   const modifiers: string[] = ['Ctrl', 'Cmd', 'Alt', 'Shift', 'Win', 'Meta', 'Fn'];
-  const parts = str.split('+').map(p => p.trim()).filter(Boolean);
+  const normalized = str.replace(/commandorcontrol/gi, 'Ctrl').replace(/command/gi, 'Cmd');
+  const parts = normalized.split('+').map(p => p.trim()).filter(Boolean);
   const mods: string[] = [];
   const keys: string[] = [];
   for (const p of parts) {

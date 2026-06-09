@@ -3,6 +3,19 @@ import type { SearchResult, ShortcutDB } from '../../types/shortcuts';
 import { searchShortcuts } from '../../data/shortcutStore';
 import { KeyComboList } from './KeyCapDisplay';
 
+function physicalKeyName(code: string): string | null {
+  if (code.startsWith('Key')) return code.slice(3);
+  if (code.startsWith('Digit')) return code.slice(5);
+  if (/^F\d+$/.test(code)) return code;
+  const map: Record<string, string> = {
+    Space: 'Space', Backspace: 'Backspace', Delete: 'Delete',
+    ArrowUp: 'Up', ArrowDown: 'Down', ArrowLeft: 'Left', ArrowRight: 'Right',
+    Equal: '=', Minus: '-', BracketLeft: '[', BracketRight: ']',
+    Semicolon: ';', Quote: "'", Comma: ',', Period: '.', Slash: '/',
+  };
+  return map[code] ?? null;
+}
+
 interface SearchPanelProps {
   db: ShortcutDB;
   onNavigate?: (softwareId: string, categoryId: string) => void;
@@ -21,19 +34,34 @@ export function SearchPanel({ db, onNavigate, inline = false, onClose }: SearchP
     setSelected(0);
   }, [query, db]);
 
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      setSelected(i => Math.min(i + 1, results.length - 1));
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      setSelected(i => Math.max(i - 1, 0));
-    } else if (e.key === 'Enter' && results[selected]) {
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Navigation
+    if (e.key === 'Escape') { onClose?.(); return; }
+    if (e.key === 'ArrowDown') { e.preventDefault(); setSelected(i => Math.min(i + 1, results.length - 1)); return; }
+    if (e.key === 'ArrowUp') { e.preventDefault(); setSelected(i => Math.max(i - 1, 0)); return; }
+    if (e.key === 'Enter' && results[selected]) {
       const r = results[selected];
       onNavigate?.(r.software.id, r.category.id);
       onClose?.();
-    } else if (e.key === 'Escape') {
-      onClose?.();
+      return;
+    }
+
+    // Combo search: when modifier keys are held, capture the physical combo
+    const hasModifier = e.metaKey || e.ctrlKey || e.altKey || e.shiftKey;
+    const modifierKeys = new Set(['Meta', 'Control', 'Shift', 'Alt', 'CapsLock', 'Tab', 'Dead']);
+    // Don't intercept standard text-editing shortcuts (Cmd/Ctrl + A/C/V/X/Z/Y)
+    const isEditing = (e.metaKey || e.ctrlKey) && 'acvxzy'.includes(e.key.toLowerCase());
+    if (hasModifier && !modifierKeys.has(e.key) && !isEditing) {
+      e.preventDefault();
+      const isMac = navigator.platform.toUpperCase().includes('MAC');
+      const mods: string[] = [];
+      if (e.metaKey || e.ctrlKey) mods.push(isMac ? 'Cmd' : 'Ctrl');
+      if (e.shiftKey) mods.push('Shift');
+      if (e.altKey) mods.push('Alt');
+      const key = (e.key.length === 1 && !(e.altKey && e.key.charCodeAt(0) > 127))
+        ? e.key.toUpperCase()
+        : physicalKeyName(e.code) ?? e.key;
+      setQuery([...mods, key].join('+'));
     }
   }, [results, selected, onNavigate, onClose]);
 
@@ -47,7 +75,7 @@ export function SearchPanel({ db, onNavigate, inline = false, onClose }: SearchP
           value={query}
           onChange={e => setQuery(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Rechercher un raccourci, une action…"
+          placeholder="Rechercher une action ou appuyer sur un raccourci (ex: Shift+M)…"
           autoFocus={!inline}
         />
         {query && (

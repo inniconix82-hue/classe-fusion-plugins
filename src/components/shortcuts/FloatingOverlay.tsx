@@ -91,12 +91,13 @@ export function FloatingOverlay() {
   const btnWhite = theme === 'dark' ? '#ffffff' : '#d97757';
   const btnWhiteText = theme === 'dark' ? '#1c1c1c' : '#ffffff';
 
-  // Map e.code (physical key) to a readable key name.
-  // Required on Mac where Alt+key produces Unicode chars via e.key (e.g. Alt+X = ≈).
+  const isMac = navigator.platform.toUpperCase().includes('MAC');
+
+  // Only used for special / non-printable keys and Mac Alt+key Unicode fallback.
   const physicalKey = (code: string): string | null => {
-    if (code.startsWith('Key')) return code.slice(3);       // KeyX → X
-    if (code.startsWith('Digit')) return code.slice(5);     // Digit1 → 1
-    if (/^F\d+$/.test(code)) return code;                   // F1…F12
+    if (code.startsWith('Key')) return code.slice(3);
+    if (code.startsWith('Digit')) return code.slice(5);
+    if (/^F\d+$/.test(code)) return code;
     const map: Record<string, string> = {
       Space: 'Space', Enter: 'Enter', NumpadEnter: 'Enter',
       Backspace: 'Backspace', Delete: 'Delete',
@@ -110,6 +111,16 @@ export function FloatingOverlay() {
     return map[code] ?? null;
   };
 
+  // Prefer e.key for printable chars so AZERTY (and other layouts) work correctly.
+  // Only fall back to physicalKey for special/non-printable keys or when Mac Alt
+  // produces a Unicode symbol instead of the actual key name.
+  const resolveKey = (e: React.KeyboardEvent): string => {
+    if (e.key.length === 1 && !(e.altKey && e.key.charCodeAt(0) > 127)) {
+      return e.key.toUpperCase();
+    }
+    return physicalKey(e.code) ?? (e.key.length === 1 ? e.key.toUpperCase() : e.key);
+  };
+
   const handleKeyCapture = (e: React.KeyboardEvent, setter: (v: string) => void) => {
     e.preventDefault();
     e.stopPropagation();
@@ -117,11 +128,10 @@ export function FloatingOverlay() {
     const ignoredKeys = new Set(['Meta', 'Control', 'Shift', 'Alt', 'CapsLock', 'Tab', 'Dead']);
     if (ignoredKeys.has(e.key)) return;
     const mods: string[] = [];
-    if (e.metaKey || e.ctrlKey) mods.push('CommandOrControl');
+    if (e.metaKey || e.ctrlKey) mods.push(isMac ? 'Cmd' : 'Ctrl');
     if (e.shiftKey) mods.push('Shift');
     if (e.altKey) mods.push('Alt');
-    const key = physicalKey(e.code) ?? (e.key.length === 1 ? e.key.toUpperCase() : e.key);
-    setter([...mods, key].join('+'));
+    setter([...mods, resolveKey(e)].join('+'));
   };
 
   const handleHotkeyKeyDown = (e: React.KeyboardEvent) => {
@@ -130,11 +140,10 @@ export function FloatingOverlay() {
     const ignoredKeys = new Set(['Meta', 'Control', 'Shift', 'Alt', 'CapsLock', 'Dead']);
     if (ignoredKeys.has(e.key)) return;
     const mods: string[] = [];
-    if (e.metaKey || e.ctrlKey) mods.push('CommandOrControl');
+    if (e.metaKey || e.ctrlKey) mods.push(isMac ? 'Cmd' : 'Ctrl');
     if (e.shiftKey) mods.push('Shift');
     if (e.altKey) mods.push('Alt');
-    const key = physicalKey(e.code) ?? (e.key.length === 1 ? e.key.toUpperCase() : e.key);
-    setHotkeyInput([...mods, key].join('+'));
+    setHotkeyInput([...mods, resolveKey(e)].join('+'));
     recordingRef.current = false;
   };
 
