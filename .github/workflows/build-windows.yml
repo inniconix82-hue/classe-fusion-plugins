@@ -1,0 +1,47 @@
+name: Build Windows App
+
+on:
+  push:
+    branches:
+      - claude/shortcuts-desktop-app-uap9H
+  workflow_dispatch:
+    inputs:
+      arch:
+        description: 'Architecture (x64 | ia32 | arm64)'
+        required: false
+        default: 'x64'
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Windows app (package + zip)
+        env:
+          WIN_ARCH: ${{ github.event.inputs.arch || 'x64' }}
+        run: node build-windows.js
+
+      - name: List release artifacts
+        run: Get-ChildItem release\*.zip | Select-Object Name, Length
+        shell: pwsh
+
+      - name: Upload ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: Raccourcis-Clavier-Windows-${{ github.event.inputs.arch || 'x64' }}
+          path: release/Raccourcis-Clavier-Windows-*.zip
+          retention-days: 14
+          if-no-files-found: error
