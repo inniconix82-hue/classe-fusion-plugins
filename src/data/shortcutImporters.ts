@@ -16,6 +16,23 @@ export interface ImportResult {
   warnings: string[];
 }
 
+export interface CSVInfo {
+  delimiter: string;
+  headers: string[];        // from first line
+  sampleRows: string[][];   // up to 3 data rows
+  hasHeader: boolean;       // true if first line looks like a header
+}
+
+export interface CSVColumnMapping {
+  delimiter: string;
+  actionCol: number;        // column index, -1 = not set
+  keysCol: number;
+  categoryCol: number;
+  subcategoryCol: number;
+  noteCol: number;
+  hasHeader: boolean;
+}
+
 // ─── DaVinci Resolve .keyb (XML) ─────────────────────────────────────────────
 
 export function parseDaVinciKeyb(xmlText: string, softwareName = 'DaVinci Resolve'): ImportResult {
@@ -242,6 +259,93 @@ function categoryLabelForVSCode(ns: string): string {
 // ─── Generic CSV ──────────────────────────────────────────────────────────────
 // Expected header: action,keys,category,subcategory,note
 
+function splitCSVLineDelim(line: string, delimiter: string): string[] {
+  const result: string[] = [];
+  let current = '';
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') { inQuotes = !inQuotes; continue; }
+    if (!inQuotes && line.startsWith(delimiter, i)) {
+      result.push(current); current = '';
+      i += delimiter.length - 1;
+      continue;
+    }
+    current += ch;
+  }
+  result.push(current);
+  return result;
+}
+
+function splitCSVLine(line: string): string[] {
+  return splitCSVLineDelim(line, ',');
+}
+
+export function detectCSVInfo(content: string): CSVInfo {
+  const lines = content.split('\n').map(l => l.trim()).filter(Boolean);
+  if (lines.length === 0) return { delimiter: ',', headers: [], sampleRows: [], hasHeader: false };
+
+  // Detect best delimiter by counting occurrences in first line
+  const candidates = [',', ';', '\t', '|'];
+  let bestDelim = ',';
+  let bestCount = 0;
+  for (const d of candidates) {
+    const count = (lines[0].match(new RegExp(d === '\t' ? '\t' : d.replace('|', '\\|'), 'g')) ?? []).length;
+    if (count > bestCount) { bestCount = count; bestDelim = d; }
+  }
+
+  const split = (line: string) => splitCSVLineDelim(line, bestDelim);
+  const firstRowCols = split(lines[0]);
+
+  // Heuristic: first row is a header if no cell looks like a key combo
+  const looksLikeData = firstRowCols.some(c => /^[A-Za-z0-9+]{1,3}$/.test(c.trim()) && c.trim().length <= 3);
+  const hasHeader = !looksLikeData || firstRowCols.some(c => /^(action|key|raccourci|category|shortcut|name|command)/i.test(c.trim()));
+
+  const dataStart = hasHeader ? 1 : 0;
+  return {
+    delimiter: bestDelim,
+    headers: firstRowCols.map(h => h.trim()),
+    sampleRows: lines.slice(dataStart, dataStart + 3).map(split),
+    hasHeader,
+  };
+}
+
+export function parseCSVWithMapping(csv: string, softwareName: string, mapping: CSVColumnMapping): ImportResult {
+  const warnings: string[] = [];
+  const lines = csv.split('\n').map(l => l.trim()).filter(Boolean);
+  const dataLines = mapping.hasHeader ? lines.slice(1) : lines;
+
+  const catMap = new Map<string, Map<string, Shortcut[]>>();
+
+  dataLines.forEach((line, i) => {
+    const cols = splitCSVLineDelim(line, mapping.delimiter);
+    const action = mapping.actionCol >= 0 ? cols[mapping.actionCol]?.trim() : undefined;
+    const keysRaw = mapping.keysCol >= 0 ? cols[mapping.keysCol]?.trim() : undefined;
+    if (!action || !keysRaw) { warnings.push(`Ligne ${i + (mapping.hasHeader ? 2 : 1)} ignorée (action ou clé vide).`); return; }
+
+    const catName = (mapping.categoryCol >= 0 && cols[mapping.categoryCol]?.trim()) || 'Général';
+    const subName = (mapping.subcategoryCol >= 0 && cols[mapping.subcategoryCol]?.trim()) || '';
+    const note = (mapping.noteCol >= 0 && cols[mapping.noteCol]?.trim()) || undefined;
+
+    if (!catMap.has(catName)) catMap.set(catName, new Map());
+    const subMap = catMap.get(catName)!;
+    if (!subMap.has(subName)) subMap.set(subName, []);
+
+    const combo = parseKeyComboString(keysRaw);
+    subMap.get(subName)!.push({ id: '', action, keys: [combo], note, createdAt: '', updatedAt: '' });
+  });
+
+  const categories: Category[] = Array.from(catMap.entries()).map(([catName, subMap], i) => {
+    const directShortcuts = subMap.get('') ?? [];
+    const subcategories = Array.from(subMap.entries())
+      .filter(([k]) => k !== '')
+      .map(([subName, shortcuts], j) => ({ id: subName, name: subName, order: j, shortcuts }));
+    return { id: catName, name: catName, order: i, shortcuts: directShortcuts, subcategories };
+  });
+
+  return { software: { name: softwareName, slug: slugify(softwareName), categories }, warnings };
+}
+
 export function parseGenericCSV(csv: string, softwareName: string): ImportResult {
   const warnings: string[] = [];
   const lines = csv.split('\n').map(l => l.trim()).filter(Boolean);
@@ -253,27 +357,39 @@ export function parseGenericCSV(csv: string, softwareName: string): ImportResult
     };
   }
 
-  const header = lines[0].split(',').map(h => h.trim().toLowerCase());
-  const colIndex = (name: string) => header.indexOf(name);
+  // Auto-detect delimiter
+  const info = detectCSVInfo(csv);
+  const delimiter = info.delimiter;
+  const split = (line: string) => splitCSVLineDelim(line, delimiter);
+  const header = split(lines[0]).map(h => h.trim().toLowerCase());
 
-  const iAction = colIndex('action');
-  const iKeys = colIndex('keys');
-  const iCategory = colIndex('category');
-  const iSub = colIndex('subcategory');
-  const iNote = colIndex('note');
+  // Try multiple aliases for each field
+  const actionAliases   = ['action', 'name', 'nom', 'description', 'command', 'commande', 'fonction', 'label', 'title'];
+  const keysAliases     = ['keys', 'key', 'shortcut', 'raccourci', 'binding', 'touche', 'touches', 'combo', 'hotkey'];
+  const categoryAliases = ['category', 'catégorie', 'categorie', 'cat', 'group', 'groupe', 'section', 'module'];
+  const subAliases      = ['subcategory', 'sous-catégorie', 'sous-categorie', 'sub', 'subcat'];
+  const noteAliases     = ['note', 'notes', 'comment', 'commentaire', 'description'];
+
+  const findCol = (aliases: string[]) => {
+    for (const a of aliases) { const i = header.indexOf(a); if (i !== -1) return i; }
+    return -1;
+  };
+
+  const iAction   = findCol(actionAliases);
+  const iKeys     = findCol(keysAliases);
+  const iCategory = findCol(categoryAliases);
+  const iSub      = findCol(subAliases);
+  const iNote     = findCol(noteAliases);
 
   if (iAction === -1 || iKeys === -1) {
     warnings.push('Colonnes "action" et "keys" requises dans le CSV.');
-    return {
-      software: { name: softwareName, slug: slugify(softwareName), categories: [] },
-      warnings,
-    };
+    return { software: { name: softwareName, slug: slugify(softwareName), categories: [] }, warnings };
   }
 
   const catMap = new Map<string, Map<string, Shortcut[]>>();
 
   lines.slice(1).forEach((line, i) => {
-    const cols = splitCSVLine(line);
+    const cols = split(line);
     const action = cols[iAction]?.trim();
     const keysRaw = cols[iKeys]?.trim();
     if (!action || !keysRaw) { warnings.push(`Ligne ${i + 2} ignorée (action ou keys vide).`); return; }
@@ -287,14 +403,7 @@ export function parseGenericCSV(csv: string, softwareName: string): ImportResult
     if (!subMap.has(subName)) subMap.set(subName, []);
 
     const combo = parseKeyComboString(keysRaw);
-    subMap.get(subName)!.push({
-      id: '',
-      action,
-      keys: [combo],
-      note,
-      createdAt: '',
-      updatedAt: '',
-    });
+    subMap.get(subName)!.push({ id: '', action, keys: [combo], note, createdAt: '', updatedAt: '' });
   });
 
   const categories: Category[] = Array.from(catMap.entries()).map(([catName, subMap], i) => {
@@ -320,20 +429,6 @@ export function parseGenericCSV(csv: string, softwareName: string): ImportResult
     software: { name: softwareName, slug: slugify(softwareName), categories },
     warnings,
   };
-}
-
-function splitCSVLine(line: string): string[] {
-  const result: string[] = [];
-  let current = '';
-  let inQuotes = false;
-  for (let i = 0; i < line.length; i++) {
-    const ch = line[i];
-    if (ch === '"') { inQuotes = !inQuotes; continue; }
-    if (ch === ',' && !inQuotes) { result.push(current); current = ''; continue; }
-    current += ch;
-  }
-  result.push(current);
-  return result;
 }
 
 function slugify(name: string): string {
