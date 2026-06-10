@@ -340,6 +340,28 @@ function normalizeSearchQuery(raw: string): string {
     .replace(/\++/g, '+');
 }
 
+// Match a single KeyCombo against a normalized query token (no '+' inside q).
+function matchesComboToken(combo: KeyCombo, token: string): boolean {
+  const keyLow = combo.key.toLowerCase();
+  if (keyLow === token) return true;
+  // Prefix match for multi-char key names (e.g. "f5", "up", "del")
+  if (token.length > 1 && keyLow.startsWith(token)) return true;
+  if (combo.modifiers.some(m => m.toLowerCase() === token)) return true;
+  return false;
+}
+
+function matchesCombo(combo: KeyCombo, q: string): boolean {
+  if (!q.includes('+')) {
+    return matchesComboToken(combo, q);
+  }
+  // Multi-part query like "shift+m": every part must match a modifier or the key
+  const parts = q.split('+').filter(Boolean);
+  const modsLow = combo.modifiers.map(m => m.toLowerCase());
+  const keyLow = combo.key.toLowerCase();
+  return parts.every(p => modsLow.includes(p) || keyLow === p || (p.length > 1 && keyLow.startsWith(p)));
+}
+
+
 export function searchShortcuts(db: ShortcutDB, query: string): SearchResult[] {
   const q = normalizeSearchQuery(query);
   if (!q) return [];
@@ -364,23 +386,11 @@ export function searchShortcuts(db: ShortcutDB, query: string): SearchResult[] {
   return results;
 }
 
-function matchesCombo(combo: KeyCombo, q: string): boolean {
-  if (q.includes('+')) {
-    // Multi-part query like "shift+m": match against full combo string
-    const combo_str = [...combo.modifiers, combo.key].join('+').toLowerCase();
-    return combo_str.includes(q);
-  }
-  // Single token: match the key name exactly, or a modifier name exactly.
-  // We do NOT use includes() here to avoid "m" matching "Cmd" modifier.
-  const keyLow = combo.key.toLowerCase();
-  if (keyLow === q) return true;
-  // Prefix match for F-keys (typing "f5" matches key "F5")
-  if (keyLow.startsWith(q) && keyLow.length > 1 && q.length > 1) return true;
-  if (combo.modifiers.some(m => m.toLowerCase() === q)) return true;
-  return false;
-}
-
 function matchesShortcut(shortcut: Shortcut, q: string): boolean {
+  // Single char: only search key combos — avoids flooding results with action name matches
+  if (q.length === 1) {
+    return shortcut.keys.some(combo => matchesCombo(combo, q));
+  }
   if (shortcut.action.toLowerCase().includes(q)) return true;
   if (shortcut.description?.toLowerCase().includes(q)) return true;
   if (shortcut.note?.toLowerCase().includes(q)) return true;
