@@ -742,7 +742,7 @@ function FlowCanvas() {
     const handler = (e: KeyboardEvent) => {
       if (showShortcuts) return
       const target = e.target as HTMLElement
-      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) return
 
       // Shift+Space = quick search dialog
       if (e.shiftKey && e.code === 'Space') {

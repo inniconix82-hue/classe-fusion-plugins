@@ -3,6 +3,7 @@ import { presetCategories, type PresetNode, type PresetCategory } from '../data/
 import { loadCustomCategories } from '../data/customCategories'
 import { buildEmbeddingIndex, semanticSearch, isEmbeddingReady } from '../data/embeddingService'
 import { classifySearchIntent } from '../data/ollamaService'
+import { CATEGORY_PACKS, getInstalledPackIds, getInstalledPacks, installPack, uninstallPack } from '../data/categoryPacks'
 
 const SUPER_CATEGORIES: { id: string; name: string; icon: string; categoryIds: string[] }[] = [
   { id: 'perso', name: 'Personnes & Équipe', icon: '👤', categoryIds: ['personnes'] },
@@ -71,6 +72,19 @@ const Sidebar: React.FC<SidebarProps> = ({
   const [popoverCatId, setPopoverCatId] = useState<string | null>(null)
 
   const [customCategories, setCustomCategories] = useState<PresetCategory[]>(() => loadCustomCategories())
+  const [installedPackIds, setInstalledPackIds] = useState<string[]>(() => getInstalledPackIds())
+  const [showPacksModal, setShowPacksModal] = useState(false)
+
+  const installedPacks = getInstalledPacks()
+  const packCategories = installedPacks.flatMap((p) => p.categories)
+  const packSuperCategories = installedPacks.map((p) => ({
+    id: p.superCategoryId,
+    name: p.superCategoryName,
+    icon: p.superCategoryIcon,
+    categoryIds: p.categories.map((c) => c.id),
+  }))
+  const allSuperCategories = [...SUPER_CATEGORIES, ...packSuperCategories]
+  const allPresetCategories = [...presetCategories, ...packCategories]
 
   const [searchQuery, setSearchQuery] = useState('')
   const [semanticMatches, setSemanticMatches] = useState<Set<string>>(new Set())
@@ -118,7 +132,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   }
 
   if (collapsed) {
-    const allCategories = [...customCategories, ...presetCategories]
+    const allCategories = [...customCategories, ...allPresetCategories]
     const popoverCat = popoverCatId ? allCategories.find((c) => c.id === popoverCatId) : null
 
     return (
@@ -285,6 +299,50 @@ const Sidebar: React.FC<SidebarProps> = ({
         </button>
       </div>
 
+      <div className="sidebar-layout-controls">
+        <button className="layout-btn" onClick={() => setShowPacksModal(true)} style={{ flex: 'none', width: '100%' }}>
+          📦 Importer des catégories
+        </button>
+      </div>
+
+      {showPacksModal && (
+        <div className="modal-overlay" onClick={() => setShowPacksModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 520 }}>
+            <div className="modal-header">
+              <h2>📦 Catégories importables</h2>
+              <button className="modal-close" onClick={() => setShowPacksModal(false)}>&times;</button>
+            </div>
+            <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {CATEGORY_PACKS.map((pack) => {
+                const isInstalled = installedPackIds.includes(pack.id)
+                const nodeCount = pack.categories.reduce((s, c) => s + c.nodes.length, 0)
+                return (
+                  <div key={pack.id} className="pack-card" style={{ borderLeftColor: pack.categories[0]?.color || 'var(--accent)' }}>
+                    <div className="pack-card-header">
+                      <span className="pack-card-icon">{pack.icon}</span>
+                      <div className="pack-card-info">
+                        <span className="pack-card-name">{pack.name}</span>
+                        <span className="pack-card-desc">{pack.description}</span>
+                        <span className="pack-card-meta">{pack.categories.length} catégorie{pack.categories.length > 1 ? 's' : ''} · {nodeCount} nodes</span>
+                      </div>
+                      <button
+                        className={`pack-card-btn ${isInstalled ? 'installed' : ''}`}
+                        onClick={() => {
+                          if (isInstalled) { uninstallPack(pack.id) } else { installPack(pack.id) }
+                          setInstalledPackIds(getInstalledPackIds())
+                        }}
+                      >
+                        {isInstalled ? '✓ Installé' : '+ Ajouter'}
+                      </button>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="sidebar-divider" />
 
       <div className="sidebar-search">
@@ -301,7 +359,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         Glisser un node sur le canvas
         {focusedSuperCat && (
           <button className="focus-reset-btn" onClick={() => setFocusedSuperCat(null)} title="Afficher tout">
-            ✕ {SUPER_CATEGORIES.find(s => s.id === focusedSuperCat)?.name}
+            ✕ {allSuperCategories.find(s => s.id === focusedSuperCat)?.name}
           </button>
         )}
       </div>
@@ -337,9 +395,9 @@ const Sidebar: React.FC<SidebarProps> = ({
         })}
 
         {/* Preset categories grouped by super-category */}
-        {SUPER_CATEGORIES.map((superCat) => {
+        {allSuperCategories.map((superCat) => {
           if (focusedSuperCat && focusedSuperCat !== superCat.id) return null
-          const cats = presetCategories.filter((c) => superCat.categoryIds.includes(c.id))
+          const cats = allPresetCategories.filter((c) => superCat.categoryIds.includes(c.id))
           if (cats.length === 0) return null
 
           // Filter for search (text + semantic embeddings + LLM intent)
@@ -367,7 +425,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                 onClick={() => setExpandedSuper((prev) => {
                   const wasOpen = !!prev[superCat.id]
                   const reset: Record<string, boolean> = {}
-                  SUPER_CATEGORIES.forEach((sc) => { reset[sc.id] = false })
+                  allSuperCategories.forEach((sc) => { reset[sc.id] = false })
                   if (!wasOpen) reset[superCat.id] = true
                   return reset
                 })}
