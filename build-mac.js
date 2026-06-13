@@ -39,53 +39,63 @@ copyDir(path.join(__dirname, 'dist-electron'), path.join(tmpDir, 'dist-electron'
 // 4. Package with electron packager
 const packager = require('@electron/packager')
 async function run() {
-  // Build for both Intel and Apple Silicon
-  const arch = process.env.MAC_ARCH || 'universal'
-  console.log(`🍎 Packaging pour macOS (${arch})...`)
-
+  const arches = ['x64', 'arm64']
   const icnsPath = path.join(__dirname, 'public', 'icon.icns')
-  const packagerOptions = {
-    dir: tmpDir,
-    name: 'Node Organisation',
-    platform: 'darwin',
-    arch,
-    out: path.join(__dirname, 'release'),
-    overwrite: true,
-    appVersion: '1.0.0',
-    appBundleId: 'com.nodeorganisation.app',
-  }
-  if (fs.existsSync(icnsPath)) packagerOptions.icon = icnsPath
-
-  const appPaths = await packager(packagerOptions)
-
-  const appFolder = appPaths[0]
-  console.log('✅ App packagée dans:', appFolder)
-
-  // 5. Create ZIP
-  const zipName = `Node-Organisation-Mac-${arch}.zip`
-  const zipPath = path.join(__dirname, 'release', zipName)
-  if (fs.existsSync(zipPath)) fs.unlinkSync(zipPath)
-
-  console.log('🗜️  Création du ZIP...')
   const releaseDir = path.join(__dirname, 'release')
-  const folderName = path.basename(appFolder)
-  try {
-    execSync(
-      `ditto -c -k --sequesterRsrc --keepParent "${appFolder}" "${zipPath}"`,
-      { stdio: 'inherit' }
-    )
-  } catch {
-    console.log('⚠️  ditto a échoué, essai avec zip -y...')
-    execSync(
-      `cd "${releaseDir}" && zip -r -y "${zipPath}" "${folderName}"`,
-      { stdio: 'inherit' }
-    )
+  fs.mkdirSync(releaseDir, { recursive: true })
+
+  for (const arch of arches) {
+    console.log(`🍎 Packaging pour macOS (${arch})...`)
+
+    const packagerOptions = {
+      dir: tmpDir,
+      name: 'Node Organisation',
+      platform: 'darwin',
+      arch,
+      out: releaseDir,
+      overwrite: true,
+      appVersion: '1.0.0',
+      appBundleId: 'com.nodeorganisation.app',
+    }
+    if (fs.existsSync(icnsPath)) packagerOptions.icon = icnsPath
+
+    const appPaths = await packager(packagerOptions)
+    const appFolder = appPaths && appPaths[0]
+    if (!appFolder) {
+      console.log(`⚠️  Pas de sortie pour ${arch}, skip ZIP`)
+      continue
+    }
+    console.log('✅ App packagée dans:', appFolder)
+
+    const zipName = `Node-Organisation-Mac-${arch}.zip`
+    const zipPath = path.join(releaseDir, zipName)
+    if (fs.existsSync(zipPath)) fs.unlinkSync(zipPath)
+
+    console.log('🗜️  Création du ZIP...')
+    const folderName = path.basename(appFolder)
+    try {
+      execSync(
+        `ditto -c -k --sequesterRsrc --keepParent "${appFolder}" "${zipPath}"`,
+        { stdio: 'inherit' }
+      )
+    } catch {
+      try {
+        execSync(
+          `cd "${releaseDir}" && zip -r -y "${zipName}" "${folderName}"`,
+          { stdio: 'inherit' }
+        )
+      } catch {
+        console.log(`⚠️  ZIP échoué pour ${arch}, le dossier .app reste disponible`)
+      }
+    }
+
+    if (fs.existsSync(zipPath)) {
+      console.log(`🎉 ZIP créé : release/${zipName}`)
+    }
   }
 
-  if (!fs.existsSync(zipPath)) throw new Error('ZIP non créé — vérifiez les permissions du dossier release/')
-
-  console.log(`\n🎉 ZIP créé : release/${zipName}`)
-  console.log('   L\'utilisateur dézippe et glisse "Node Organisation.app" dans Applications.')
+  console.log('\n✅ Build terminé !')
+  console.log('   Glisser "Node Organisation.app" dans Applications.')
   console.log('   Ollama : https://ollama.com/download (installer séparément sur Mac)')
 
   // Cleanup
