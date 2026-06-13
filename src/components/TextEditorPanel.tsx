@@ -7,6 +7,7 @@ interface TextEditorPanelProps {
   initialContent?: string
   rawMarkdown?: string
   onContentChange?: (html: string) => void
+  theme?: 'dark' | 'light'
 }
 
 const FONT_SIZES = ['10', '12', '14', '16', '18', '24', '32', '48']
@@ -24,15 +25,24 @@ const TextEditorPanel: React.FC<TextEditorPanelProps> = ({
   initialContent = '',
   rawMarkdown = '',
   onContentChange,
+  theme = 'dark',
 }) => {
   const editorRef = useRef<HTMLDivElement>(null)
-  const [bgColor, setBgColor] = useState('#1a2744')
+  const defaultBg = theme === 'light' ? '#ffffff' : '#1a2744'
+  const [bgColor, setBgColor] = useState(defaultBg)
+  const lastLoadedContentRef = useRef('')
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>()
 
   useEffect(() => {
-    if (editorRef.current && initialContent) {
+    setBgColor(theme === 'light' ? '#ffffff' : '#1a2744')
+  }, [theme])
+
+  useEffect(() => {
+    if (editorRef.current && initialContent && initialContent !== lastLoadedContentRef.current) {
       const html = String(marked.parse(initialContent, { async: false, breaks: true, gfm: true }))
       editorRef.current.innerHTML = html
       editorRef.current.classList.add('ollama-formatted')
+      lastLoadedContentRef.current = initialContent
     }
   }, [initialContent])
 
@@ -43,12 +53,24 @@ const TextEditorPanel: React.FC<TextEditorPanelProps> = ({
 
   const handleInput = useCallback(() => {
     if (onContentChange && editorRef.current) {
-      onContentChange(editorRef.current.innerHTML)
+      if (debounceRef.current) clearTimeout(debounceRef.current)
+      debounceRef.current = setTimeout(() => {
+        if (editorRef.current) onContentChange(editorRef.current.innerHTML)
+      }, 300)
     }
   }, [onContentChange])
 
+  useEffect(() => {
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }
+  }, [])
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     e.stopPropagation()
+    if ((e.ctrlKey || e.metaKey) && e.key === 'b') { e.preventDefault(); exec('bold') }
+    else if ((e.ctrlKey || e.metaKey) && e.key === 'i') { e.preventDefault(); exec('italic') }
+    else if ((e.ctrlKey || e.metaKey) && e.key === 'u') { e.preventDefault(); exec('underline') }
+    else if ((e.ctrlKey || e.metaKey) && e.key === 'z') { /* allow native undo */ }
+    else if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.shiftKey && e.key === 'z'))) { /* allow native redo */ }
   }
 
   const exportToPDF = useCallback(() => {
@@ -177,27 +199,6 @@ const TextEditorPanel: React.FC<TextEditorPanelProps> = ({
     window.open(`mailto:?subject=${subject}&body=${body}`)
   }, [])
 
-  const insertFromNodes = useCallback(() => {
-    // Triggered externally via ref - just focus
-    editorRef.current?.focus()
-  }, [])
-
-  // Expose insertContent for external use
-  ;(TextEditorPanel as any)._insert = (html: string) => {
-    if (editorRef.current) {
-      editorRef.current.focus()
-      const sel = window.getSelection()
-      if (sel && sel.rangeCount > 0) {
-        const range = sel.getRangeAt(0)
-        const frag = range.createContextualFragment(html)
-        range.deleteContents()
-        range.insertNode(frag)
-      } else {
-        editorRef.current.innerHTML += html
-      }
-      handleInput()
-    }
-  }
 
   return (
     <div className="text-editor-panel">
@@ -263,7 +264,7 @@ const TextEditorPanel: React.FC<TextEditorPanelProps> = ({
           className="editor-color-input"
           onChange={(e) => exec('foreColor', e.target.value)}
           title="Couleur du texte"
-          defaultValue="#f1f5f9"
+          defaultValue={theme === 'light' ? '#1e293b' : '#f1f5f9'}
         />
 
         <input

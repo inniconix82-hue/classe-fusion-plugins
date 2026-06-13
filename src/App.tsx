@@ -139,6 +139,7 @@ function FlowCanvas() {
   const [ollamaError, setOllamaError] = useState<string | null>(null)
   const [ollamaLoading, setOllamaLoading] = useState(false)
   const [showEditor, setShowEditor] = useState(false)
+  const [editorInitialContent, setEditorInitialContent] = useState('')
   const [editorContent, setEditorContent] = useState('')
   const [rawMarkdown, setRawMarkdown] = useState('')
   const [showTemplates, setShowTemplates] = useState(false)
@@ -613,12 +614,7 @@ function FlowCanvas() {
 
   const onSendToEditor = useCallback((text: string) => {
     setRawMarkdown(text)
-    const html = text
-      .split('\n')
-      .filter((line) => line.trim())
-      .map((line) => `<p>${line}</p>`)
-      .join('')
-    setEditorContent((prev) => prev + html)
+    setEditorInitialContent(text)
     setShowEditor(true)
     setShowOllama(false)
   }, [])
@@ -1056,9 +1052,10 @@ function FlowCanvas() {
       {showEditor && (
         <TextEditorPanel
           onClose={() => setShowEditor(false)}
-          initialContent={editorContent}
+          initialContent={editorInitialContent}
           rawMarkdown={rawMarkdown}
           onContentChange={setEditorContent}
+          theme={theme}
         />
       )}
 
