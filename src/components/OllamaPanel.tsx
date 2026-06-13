@@ -32,7 +32,13 @@ const SUGGESTED_MODELS: { name: string; label: string; desc: string; size: strin
   { name: 'phi3', label: 'Phi-3', desc: 'Rapide et efficace', size: '2.3 Go', primary: true },
   { name: 'tinyllama', label: 'TinyLlama', desc: 'Ultra léger', size: '0.6 Go' },
   { name: 'mistral', label: 'Mistral 7B', desc: 'Très polyvalent', size: '4.1 Go' },
-  { name: 'llama3.2', label: 'Llama 3.2', desc: 'Dernière génération', size: '2.0 Go' },
+  { name: 'llama3.2', label: 'Llama 3.2', desc: 'Meta, dernière génération', size: '2.0 Go' },
+  { name: 'qwen3', label: 'Qwen3', desc: 'Raisonnement avancé, multilingue', size: '2.5 Go' },
+  { name: 'gemma3', label: 'Gemma 3', desc: 'Google, compact et puissant', size: '3.3 Go' },
+  { name: 'deepseek-r1', label: 'DeepSeek-R1', desc: 'Raisonnement profond', size: '4.7 Go' },
+  { name: 'kimi-k2', label: 'Kimi-K2', desc: 'Moonshot, multilingue', size: '4.0 Go' },
+  { name: 'qwen2.5-coder', label: 'Qwen Coder', desc: 'Spécialisé code', size: '4.7 Go' },
+  { name: 'codestral', label: 'Codestral', desc: 'Mistral, spécialisé code', size: '12 Go' },
 ]
 
 const OllamaPanel: React.FC<OllamaPanelProps> = ({
