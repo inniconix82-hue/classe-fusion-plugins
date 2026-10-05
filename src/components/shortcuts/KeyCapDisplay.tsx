@@ -1,6 +1,7 @@
 import React from 'react';
 import type { KeyCombo } from '../../types/shortcuts';
 import { KEY_DISPLAY_MAP } from '../../types/shortcuts';
+import { adaptKeyComboForPlatform } from '../../data/shortcutStore';
 
 interface KeyCapProps {
   value: string;
@@ -30,18 +31,19 @@ interface KeyComboDisplayProps {
 
 export function KeyComboDisplay({ combo, size = 'md' }: KeyComboDisplayProps) {
   const parts: React.ReactNode[] = [];
+  const platformCombo = adaptKeyComboForPlatform(combo);
 
-  combo.modifiers.forEach((mod, i) => {
+  platformCombo.modifiers.forEach((mod, i) => {
     parts.push(<KeyCap key={`mod-${i}`} value={mod} size={size} variant="modifier" />);
     parts.push(<span key={`sep-${i}`} className="keycap-sep">+</span>);
   });
 
-  if (combo.key) {
+  if (platformCombo.key) {
     const isSpecial =
-      combo.key.length > 1 ||
-      Object.keys(KEY_DISPLAY_MAP).includes(combo.key.toLowerCase());
+      platformCombo.key.length > 1 ||
+      Object.keys(KEY_DISPLAY_MAP).includes(platformCombo.key.toLowerCase());
     parts.push(
-      <KeyCap key="key" value={combo.key} size={size} variant={isSpecial ? 'special' : 'key'} />
+      <KeyCap key="key" value={platformCombo.key} size={size} variant={isSpecial ? 'special' : 'key'} />
     );
   }
 

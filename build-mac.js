@@ -142,6 +142,16 @@ DÉSINSTALLATION
   fs.writeFileSync(installPath, installSh, { mode: 0o755 })
   fs.writeFileSync(lisezmoiPath, lisezmoi)
 
+  // Electron's downloaded runtime is ad-hoc signed before Packager changes the
+  // bundle. Re-sign the finished app so macOS can verify all bundled resources.
+  if (process.platform === 'darwin') {
+    const packagedApp = path.join(appFolder, 'Raccourcis Clavier.app')
+    console.log('🔏 Signature ad hoc du bundle...')
+    execSync(`codesign --force --deep --sign - --timestamp=none "${packagedApp}"`, { stdio: 'inherit' })
+    execSync(`codesign --verify --deep --strict "${packagedApp}"`, { stdio: 'inherit' })
+    console.log('✅ Signature vérifiée')
+  }
+
   // ─── 6. ZIP ───────────────────────────────────────────────────────
   const zipName = `Raccourcis-Clavier-Mac-${arch}.zip`
   const zipPath = path.join(__dirname, 'release', zipName)

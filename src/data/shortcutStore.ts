@@ -9,7 +9,7 @@ import type {
 } from '../types/shortcuts';
 
 const STORAGE_KEY = 'shortcut-manager-db';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 function now(): string {
   return new Date().toISOString();
@@ -29,7 +29,9 @@ export function loadDB(): ShortcutDB {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return emptyDB();
     const parsed = JSON.parse(raw) as ShortcutDB;
-    return parsed;
+    const { db, changed } = enrichDaVinciSpecializedShortcuts(parsed);
+    if (changed) localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+    return db;
   } catch {
     return emptyDB();
   }
@@ -38,6 +40,65 @@ export function loadDB(): ShortcutDB {
 export function saveDB(db: ShortcutDB): void {
   db.updatedAt = now();
   localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+}
+
+/**
+ * Copy the user's imported NICONIX mappings into the matching DaVinci
+ * categories. Existing actions are kept as-is, so custom mappings are never
+ * replaced. The migration is idempotent and also works when the source preset
+ * is imported after the app has first started.
+ */
+export function enrichDaVinciSpecializedShortcuts(input: ShortcutDB): { db: ShortcutDB; changed: boolean } {
+  const target = input.softwares.find(sw => sw.slug === 'davinci-resolve');
+  const source = input.softwares.find(sw => sw.slug === 'niconix-keys');
+  if (!target || !source) {
+    if (input.version === DB_VERSION) return { db: input, changed: false };
+    return { db: { ...input, version: DB_VERSION }, changed: true };
+  }
+
+  const sourceCategory = (name: string) =>
+    source.categories.find(cat => cat.name.localeCompare(name, undefined, { sensitivity: 'accent' }) === 0)?.shortcuts ?? [];
+
+  const colorViewPattern = /stills|primaries|highlight|reference|bypass color|channels rgb|video scopes|lightbox|workspace primary workspace color/i;
+  const mappings: Record<string, Shortcut[]> = {
+    Fusion: sourceCategory('Fusion'),
+    Fairlight: sourceCategory('Fairlight'),
+    Color: [
+      ...sourceCategory('Nodes'),
+      ...sourceCategory('Session'),
+      ...sourceCategory('Vue').filter(s => colorViewPattern.test(s.action)),
+      ...sourceCategory('Espaces de travail').filter(s => colorViewPattern.test(s.action)),
+    ],
+  };
+
+  let added = 0;
+  const timestamp = now();
+  const categories = target.categories.map(category => {
+    const sourceShortcuts = mappings[category.name];
+    if (!sourceShortcuts?.length) return category;
+
+    const existingActions = new Set(category.shortcuts.map(s => s.action.trim().toLocaleLowerCase()));
+    const additions = sourceShortcuts
+      .filter(s => !existingActions.has(s.action.trim().toLocaleLowerCase()))
+      .map(s => ({ ...s, id: generateId(), createdAt: timestamp, updatedAt: timestamp }));
+    added += additions.length;
+    return additions.length ? { ...category, shortcuts: [...category.shortcuts, ...additions] } : category;
+  });
+
+  const versionChanged = input.version !== DB_VERSION;
+  if (!added && !versionChanged) return { db: input, changed: false };
+
+  const db: ShortcutDB = {
+    ...input,
+    version: DB_VERSION,
+    updatedAt: timestamp,
+    softwares: input.softwares.map(sw =>
+      sw.id === target.id && added
+        ? { ...sw, categories, updatedAt: timestamp }
+        : sw
+    ),
+  };
+  return { db, changed: true };
 }
 
 // ─── Software ────────────────────────────────────────────────────────────────
@@ -328,7 +389,11 @@ export function deleteShortcut(
 
 // ─── Search ──────────────────────────────────────────────────────────────────
 
-function normalizeSearchQuery(raw: string): string {
+function normalizeTextQuery(raw: string): string {
+  return raw.toLowerCase().trim().replace(/\s+/g, ' ');
+}
+
+function normalizeComboQuery(raw: string): string {
   return raw
     .toLowerCase()
     .trim()
@@ -342,11 +407,12 @@ function normalizeSearchQuery(raw: string): string {
 
 // Match a single KeyCombo against a normalized query token (no '+' inside q).
 function matchesComboToken(combo: KeyCombo, token: string): boolean {
-  const keyLow = combo.key.toLowerCase();
+  const platformCombo = adaptKeyComboForPlatform(combo);
+  const keyLow = platformCombo.key.toLowerCase();
   if (keyLow === token) return true;
   // Prefix match for multi-char key names (e.g. "f5", "up", "del")
   if (token.length > 1 && keyLow.startsWith(token)) return true;
-  if (combo.modifiers.some(m => m.toLowerCase() === token)) return true;
+  if (platformCombo.modifiers.some(m => m.toLowerCase() === token)) return true;
   return false;
 }
 
@@ -356,27 +422,29 @@ function matchesCombo(combo: KeyCombo, q: string): boolean {
   }
   // Multi-part query like "shift+m": every part must match a modifier or the key
   const parts = q.split('+').filter(Boolean);
-  const modsLow = combo.modifiers.map(m => m.toLowerCase());
-  const keyLow = combo.key.toLowerCase();
+  const platformCombo = adaptKeyComboForPlatform(combo);
+  const modsLow = platformCombo.modifiers.map(m => m.toLowerCase());
+  const keyLow = platformCombo.key.toLowerCase();
   return parts.every(p => modsLow.includes(p) || keyLow === p || (p.length > 1 && keyLow.startsWith(p)));
 }
 
 
 export function searchShortcuts(db: ShortcutDB, query: string): SearchResult[] {
-  const q = normalizeSearchQuery(query);
-  if (!q) return [];
+  const textQuery = normalizeTextQuery(query);
+  const comboQuery = normalizeComboQuery(query);
+  if (!textQuery) return [];
   const results: SearchResult[] = [];
 
   for (const sw of db.softwares) {
     for (const cat of sw.categories) {
       for (const shortcut of cat.shortcuts) {
-        if (matchesShortcut(shortcut, q)) {
+        if (matchesShortcut(shortcut, textQuery, comboQuery)) {
           results.push({ software: sw, category: cat, shortcut });
         }
       }
       for (const sub of cat.subcategories) {
         for (const shortcut of sub.shortcuts) {
-          if (matchesShortcut(shortcut, q)) {
+          if (matchesShortcut(shortcut, textQuery, comboQuery)) {
             results.push({ software: sw, category: cat, subcategory: sub, shortcut });
           }
         }
@@ -386,16 +454,16 @@ export function searchShortcuts(db: ShortcutDB, query: string): SearchResult[] {
   return results;
 }
 
-function matchesShortcut(shortcut: Shortcut, q: string): boolean {
+function matchesShortcut(shortcut: Shortcut, textQuery: string, comboQuery: string): boolean {
   // Single char: only search key combos — avoids flooding results with action name matches
-  if (q.length === 1) {
-    return shortcut.keys.some(combo => matchesCombo(combo, q));
+  if (textQuery.length === 1) {
+    return shortcut.keys.some(combo => matchesCombo(combo, comboQuery));
   }
-  if (shortcut.action.toLowerCase().includes(q)) return true;
-  if (shortcut.description?.toLowerCase().includes(q)) return true;
-  if (shortcut.note?.toLowerCase().includes(q)) return true;
+  if (shortcut.action.toLowerCase().includes(textQuery)) return true;
+  if (shortcut.description?.toLowerCase().includes(textQuery)) return true;
+  if (shortcut.note?.toLowerCase().includes(textQuery)) return true;
   for (const combo of shortcut.keys) {
-    if (matchesCombo(combo, q)) return true;
+    if (matchesCombo(combo, comboQuery)) return true;
   }
   return false;
 }
@@ -459,7 +527,29 @@ function assignIds(sw: Omit<Software, 'id' | 'createdAt' | 'updatedAt'>): Softwa
 // ─── Key combo helpers ────────────────────────────────────────────────────────
 
 export function formatKeyCombo(combo: KeyCombo): string {
-  return [...combo.modifiers, combo.key].join('+');
+  const platformCombo = adaptKeyComboForPlatform(combo);
+  return [...platformCombo.modifiers, platformCombo.key].join('+');
+}
+
+export type ShortcutPlatform = 'mac' | 'windows' | 'other';
+
+export function getShortcutPlatform(): ShortcutPlatform {
+  if (typeof navigator === 'undefined') return 'other';
+  const value = `${navigator.platform} ${navigator.userAgent}`.toUpperCase();
+  if (value.includes('MAC')) return 'mac';
+  if (value.includes('WIN')) return 'windows';
+  return 'other';
+}
+
+export function adaptKeyComboForPlatform(
+  combo: KeyCombo,
+  platform: ShortcutPlatform = getShortcutPlatform()
+): KeyCombo {
+  if (platform !== 'windows') return combo;
+  const modifiers = combo.modifiers.map(mod =>
+    mod === 'Cmd' || mod === 'Meta' ? 'Ctrl' : mod
+  );
+  return { ...combo, modifiers: [...new Set(modifiers)] as KeyCombo['modifiers'] };
 }
 
 export function parseKeyComboString(str: string): KeyCombo {

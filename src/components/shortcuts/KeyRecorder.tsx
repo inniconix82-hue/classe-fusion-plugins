@@ -35,7 +35,7 @@ export function KeyRecorder({ value, onChange, placeholder = 'Cliquez puis appuy
     if (e.ctrlKey) modifiers.push('Ctrl');
     if (e.shiftKey) modifiers.push('Shift');
     if (e.altKey) modifiers.push('Alt');
-    if (e.metaKey) modifiers.push('Cmd');
+    if (e.metaKey) modifiers.push(navigator.platform.toUpperCase().includes('MAC') ? 'Cmd' : 'Win');
 
     if (MODIFIER_KEYS.has(e.key)) {
       // Only modifiers pressed — wait for main key

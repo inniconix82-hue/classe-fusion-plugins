@@ -587,7 +587,13 @@ function getDaVinciHotkeyCategory(raw: string): string {
 export function autoImport(content: string, filename: string, softwareName?: string): ImportResult {
   const ext = filename.split('.').pop()?.toLowerCase() ?? '';
 
-  if (ext === 'keyb') return parseDaVinciKeyb(content, softwareName || 'DaVinci Resolve');
+  // Resolve presets can use the same .keyb extension for either XML or its
+  // text hotkey syntax. Inspect the content before selecting the parser.
+  if (ext === 'keyb') {
+    return content.includes(':=')
+      ? parseDaVinciHotkeyTxt(content, softwareName || 'DaVinci Resolve')
+      : parseDaVinciKeyb(content, softwareName || 'DaVinci Resolve');
+  }
   if (ext === 'kys') return parsePhotoshopKys(content);
   if (ext === 'json') return parseVSCodeKeybindings(content);
   if (ext === 'csv') return parseGenericCSV(content, softwareName || filename.replace(/\.\w+$/, ''));

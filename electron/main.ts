@@ -6,7 +6,7 @@ import { spawn, execFile, exec } from 'child_process'
 let mainWindow: BrowserWindow | null = null
 let overlayWindow: BrowserWindow | null = null
 let tray: Tray | null = null
-let currentHotkey = 'CommandOrControl+Shift+K'
+let currentHotkey = process.platform === 'darwin' ? 'Cmd+Shift+K' : 'Ctrl+Shift+K'
 
 function getOverlayBg(): string {
   return nativeTheme.shouldUseDarkColors ? '#1c1c1c' : '#f0f2f5'

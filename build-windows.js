@@ -63,7 +63,7 @@ setlocal
 set "APP_NAME=Raccourcis Clavier"
 set "EXE_NAME=Raccourcis Clavier.exe"
 set "SCRIPT_DIR=%~dp0"
-set "APP_SRC=%SCRIPT_DIR%Raccourcis Clavier-win32-${arch}"
+set "APP_SRC=%SCRIPT_DIR%"
 set "DEST=%LOCALAPPDATA%\\%APP_NAME%"
 
 echo.
@@ -72,8 +72,8 @@ echo    Raccourcis Clavier ^— Installateur
 echo ==========================================
 echo.
 
-if not exist "%APP_SRC%" (
-  echo [ERREUR] Dossier de l'application introuvable.
+if not exist "%APP_SRC%%EXE_NAME%" (
+  echo [ERREUR] Executable de l'application introuvable.
   pause & exit /b 1
 )
 
@@ -84,7 +84,7 @@ if exist "%DEST%" (
 )
 
 echo Copie vers %DEST%...
-xcopy /e /i /q "%APP_SRC%" "%DEST%"
+xcopy /e /i /q /y "%APP_SRC%*" "%DEST%\"
 
 echo Création du raccourci Bureau...
 powershell -NoProfile -Command ^
