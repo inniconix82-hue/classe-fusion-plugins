@@ -32,13 +32,16 @@ import { FUSION_NODES } from '../../data/fusionNodeCatalog';
 
 type Modal = 'none' | 'import' | 'pdf' | 'search';
 type AppSection = 'shortcuts' | 'effects';
+const ACTIVE_SOFTWARE_KEY = 'shortcut-manager-active-software';
 
 export function ShortcutsApp() {
   const [db, setDb] = useState<ShortcutDB>(() => loadDB());
   const [selectedSoftwareId, setSelectedSoftwareId] = useState<string | null>(
     () => {
       const loaded = loadDB();
-      return loaded.softwares.find(software => software.slug === 'niconix-keys')?.id
+      const savedId = localStorage.getItem(ACTIVE_SOFTWARE_KEY);
+      return loaded.softwares.find(software => software.id === savedId)?.id
+        ?? loaded.softwares.find(software => software.slug === 'niconix-keys')?.id
         ?? loaded.softwares[0]?.id
         ?? null;
     }
@@ -53,6 +56,11 @@ export function ShortcutsApp() {
   useEffect(() => {
     saveDB(db);
   }, [db]);
+
+  useEffect(() => {
+    if (selectedSoftwareId) localStorage.setItem(ACTIVE_SOFTWARE_KEY, selectedSoftwareId);
+    else localStorage.removeItem(ACTIVE_SOFTWARE_KEY);
+  }, [selectedSoftwareId]);
 
   // Scroll to and briefly highlight a shortcut after navigation
   useEffect(() => {
