@@ -36,7 +36,12 @@ type AppSection = 'shortcuts' | 'effects';
 export function ShortcutsApp() {
   const [db, setDb] = useState<ShortcutDB>(() => loadDB());
   const [selectedSoftwareId, setSelectedSoftwareId] = useState<string | null>(
-    () => loadDB().softwares[0]?.id ?? null
+    () => {
+      const loaded = loadDB();
+      return loaded.softwares.find(software => software.slug === 'niconix-keys')?.id
+        ?? loaded.softwares[0]?.id
+        ?? null;
+    }
   );
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [modal, setModal] = useState<Modal>('none');
@@ -292,9 +297,9 @@ export function ShortcutsApp() {
             <button
               className="btn btn-ghost btn-sm"
               onClick={() => setModal('import')}
-              title="Importer depuis un fichier"
+              title="Importer votre propre profil de raccourcis"
             >
-              ⬆ Importer
+              ⬆ Importer mon profil
             </button>
             {selectedSoftware && (
               <button

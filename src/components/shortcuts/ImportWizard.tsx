@@ -96,7 +96,7 @@ export function ImportWizard({ onImport, onClose }: ImportWizardProps) {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-panel import-wizard" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>Importer des raccourcis</h2>
+          <h2>Importer mon profil de raccourcis</h2>
           <button className="btn-icon" onClick={onClose}>✕</button>
         </div>
 
@@ -104,6 +104,9 @@ export function ImportWizard({ onImport, onClose }: ImportWizardProps) {
           <div className="import-step">
             <p className="import-hint">
               Formats supportés : DaVinci Resolve <code>.keyb</code>, VS Code <code>keybindings.json</code>, Photoshop <code>.kys</code>, CSV/TXT générique.
+            </p>
+            <p className="import-hint">
+              Le profil importé devient la liste active. S’il porte le même nom technique qu’un profil existant, il le remplace. Les catalogues Effets et Nodes Fusion restent inchangés.
             </p>
             <div
               className={`drop-zone ${dragging ? 'drop-zone--active' : ''}`}

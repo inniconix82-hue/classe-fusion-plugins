@@ -7,6 +7,7 @@ import type {
   KeyCombo,
   SearchResult,
 } from '../types/shortcuts';
+import niconixPreset from './niconixPreset.json';
 
 const STORAGE_KEY = 'shortcut-manager-db';
 const DB_VERSION = 2;
@@ -21,14 +22,16 @@ export function generateId(): string {
 }
 
 function emptyDB(): ShortcutDB {
-  return { softwares: [], version: DB_VERSION, updatedAt: now() };
+  const preset = structuredClone(niconixPreset) as unknown as ShortcutDB;
+  return { ...preset, version: DB_VERSION, updatedAt: now() };
 }
 
 export function loadDB(): ShortcutDB {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return emptyDB();
-    return JSON.parse(raw) as ShortcutDB;
+    const parsed = JSON.parse(raw) as ShortcutDB;
+    return parsed.softwares?.length ? parsed : emptyDB();
   } catch {
     return emptyDB();
   }
@@ -435,7 +438,15 @@ export function mergeImportedSoftware(
       ...db,
       softwares: db.softwares.map(s =>
         s.slug === sw.slug
-          ? { ...s, categories: [...s.categories, ...withIds.categories], updatedAt: now() }
+          ? {
+              ...s,
+              name: withIds.name,
+              icon: withIds.icon,
+              version: withIds.version,
+              platform: withIds.platform,
+              categories: withIds.categories,
+              updatedAt: now(),
+            }
           : s
       ),
     };
