@@ -6,7 +6,27 @@ import { spawn, execFile, exec } from 'child_process'
 let mainWindow: BrowserWindow | null = null
 let overlayWindow: BrowserWindow | null = null
 let tray: Tray | null = null
+let isQuitting = false
 let currentHotkey = process.platform === 'darwin' ? 'Cmd+Shift+K' : 'Ctrl+Shift+K'
+
+// A second packaged copy used to be able to write to the same Chromium
+// localStorage database. Keep one process in charge of user data and focus the
+// existing window when the app is launched again.
+const hasSingleInstanceLock = app.requestSingleInstanceLock()
+
+if (!hasSingleInstanceLock) {
+  app.quit()
+} else {
+  app.on('second-instance', () => {
+    if (!mainWindow || mainWindow.isDestroyed()) {
+      createMainWindow()
+      return
+    }
+    if (mainWindow.isMinimized()) mainWindow.restore()
+    mainWindow.show()
+    mainWindow.focus()
+  })
+}
 
 function getOverlayBg(): string {
   return nativeTheme.shouldUseDarkColors ? '#1c1c1c' : '#f0f2f5'
@@ -70,6 +90,7 @@ function createMainWindow() {
 
   // Hide to tray instead of closing
   mainWindow.on('close', (e) => {
+    if (isQuitting) return
     e.preventDefault()
     mainWindow?.hide()
   })
@@ -204,6 +225,7 @@ function registerHotkey(hotkey: string) {
 }
 
 app.whenReady().then(() => {
+  if (!hasSingleInstanceLock) return
   // Restore saved hotkey
   try {
     const cfg = join(app.getPath('userData'), 'hotkey.txt')
@@ -217,6 +239,10 @@ app.whenReady().then(() => {
 
 app.on('will-quit', () => {
   globalShortcut.unregisterAll()
+})
+
+app.on('before-quit', () => {
+  isQuitting = true
 })
 
 // Keep app alive in tray — only quit via tray menu

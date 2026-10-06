@@ -25,9 +25,12 @@ import { ShortcutList } from './ShortcutList';
 import { SearchPanel } from './SearchPanel';
 import { ImportWizard } from './ImportWizard';
 import { PDFGenerator } from './PDFGenerator';
+import { EffectsCatalog } from './EffectsCatalog';
 import type { ImportResult } from '../../data/shortcutImporters';
+import { DAVINCI_EFFECTS } from '../../data/effectCatalog';
 
 type Modal = 'none' | 'import' | 'pdf' | 'search';
+type AppSection = 'shortcuts' | 'effects';
 
 export function ShortcutsApp() {
   const [db, setDb] = useState<ShortcutDB>(() => loadDB());
@@ -36,6 +39,7 @@ export function ShortcutsApp() {
   );
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [modal, setModal] = useState<Modal>('none');
+  const [activeSection, setActiveSection] = useState<AppSection>('shortcuts');
   const [activeAppSlug, setActiveAppSlug] = useState<string | null>(null);
   const [highlightedShortcutId, setHighlightedShortcutId] = useState<string | null>(null);
 
@@ -66,7 +70,11 @@ export function ShortcutsApp() {
     const handler = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
         e.preventDefault();
-        setModal(m => m === 'search' ? 'none' : 'search');
+        if (activeSection === 'shortcuts') {
+          setModal(m => m === 'search' ? 'none' : 'search');
+        } else {
+          document.getElementById('effects-search-input')?.focus();
+        }
       }
       if (e.key === 'Escape' && modal !== 'none') {
         setModal('none');
@@ -74,7 +82,7 @@ export function ShortcutsApp() {
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [modal]);
+  }, [modal, activeSection]);
 
   const selectedSoftware = db.softwares.find(s => s.id === selectedSoftwareId) ?? null;
   const selectedCategory = selectedSoftware?.categories.find(c => c.id === selectedCategoryId) ?? null;
@@ -253,48 +261,72 @@ export function ShortcutsApp() {
       <div className="shortcuts-topbar">
         <div className="shortcuts-topbar-left">
           <h1 className="shortcuts-title">⌨️ Raccourcis Clavier</h1>
-          <span className="shortcuts-stats">{db.softwares.length} logiciels · {totalShortcuts} raccourcis</span>
+          <nav className="app-section-tabs" aria-label="Sections de l’application">
+            <button
+              className={`app-section-tab ${activeSection === 'shortcuts' ? 'active' : ''}`}
+              onClick={() => setActiveSection('shortcuts')}
+            >
+              ⌨️ Raccourcis
+            </button>
+            <button
+              className={`app-section-tab ${activeSection === 'effects' ? 'active' : ''}`}
+              onClick={() => { setActiveSection('effects'); setModal('none'); }}
+            >
+              ✨ Effets
+            </button>
+          </nav>
+          <span className="shortcuts-stats">
+            {activeSection === 'shortcuts'
+              ? `${db.softwares.length} logiciels · ${totalShortcuts} raccourcis`
+              : `${DAVINCI_EFFECTS.length} effets documentés`}
+          </span>
         </div>
-        <div className="shortcuts-topbar-actions">
-          <button
-            className="btn btn-ghost btn-sm"
-            onClick={() => setModal('search')}
-            title="Rechercher (Ctrl+F)"
-          >
-            🔍 Recherche
-          </button>
-          <button
-            className="btn btn-ghost btn-sm"
-            onClick={() => setModal('import')}
-            title="Importer depuis un fichier"
-          >
-            ⬆ Importer
-          </button>
-          {selectedSoftware && (
+        {activeSection === 'shortcuts' ? (
+          <div className="shortcuts-topbar-actions">
             <button
               className="btn btn-ghost btn-sm"
-              onClick={() => setModal('pdf')}
-              title="Exporter en PDF"
+              onClick={() => setModal('search')}
+              title="Rechercher (Ctrl+F)"
             >
-              📄 PDF
+              🔍 Recherche
             </button>
-          )}
-          <div className="dropdown">
-            <button className="btn btn-ghost btn-sm">⋯</button>
-            <div className="dropdown-menu">
-              <button className="dropdown-item" onClick={handleExportJSON}>
-                Sauvegarder (JSON)
+            <button
+              className="btn btn-ghost btn-sm"
+              onClick={() => setModal('import')}
+              title="Importer depuis un fichier"
+            >
+              ⬆ Importer
+            </button>
+            {selectedSoftware && (
+              <button
+                className="btn btn-ghost btn-sm"
+                onClick={() => setModal('pdf')}
+                title="Exporter en PDF"
+              >
+                📄 PDF
               </button>
-              <label className="dropdown-item">
-                Restaurer (JSON)
-                <input type="file" accept=".json" style={{ display: 'none' }} onChange={handleImportJSON} />
-              </label>
+            )}
+            <div className="dropdown">
+              <button className="btn btn-ghost btn-sm">⋯</button>
+              <div className="dropdown-menu">
+                <button className="dropdown-item" onClick={handleExportJSON}>
+                  Sauvegarder (JSON)
+                </button>
+                <label className="dropdown-item">
+                  Restaurer (JSON)
+                  <input type="file" accept=".json" style={{ display: 'none' }} onChange={handleImportJSON} />
+                </label>
+              </div>
             </div>
           </div>
-        </div>
+        ) : (
+          <span className="effects-topbar-hint">Recherche : ⌘F</span>
+        )}
       </div>
 
-      {/* Main layout */}
+      {activeSection === 'effects' ? (
+        <EffectsCatalog />
+      ) : (
       <div className="shortcuts-layout">
         {/* Left: software list */}
         <aside className="shortcuts-sidebar-left">
@@ -363,6 +395,7 @@ export function ShortcutsApp() {
           )}
         </main>
       </div>
+      )}
 
       {/* Modals */}
       {modal === 'search' && (
