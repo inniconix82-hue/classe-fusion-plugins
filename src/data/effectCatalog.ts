@@ -12,6 +12,43 @@ export interface DavinciEffect {
   availability?: 'Gratuit' | 'Studio';
 }
 
+const EFFECT_CATEGORY_ENGLISH: Record<string, string> = {
+  '3D': '3D',
+  'Composition': 'Composite',
+  'Couleur': 'Color',
+  'Dialogue': 'Dialogue',
+  'Dynamique': 'Dynamics',
+  'Déformation': 'Warp',
+  'Détourage et masques': 'Keying & Masks',
+  'Espace et ambiance': 'Space & Ambience',
+  'Flous': 'Blur',
+  'Hauteur et voix': 'Pitch & Voice',
+  'Keying': 'Keying',
+  'Look cinéma': 'Film Look',
+  'Masques': 'Masks',
+  'Modulation': 'Modulation',
+  'Mouvement': 'Motion',
+  'Musique': 'Music',
+  'Netteté': 'Sharpen',
+  'Nettoyage audio': 'Audio Repair',
+  'Nodes et composition': 'Nodes & Composite',
+  'Particules': 'Particles',
+  'Peau et portrait': 'Beauty & Portrait',
+  'Peinture et retouche': 'Paint & Retouch',
+  'Restauration': 'Revival',
+  'Réduction de bruit': 'Noise Reduction',
+  'Stylisation': 'Stylize',
+  'Temps': 'Time',
+  'Titres et graphisme': 'Titles & Graphics',
+  'Tracking': 'Tracking',
+  'Éclairage': 'Light',
+  'Égalisation': 'EQ',
+};
+
+export function getEffectCategoryLabel(category: string) {
+  return { english: EFFECT_CATEGORY_ENGLISH[category] ?? category, french: category };
+}
+
 export const EFFECT_PAGES: { name: EffectPage; icon: string; hint: string }[] = [
   { name: 'Cut', icon: '✂️', hint: 'Montage rapide' },
   { name: 'Edit', icon: '🎞️', hint: 'Montage et Open FX' },
@@ -643,6 +680,7 @@ export function effectMatchesQuery(effect: DavinciEffect, query: string): boolea
   const nameTokens = normalizeEffectSearch(effect.name).split(/[^a-z0-9]+/).filter(Boolean);
   const contentTokens = normalizeEffectSearch([
     effect.category,
+    getEffectCategoryLabel(effect.category).english,
     effect.summary,
     effect.usage,
     effect.path,

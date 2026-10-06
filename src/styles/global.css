@@ -3803,6 +3803,56 @@ body {
    DaVinci Effects Catalog
    ============================== */
 
+.effects-library {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.catalog-kind-switch {
+  display: flex;
+  flex-shrink: 0;
+  gap: 6px;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  padding: 8px 12px;
+}
+
+.catalog-kind-switch button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-secondary);
+  padding: 7px 11px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.catalog-kind-switch button:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.catalog-kind-switch button.active {
+  border-color: color-mix(in srgb, var(--accent) 48%, transparent);
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  color: var(--text-primary);
+}
+
+.catalog-kind-switch button span {
+  border-radius: 9px;
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+  padding: 1px 6px;
+  font-size: 9px;
+}
+
 .effects-catalog {
   display: flex;
   flex: 1;
@@ -3914,6 +3964,97 @@ body {
 .effects-category-item > span:first-child {
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.category-bilingual {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.category-bilingual strong {
+  overflow: hidden;
+  color: var(--text-primary);
+  font-size: 11px;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.category-bilingual small {
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: 9px;
+  font-weight: 400;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fusion-node-intro {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+
+.fusion-node-intro-card,
+.fusion-node-tip {
+  border: 1px solid var(--border-color);
+  border-radius: 9px;
+  background: var(--bg-primary);
+  padding: 13px;
+}
+
+.fusion-node-intro-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.fusion-node-symbol {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  margin-bottom: 10px;
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--accent) 17%, transparent);
+  color: var(--accent-hover);
+  font-size: 21px;
+}
+
+.fusion-node-intro-card strong,
+.fusion-node-tip strong {
+  color: var(--text-primary);
+  font-size: 12px;
+}
+
+.fusion-node-intro-card small {
+  margin-top: 2px;
+  color: var(--text-muted);
+  font-size: 10px;
+}
+
+.fusion-node-intro-card p,
+.fusion-node-tip p {
+  margin-top: 9px;
+  color: var(--text-secondary);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.fusion-node-tip kbd,
+.effect-path kbd {
+  display: inline-block;
+  margin-top: 9px;
+  border: 1px solid var(--border-color);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  padding: 2px 5px;
+  font-family: inherit;
+  font-size: 9px;
 }
 
 .effects-main {

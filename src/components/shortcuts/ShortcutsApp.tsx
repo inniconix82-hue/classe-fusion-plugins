@@ -28,6 +28,7 @@ import { PDFGenerator } from './PDFGenerator';
 import { EffectsCatalog } from './EffectsCatalog';
 import type { ImportResult } from '../../data/shortcutImporters';
 import { DAVINCI_EFFECTS } from '../../data/effectCatalog';
+import { FUSION_NODES } from '../../data/fusionNodeCatalog';
 
 type Modal = 'none' | 'import' | 'pdf' | 'search';
 type AppSection = 'shortcuts' | 'effects';
@@ -278,7 +279,7 @@ export function ShortcutsApp() {
           <span className="shortcuts-stats">
             {activeSection === 'shortcuts'
               ? `${db.softwares.length} logiciels · ${totalShortcuts} raccourcis`
-              : `${DAVINCI_EFFECTS.length} effets documentés`}
+              : `${DAVINCI_EFFECTS.length} effets · ${FUSION_NODES.length} nodes Fusion`}
           </span>
         </div>
         {activeSection === 'shortcuts' ? (
