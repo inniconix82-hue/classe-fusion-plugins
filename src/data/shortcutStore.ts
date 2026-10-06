@@ -28,10 +28,7 @@ export function loadDB(): ShortcutDB {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return emptyDB();
-    const parsed = JSON.parse(raw) as ShortcutDB;
-    const { db, changed } = enrichDaVinciSpecializedShortcuts(parsed);
-    if (changed) localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
-    return db;
+    return JSON.parse(raw) as ShortcutDB;
   } catch {
     return emptyDB();
   }
@@ -40,65 +37,6 @@ export function loadDB(): ShortcutDB {
 export function saveDB(db: ShortcutDB): void {
   db.updatedAt = now();
   localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
-}
-
-/**
- * Copy the user's imported NICONIX mappings into the matching DaVinci
- * categories. Existing actions are kept as-is, so custom mappings are never
- * replaced. The migration is idempotent and also works when the source preset
- * is imported after the app has first started.
- */
-export function enrichDaVinciSpecializedShortcuts(input: ShortcutDB): { db: ShortcutDB; changed: boolean } {
-  const target = input.softwares.find(sw => sw.slug === 'davinci-resolve');
-  const source = input.softwares.find(sw => sw.slug === 'niconix-keys');
-  if (!target || !source) {
-    if (input.version === DB_VERSION) return { db: input, changed: false };
-    return { db: { ...input, version: DB_VERSION }, changed: true };
-  }
-
-  const sourceCategory = (name: string) =>
-    source.categories.find(cat => cat.name.localeCompare(name, undefined, { sensitivity: 'accent' }) === 0)?.shortcuts ?? [];
-
-  const colorViewPattern = /stills|primaries|highlight|reference|bypass color|channels rgb|video scopes|lightbox|workspace primary workspace color/i;
-  const mappings: Record<string, Shortcut[]> = {
-    Fusion: sourceCategory('Fusion'),
-    Fairlight: sourceCategory('Fairlight'),
-    Color: [
-      ...sourceCategory('Nodes'),
-      ...sourceCategory('Session'),
-      ...sourceCategory('Vue').filter(s => colorViewPattern.test(s.action)),
-      ...sourceCategory('Espaces de travail').filter(s => colorViewPattern.test(s.action)),
-    ],
-  };
-
-  let added = 0;
-  const timestamp = now();
-  const categories = target.categories.map(category => {
-    const sourceShortcuts = mappings[category.name];
-    if (!sourceShortcuts?.length) return category;
-
-    const existingActions = new Set(category.shortcuts.map(s => s.action.trim().toLocaleLowerCase()));
-    const additions = sourceShortcuts
-      .filter(s => !existingActions.has(s.action.trim().toLocaleLowerCase()))
-      .map(s => ({ ...s, id: generateId(), createdAt: timestamp, updatedAt: timestamp }));
-    added += additions.length;
-    return additions.length ? { ...category, shortcuts: [...category.shortcuts, ...additions] } : category;
-  });
-
-  const versionChanged = input.version !== DB_VERSION;
-  if (!added && !versionChanged) return { db: input, changed: false };
-
-  const db: ShortcutDB = {
-    ...input,
-    version: DB_VERSION,
-    updatedAt: timestamp,
-    softwares: input.softwares.map(sw =>
-      sw.id === target.id && added
-        ? { ...sw, categories, updatedAt: timestamp }
-        : sw
-    ),
-  };
-  return { db, changed: true };
 }
 
 // ─── Software ────────────────────────────────────────────────────────────────

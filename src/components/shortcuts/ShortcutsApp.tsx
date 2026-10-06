@@ -231,14 +231,12 @@ export function ShortcutsApp() {
     reader.onload = (ev) => {
       try {
         const parsed = JSON.parse(ev.target?.result as string) as ShortcutDB;
-        if (parsed.softwares && confirm('Fusionner avec les données existantes ?')) {
-          setDb(prev => ({
-            ...prev,
-            softwares: [
-              ...prev.softwares,
-              ...parsed.softwares.filter(s => !prev.softwares.find(e => e.slug === s.slug)),
-            ],
-          }));
+        if (Array.isArray(parsed.softwares) && confirm(
+          `Restaurer cette sauvegarde (${parsed.softwares.length} logiciels) ?\n\nLes données actuellement affichées seront remplacées par le contenu exact du fichier.`
+        )) {
+          setDb(parsed);
+          setSelectedSoftwareId(parsed.softwares[0]?.id ?? null);
+          setSelectedCategoryId(null);
         }
       } catch {
         alert('Fichier JSON invalide.');
